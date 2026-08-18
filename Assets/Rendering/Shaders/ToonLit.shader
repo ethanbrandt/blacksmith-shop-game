@@ -132,6 +132,8 @@ Shader "Custom/ToonLit"
                         diffuseStepped = originalStepped;
                     }
                 }
+
+                return diffuseStepped;
             }
 
             half4 frag(Varyings input) : SV_Target
@@ -142,57 +144,37 @@ Shader "Custom/ToonLit"
                 float3 normalWS = normalize(input.normalWS);
                 float4 shadowCoord = TransformWorldToShadowCoord(input.positionWS);
                 Light mainLight = GetMainLight(shadowCoord);
-                float diffuseAmount = dot(normalWS, mainLight.direction) + _Wrap;
-                diffuseAmount *= _Steepness;
 
-                float cutsInv = 1.0 / float(_Cuts);
-                float cut = cutsInv;
+                float lightAmt = 0;
+                lightAmt += EvaluateLight(normalWS, mainLight);
+                float3 additionalLightColor = float3(1, 1, 1);
 
-                float originalIndex = ceil(diffuseAmount * float(_Cuts));
-                float originalStepped = saturate(originalIndex * cut);
-                float diffuseStepped = saturate(diffuseAmount + GLSLMod(1.0 - diffuseAmount, cutsInv));
-                
-                if (_ThresholdGradientSize > 0.0)
-                {
-                    float nearestK = floor(diffuseAmount / cut + 0.5);
-                    float threshold = nearestK * cut;
+                #if defined(_ADDITIONAL_LIGHTS)
+                    uint pixelLightCount = GetAdditionalLightsCount();
+                    LIGHT_LOOP_BEGIN(pixelLightCount)
+                        Light additionalLight = GetAdditionalLight(lightIndex, input.positionWS, float4(1, 1, 1, 1));
+                        float lightEval = EvaluateLight(normalWS, additionalLight);
+                        lightAmt += lightEval;
+                        additionalLightColor += additionalLight.color * lightEval;
+                    LIGHT_LOOP_END
+                #endif
 
-                    if (nearestK >= 0.0 && nearestK <= float(_Cuts))
-                    {
-                        float halfWidth = 0.5 * cut * _ThresholdGradientSize;
-                        float low = max(0.0, threshold - halfWidth);
-                        float high = min(1.0, threshold + halfWidth);
-
-                        float blend = 0.0;
-                        if (high > low)
-                            blend = smoothstep(low, high, diffuseAmount);
-                        else
-                            blend = step(threshold, diffuseAmount);
-                        float leftValue = threshold;
-                        float rightValue = min(threshold + cut, 1.0);
-                        diffuseStepped = lerp(leftValue, rightValue, blend);
-                        diffuseStepped = saturate(diffuseStepped);
-                    }
-                    else
-                    {
-                        diffuseStepped = originalStepped;
-                    }
-                }
 
                 float shadow = mainLight.distanceAttenuation * mainLight.shadowAttenuation;
-                float lit = diffuseStepped * shadow;
+                float lit = lightAmt * shadow;
                 half3 finalColor;
 
+                
                 if (_UsePalette > 0.5)
                 {
                     half3 paletteColor = albedo * lerp(_ShadowColor.rgb, _HighlightColor.rgb, lit);
-                    finalColor = paletteColor;
+                    finalColor = paletteColor * additionalLightColor;
                 }
                 else
                 {
-                    float3 finalLighting = diffuseStepped * mainLight.color * shadow;
+                    float3 finalLighting = lightAmt * mainLight.color * shadow;
                     float3 ambient = _GlobalAmbientColor.rgb;
-                    finalColor = albedo * (finalLighting + ambient);
+                    finalColor = albedo * (finalLighting + ambient) * additionalLightColor;
                 }
 
                 return half4(finalColor, 1.0);
@@ -227,7 +209,6 @@ Shader "Custom/ToonLit"
             CBUFFER_START(UnityPerMaterial)
                 half4 _BaseColor;
                 half4 _HighlightColor;
-                half4 _MidtoneColor;
                 half4 _ShadowColor;
                 float _UsePalette;
 
@@ -235,16 +216,6 @@ Shader "Custom/ToonLit"
                 float _Steepness;
                 float _Wrap;
                 float _ThresholdGradientSize;
-                
-                float _UseDither;
-                float _DitherStrength;
-                half4 _Color2;
-                float _Noise2Scale;
-                float _Noise2Threshold;
-                
-                half4 _Color3;
-                float _Noise3Scale;
-                float _Noise3Threshold;
             CBUFFER_END
 
             float3 _LightDirection;
@@ -253,7 +224,7 @@ Shader "Custom/ToonLit"
                 Varyings output;
                 float3 positionWS = TransformObjectToWorld(input.positionOS.xyz);
                 float3 normalWS = TransformObjectToWorldNormal(input.normalOS);
-                output.positionHCS = TransformWorldToHClip(ApplyShadowBias(positionWS, normalWS, _LightDirection));
+                output.positionHCS = TransformWorldToHClip(ApplyShadowBias(positionWS, normalWS, ));
                 return output;
             }
 
@@ -289,7 +260,6 @@ Shader "Custom/ToonLit"
             CBUFFER_START(UnityPerMaterial)
                 half4 _BaseColor;
                 half4 _HighlightColor;
-                half4 _MidtoneColor;
                 half4 _ShadowColor;
                 float _UsePalette;
 
@@ -297,16 +267,6 @@ Shader "Custom/ToonLit"
                 float _Steepness;
                 float _Wrap;
                 float _ThresholdGradientSize;
-                
-                float _UseDither;
-                float _DitherStrength;
-                half4 _Color2;
-                float _Noise2Scale;
-                float _Noise2Threshold;
-                
-                half4 _Color3;
-                float _Noise3Scale;
-                float _Noise3Threshold;
             CBUFFER_END
 
             Varyings vert(Attributes input)
@@ -350,7 +310,6 @@ Shader "Custom/ToonLit"
             CBUFFER_START(UnityPerMaterial)
                 half4 _BaseColor;
                 half4 _HighlightColor;
-                half4 _MidtoneColor;
                 half4 _ShadowColor;
                 float _UsePalette;
 
@@ -358,16 +317,6 @@ Shader "Custom/ToonLit"
                 float _Steepness;
                 float _Wrap;
                 float _ThresholdGradientSize;
-                
-                float _UseDither;
-                float _DitherStrength;
-                half4 _Color2;
-                float _Noise2Scale;
-                float _Noise2Threshold;
-                
-                half4 _Color3;
-                float _Noise3Scale;
-                float _Noise3Threshold;
             CBUFFER_END
 
             Varyings vert(Attributes input)
