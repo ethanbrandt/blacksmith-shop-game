@@ -1,3 +1,4 @@
+using Unity.Mathematics;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody))]
@@ -70,6 +71,8 @@ public class Pickable : MonoBehaviour
 		SetPhysicsActive(false);
 
 		transform.SetParent(socket, true);
+		transform.localPosition = Vector3.zero;
+		transform.localRotation = Quaternion.identity;
 	}
 
 	public void Drop(Vector3 worldPosition, Vector3 velocity)
