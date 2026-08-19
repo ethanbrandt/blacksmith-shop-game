@@ -11,7 +11,10 @@ Shader "Custom/ToonLit"
 
         _Cuts ("Cuts", Range(1, 8)) = 3
         _Steepness ("Steepness", Range(1, 8)) = 1.0
-        _Wrap ("Wrap", Range(-1.0, 0.0)) = 0.0
+        _Wrap ("Wrap", Range(-1.0, 1.0)) = 0.0
+        [Enum(Banding, 0, Shadow Map, 1)] _ReceiveShadowMap ("Receive Shadows", Float) = 1
+        _ShadowReceiverBias ("Shadow Receiver Bias", Range(0.0, 0.5)) = 0.02
+        _ShadowNormalBias ("Shadow Normal Bias", Range(0.0, 0.5)) = 0.04
        
         _ThresholdGradientSize ("Threshold Gradient Size", Range(0.0, 1.0)) = 0.2
     }
@@ -36,10 +39,11 @@ Shader "Custom/ToonLit"
             #pragma fragment frag
 
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
-            #pragma multi_compile _ _ADDITIONAL_LIGHTS
-            #pragma multi_compile _ _ADDITIONAL_LIGHT_SHADOWS
+            #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
+            #pragma multi_compile_fragment _ _ADDITIONAL_LIGHT_SHADOWS
             #pragma multi_compile _ _SHADOWS_SOFT
-            #pragma multi_compile _ _FORWARD_PLUS
+            #pragma multi_compile_fragment _ _LIGHT_COOKIES
+            #pragma multi_compile _ _LIGHT_LAYERS
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
@@ -70,11 +74,76 @@ Shader "Custom/ToonLit"
                 float _Steepness;
                 float _Wrap;
                 float _ThresholdGradientSize;
+                float _ShadowReceiverBias;
+                float _ShadowNormalBias;
+                float _ReceiveShadowMap;
             CBUFFER_END
 
             float GLSLMod(float x, float y)
             {
                 return x - y * floor(x / y);
+            }
+
+            float ToonDiffuse(float diffuseAmount)
+            {
+                float cutsInv = 1.0 / float(_Cuts);
+                float cut = cutsInv;
+                float originalIndex = ceil(diffuseAmount * float(_Cuts));
+                float originalStepped = saturate(originalIndex * cut);
+                float diffuseStepped = saturate(diffuseAmount + GLSLMod(1.0 - diffuseAmount, cutsInv));
+
+                if (_ThresholdGradientSize > 0.0)
+                {
+                    float nearestK = floor(diffuseAmount / cut + 0.5);
+                    float threshold = nearestK * cut;
+                    if (nearestK >= 0.0 && nearestK <= float(_Cuts))
+                    {
+                        float halfWidth = 0.5 * cut * _ThresholdGradientSize;
+                        float low = max(0.0, threshold - halfWidth);
+                        float high = min(1.0, threshold + halfWidth);
+                        float blend = high > low
+                            ? smoothstep(low, high, diffuseAmount)
+                            : step(threshold, diffuseAmount);
+                        float leftValue = threshold;
+                        float rightValue = min(threshold + cut, 1.0);
+                        diffuseStepped = saturate(lerp(leftValue, rightValue, blend));
+                    }
+                    else
+                    {
+                        diffuseStepped = originalStepped;
+                    }
+                }
+                return diffuseStepped;
+            }
+
+            Light GetBiasedAdditionalLight(uint lightIndex, float3 positionWS, float3 normalWS, half4 shadowMask)
+            {
+                if (_ReceiveShadowMap > 0.5)
+                {
+                    Light light = GetAdditionalLight(lightIndex, positionWS, shadowMask);
+                    float ndotlSat = saturate(dot(normalWS, light.direction));
+                    float sinNL = sqrt(max(0.0, 1.0 - ndotlSat * ndotlSat));
+                    float3 biasedWS = positionWS
+                        + light.direction * _ShadowReceiverBias
+                        + normalWS * (_ShadowNormalBias * max(sinNL, 0.2));
+                    return GetAdditionalLight(lightIndex, biasedWS, shadowMask);
+                }
+                return GetAdditionalLight(lightIndex, positionWS);
+            }
+
+            float3 ShadeToonPunctual(Light light, float3 normalWS)
+            {
+#ifdef _LIGHT_LAYERS
+                if (!IsMatchingLightLayer(light.layerMask, GetMeshRenderingLayer()))
+                    return 0;
+#endif
+                float ndotl = dot(normalWS, light.direction) + _Wrap;
+                ndotl *= _Steepness;
+                float stepped = ToonDiffuse(ndotl);
+                float atten = light.distanceAttenuation;
+                if (_ReceiveShadowMap > 0.5)
+                    atten *= light.shadowAttenuation;
+                return stepped * light.color * atten;
             }
 
             float2 RotateVec2(float2 v, float angleDeg)
@@ -94,87 +163,56 @@ Shader "Custom/ToonLit"
                 return output;
             }
 
-            float EvaluateLight(float3 _normalWS, Light _light)
-            {
-                float diffuseAmount = dot(_normalWS, _light.direction) + _Wrap;
-                diffuseAmount *= _Steepness;
-
-                float cutsInv = 1.0 / float(_Cuts);
-                float cut = cutsInv;
-
-                float originalIndex = ceil(diffuseAmount * float(_Cuts));
-                float originalStepped = saturate(originalIndex * cut);
-                float diffuseStepped = saturate(diffuseAmount + GLSLMod(1.0 - diffuseAmount, cutsInv));
-
-                if (_ThresholdGradientSize > 0.0)
-                {
-                    float nearestK = floor(diffuseAmount / cut + 0.5);
-                    float threshold = nearestK * cut;
-
-                    if (nearestK >= 0.0 && nearestK <= float(_Cuts))
-                    {
-                        float halfWidth = 0.5 * cut * _ThresholdGradientSize;
-                        float low = max(0.0, threshold - halfWidth);
-                        float high = min(1.0, threshold + halfWidth);
-
-                        float blend = 0.0;
-                        if (high > low)
-                            blend = smoothstep(low, high, diffuseAmount);
-                        else
-                            blend = step(threshold, diffuseAmount);
-                        float leftValue = threshold;
-                        float rightValue = min(threshold + cut, 1.0);
-                        diffuseStepped = lerp(leftValue, rightValue, blend);
-                        diffuseStepped = saturate(diffuseStepped);
-                    }
-                    else
-                    {
-                        diffuseStepped = originalStepped;
-                    }
-                }
-
-                return diffuseStepped;
-            }
-
             half4 frag(Varyings input) : SV_Target
             {
-
                 half3 albedo = _BaseColor.rgb;
 
                 float3 normalWS = normalize(input.normalWS);
-                float4 shadowCoord = TransformWorldToShadowCoord(input.positionWS);
-                Light mainLight = GetMainLight(shadowCoord);
+                Light mainLight = GetMainLight();
+                float3 lightDir = mainLight.direction;
+                float ndotl = dot(normalWS, lightDir);
 
-                float lightAmt = 0;
-                lightAmt += EvaluateLight(normalWS, mainLight);
-                float3 additionalLightColor = float3(1, 1, 1);
+                if (_ReceiveShadowMap > 0.5)
+                {
+                    float ndotlSat = saturate(ndotl);
+                    float sinNL = sqrt(max(0.0, 1.0 - ndotlSat * ndotlSat));
+                    float3 biasedWS = input.positionWS
+                        + lightDir * _ShadowReceiverBias
+                        + normalWS * (_ShadowNormalBias * max(sinNL, 0.2));
+                    mainLight = GetMainLight(TransformWorldToShadowCoord(biasedWS));
+                }
 
+                float diffuseAmount = ndotl + _Wrap;
+                diffuseAmount *= _Steepness;
+                float diffuseStepped = ToonDiffuse(diffuseAmount);
+
+                float shadow = 1.0;
+                if (_ReceiveShadowMap > 0.5)
+                    shadow = mainLight.distanceAttenuation * mainLight.shadowAttenuation;
+                float lit = diffuseStepped * shadow;
+
+                float3 additionalLighting = 0;
                 #if defined(_ADDITIONAL_LIGHTS)
+                    half4 shadowMask = half4(1, 1, 1, 1);
                     uint pixelLightCount = GetAdditionalLightsCount();
+
                     LIGHT_LOOP_BEGIN(pixelLightCount)
-                        Light additionalLight = GetAdditionalLight(lightIndex, input.positionWS, float4(1, 1, 1, 1));
-                        float lightEval = EvaluateLight(normalWS, additionalLight);
-                        lightAmt += lightEval;
-                        additionalLightColor += additionalLight.color * lightEval;
+                        Light addLight = GetBiasedAdditionalLight(lightIndex, input.positionWS, normalWS, shadowMask);
+                        additionalLighting += ShadeToonPunctual(addLight, normalWS);
                     LIGHT_LOOP_END
                 #endif
 
-
-                float shadow = mainLight.distanceAttenuation * mainLight.shadowAttenuation;
-                float lit = lightAmt * shadow;
                 half3 finalColor;
-
-                
                 if (_UsePalette > 0.5)
                 {
                     half3 paletteColor = albedo * lerp(_ShadowColor.rgb, _HighlightColor.rgb, lit);
-                    finalColor = paletteColor * additionalLightColor;
+                    finalColor = paletteColor + albedo * additionalLighting;
                 }
                 else
                 {
-                    float3 finalLighting = lightAmt * mainLight.color * shadow;
+                    float3 finalLighting = diffuseStepped * mainLight.color * shadow;
                     float3 ambient = _GlobalAmbientColor.rgb;
-                    finalColor = albedo * (finalLighting + ambient) * additionalLightColor;
+                    finalColor = albedo * (finalLighting + additionalLighting + ambient);
                 }
 
                 return half4(finalColor, 1.0);
@@ -216,6 +254,9 @@ Shader "Custom/ToonLit"
                 float _Steepness;
                 float _Wrap;
                 float _ThresholdGradientSize;
+                float _ShadowReceiverBias;
+                float _ShadowNormalBias;
+                float _ReceiveShadowMap;
             CBUFFER_END
 
             float3 _LightDirection;
@@ -224,7 +265,9 @@ Shader "Custom/ToonLit"
                 Varyings output;
                 float3 positionWS = TransformObjectToWorld(input.positionOS.xyz);
                 float3 normalWS = TransformObjectToWorldNormal(input.normalOS);
-                output.positionHCS = TransformWorldToHClip(ApplyShadowBias(positionWS, normalWS, ));
+
+                
+                output.positionHCS = TransformWorldToHClip(ApplyShadowBias(positionWS, normalWS, _LightDirection));
                 return output;
             }
 
@@ -267,6 +310,9 @@ Shader "Custom/ToonLit"
                 float _Steepness;
                 float _Wrap;
                 float _ThresholdGradientSize;
+                float _ShadowReceiverBias;
+                float _ShadowNormalBias;
+                float _ReceiveShadowMap;
             CBUFFER_END
 
             Varyings vert(Attributes input)
@@ -317,6 +363,9 @@ Shader "Custom/ToonLit"
                 float _Steepness;
                 float _Wrap;
                 float _ThresholdGradientSize;
+                float _ShadowReceiverBias;
+                float _ShadowNormalBias;
+                float _ReceiveShadowMap;
             CBUFFER_END
 
             Varyings vert(Attributes input)
