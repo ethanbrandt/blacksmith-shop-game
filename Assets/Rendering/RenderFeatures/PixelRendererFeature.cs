@@ -22,6 +22,8 @@ public class PixelRendererFeature : ScriptableRendererFeature
         public Material compositeMaterial;
         [Tooltip("Hidden/SharpUpscale material (Pass 4).")]
         public Material upscaleMaterial;
+        [Tooltip("Hidden/ObjectId shader used to write per-object ids.")]
+        public Shader objectIdShader;
 
         [Header("Outline - Colors")]
         public Color lineTint = new Color(0.05f, 0.05f, 0.08f, 1f);
@@ -61,11 +63,16 @@ public class PixelRendererFeature : ScriptableRendererFeature
 
     public PixelSettings settings = new PixelSettings();
     private PixelRenderPass _pixelPass;
+    private ObjectIdPass _objectIdPass;
+    private Material _objectIdMaterial;
 
     public override void Create()
     {
         if (settings == null) settings = new PixelSettings();
 
+        EnsureObjectIdMaterial();
+
+        _objectIdPass = new ObjectIdPass(_objectIdMaterial);
         _pixelPass = new PixelRenderPass(settings)
         {
             renderPassEvent = RenderPassEvent.AfterRenderingPostProcessing
@@ -74,10 +81,40 @@ public class PixelRendererFeature : ScriptableRendererFeature
 
     public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
     {
-        if (renderingData.cameraData.cameraType == CameraType.Game || renderingData.cameraData.cameraType == CameraType.SceneView)
+        if (renderingData.cameraData.cameraType != CameraType.Game && renderingData.cameraData.cameraType != CameraType.SceneView)
+            return;
+
+        EnsureObjectIdMaterial();
+        if (_objectIdPass != null)
+            _objectIdPass.SetMaterial(_objectIdMaterial);
+
+        ObjectIdBinding.BindAll();
+
+        if (_objectIdMaterial != null)
+            renderer.EnqueuePass(_objectIdPass);
+
+        renderer.EnqueuePass(_pixelPass);
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (_objectIdMaterial != null)
         {
-            renderer.EnqueuePass(_pixelPass);
+            CoreUtils.Destroy(_objectIdMaterial);
+            _objectIdMaterial = null;
         }
+    }
+
+    void EnsureObjectIdMaterial()
+    {
+        if (_objectIdMaterial != null)
+            return;
+
+        Shader shader = settings != null ? settings.objectIdShader : null;
+        if (shader == null)
+            shader = Shader.Find("Hidden/ObjectId");
+        if (shader != null)
+            _objectIdMaterial = CoreUtils.CreateEngineMaterial(shader);
     }
 
     private class PixelRenderPass : ScriptableRenderPass

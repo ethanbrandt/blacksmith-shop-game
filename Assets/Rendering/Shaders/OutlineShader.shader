@@ -40,7 +40,9 @@ Shader "Hidden/OutlineShader"
             float _KernelRadius;     
             float _ZDeltaCutoff;     
             float _AngleZCutoff;     
-            float _AngleZScale;      
+            float _AngleZScale;
+            
+            TEXTURE2D(_ObjectIdTexture);
 
             // Reconstruct position in view-space.
             float3 ReconstructViewPos(float2 uv, float rawDepth)
@@ -53,6 +55,26 @@ Shader "Hidden/OutlineShader"
                 float4 viewPos = mul(UNITY_MATRIX_I_P, clipPos);
                 return viewPos.xyz / viewPos.w;
             }
+            
+            uint HashUInt(uint x)
+            {
+                x ^= x >> 16;
+                x *= 0x7feb352du;
+                x ^= x >> 15;
+                x *= 0x846ca68bu;
+                x ^= x >> 16;
+                return x;
+            }
+            float3 IdToRgb(float id)
+            {
+                if (id <= 0.0)
+                    return 0;
+                uint h = HashUInt((uint)id);
+                return float3(
+                    (h & 255u) / 255.0,
+                    ((h >> 8) & 255u) / 255.0,
+                    ((h >> 16) & 255u) / 255.0);
+            }
 
             half4 frag(Varyings input) : SV_Target
             {
@@ -62,6 +84,7 @@ Shader "Hidden/OutlineShader"
                 float3 vp[9];
                 float3 vn[9];
                 float2 sampleUVs[9];
+                float vid[9];
 
                 // Extract 3x3 grid.
                 [unroll]
@@ -72,6 +95,8 @@ Shader "Hidden/OutlineShader"
                     
                     float rawDepth = SampleSceneDepth(sampleUVs[k]);
                     vp[k] = ReconstructViewPos(sampleUVs[k], rawDepth);
+
+                    vid[k] = SAMPLE_TEXTURE2D(_ObjectIdTexture, sampler_PointClamp, sampleUVs[k]).x;
                     
                     float3 normalWS = SampleSceneNormals(sampleUVs[k]);
                     vn[k] = mul((float3x3)UNITY_MATRIX_V, normalWS); 
@@ -125,12 +150,18 @@ Shader "Hidden/OutlineShader"
                 for (int s = 0; s < 8; s++) 
                 {
                     int idx = neighbors[s];
-                    
                     // Check for depth discontinuities.
                     z_thresh = _ZThresh;
-                    if ((vp[idx].z - vp[4].z) > z_thresh)
+                    float zDelta = vp[idx].z - vp[4].z;
+                    if (zDelta > z_thresh)
                     {
                         has_line = true;
+                    }
+
+                    if (vid[idx] != vid[4])
+                    {
+                        crease_weight = 0;
+                        has_line = zDelta > 0.0001;
                     }
                     
                     // Track the closest neighbor to use its color for the line.
@@ -161,7 +192,7 @@ Shader "Hidden/OutlineShader"
                     result = center_color * (1.0 + _CreaseBrighten);
                     alpha = (crease_weight > 0.01) * _CreaseAlpha;
                 }
-
+                
                 return half4(result, alpha);
             }
             ENDHLSL
