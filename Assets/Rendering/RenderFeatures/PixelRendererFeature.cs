@@ -10,6 +10,7 @@ public class PixelRendererFeature : ScriptableRendererFeature
     [System.Serializable]
     public class PixelSettings
     {
+        public float zThresh = 0.5f;
         [Header("Internal Resolution")]
         public int width = 640;
         public int height = 360;
@@ -174,6 +175,7 @@ public class PixelRendererFeature : ScriptableRendererFeature
             // Pass 2: Generate outline at internal resolution.
             if (hasOutline)
             {
+                _settings.outlineMaterial.SetFloat("_ZThresh", _settings.zThresh);
                 // Apply base colors.
                 _settings.outlineMaterial.SetVector("_LineTint", new Vector4(_settings.lineTint.r, _settings.lineTint.g, _settings.lineTint.b, 0));
                 _settings.outlineMaterial.SetVector("_CreaseTint", new Vector4(_settings.creaseTint.r, _settings.creaseTint.g, _settings.creaseTint.b, 0));

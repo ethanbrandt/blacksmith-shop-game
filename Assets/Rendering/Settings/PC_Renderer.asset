@@ -70,6 +70,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PixelRendererFeature
   m_Active: 1
   settings:
+    zThresh: 0.35
     width: 640
     height: 360
     outlineMaterial: {fileID: 2100000, guid: 7126287e1ca9e0b489e1c2d51f050f30, type: 2}
@@ -78,8 +79,8 @@ MonoBehaviour:
     lineTint: {r: 0.11877251, g: 0, b: 1, a: 1}
     creaseTint: {r: 1, g: 0.46519178, b: 0, a: 1}
     flipPalettes: 0
-    lineDarken: 0.453
-    creaseBrighten: 0.562
+    lineDarken: 0.592
+    creaseBrighten: 0.423
     lineOverlay: 0
     lineAlpha: 1
     creaseOverlay: 1
@@ -108,7 +109,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f62c9c65cf3354c93be831c8bc075510, type: 3}
   m_Name: ScreenSpaceAmbientOcclusion
   m_EditorClassIdentifier: 
-  m_Active: 1
+  m_Active: 0
   m_Settings:
     AOMethod: 0
     Downsample: 0

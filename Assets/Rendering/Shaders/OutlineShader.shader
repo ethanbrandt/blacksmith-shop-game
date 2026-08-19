@@ -19,6 +19,7 @@ Shader "Hidden/OutlineShader"
             // Uniform Parameters
             
             // Parameters based on scene color.
+            float _ZThresh;
             float _LineDarken;
             float _CreaseBrighten;
             
@@ -75,6 +76,7 @@ Shader "Hidden/OutlineShader"
                     float3 normalWS = SampleSceneNormals(sampleUVs[k]);
                     vn[k] = mul((float3x3)UNITY_MATRIX_V, normalWS); 
                 }
+                //return float4(vn[4], 1);
 
                 // Angular adaptation threshold for silhouette.
                 float facing = 1.0 - vn[4].z;
@@ -97,7 +99,6 @@ Shader "Hidden/OutlineShader"
                 
                 invDepthDifference = clamp(invDepthDifference, 0.0, 1.0);
                 invDepthDifference = clamp(smoothstep(0.9, 0.9, invDepthDifference) * 10.0, 0.0, 1.0);
-                depthDifference = smoothstep(_DepthDiffLow, _DepthDiffHigh, depthDifference);
 
                 // Directional contrast between cardinal opposites.
                 float d0 = 1.0 - dot(vn[4], vn[cardinals[0]]);
@@ -126,6 +127,7 @@ Shader "Hidden/OutlineShader"
                     int idx = neighbors[s];
                     
                     // Check for depth discontinuities.
+                    z_thresh = _ZThresh;
                     if ((vp[idx].z - vp[4].z) > z_thresh)
                     {
                         has_line = true;
@@ -141,6 +143,7 @@ Shader "Hidden/OutlineShader"
 
                 // Mask output.
                 float3 result = float3(0.0, 0.0, 0.0);
+                result = SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, uv).rgb;
                 float alpha = 0.0;
 
                 // Return strictly the mask.
@@ -148,7 +151,7 @@ Shader "Hidden/OutlineShader"
                 {
                     // Darken the color of the closest pixel for the silhouette.
                     float3 closest_color = SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, sampleUVs[closest_idx]).rgb;
-                    result = closest_color * _LineDarken;
+                    result = closest_color * (1.0 - _LineDarken);
                     alpha = _LineAlpha;
                 }
                 else if (crease_weight > 0.0)
@@ -156,7 +159,7 @@ Shader "Hidden/OutlineShader"
                     // Brighten the center color for the crease.
                     float3 center_color = SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, uv).rgb;
                     result = center_color * (1.0 + _CreaseBrighten);
-                    alpha = crease_weight * _CreaseAlpha;
+                    alpha = (crease_weight > 0.01) * _CreaseAlpha;
                 }
 
                 return half4(result, alpha);
