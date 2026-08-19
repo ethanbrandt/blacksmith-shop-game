@@ -2,21 +2,26 @@ Shader "Custom/ToonLit"
 {
     Properties
     {
+        [Header(Palette Settings)]
+        [Space(3)]
         _BaseColor ("Base Color", Color) = (1, 1, 1, 1)
-        
-        // Palette System.
         _HighlightColor ("Highlight Color", Color) = (1, 1, 1, 1)
         _ShadowColor ("Shadow Color", Color) = (0.3, 0.3, 0.4, 1)
-        [Toggle] _UsePalette ("Use Palette", Float) = 0
+        [Toggle] _UsePalette ("Use Palette", Float) = 1
 
+        [Header(Toon Light Banding Settings)]
+        [Space(3)]
         _Cuts ("Cuts", Range(1, 8)) = 3
         _Steepness ("Steepness", Range(1, 8)) = 1.0
         _Wrap ("Wrap", Range(-1.0, 1.0)) = 0.0
+        _ThresholdGradientSize ("Threshold Gradient Size", Range(0.0, 1.0)) = 0.1
+        
+        [Header(Shadow Settings)]
+        [Space(3)]
         [Enum(Banding, 0, Shadow Map, 1)] _ReceiveShadowMap ("Receive Shadows", Float) = 1
         _ShadowReceiverBias ("Shadow Receiver Bias", Range(0.0, 0.5)) = 0.02
         _ShadowNormalBias ("Shadow Normal Bias", Range(0.0, 0.5)) = 0.04
        
-        _ThresholdGradientSize ("Threshold Gradient Size", Range(0.0, 1.0)) = 0.2
     }
     
     SubShader
@@ -26,7 +31,6 @@ Shader "Custom/ToonLit"
             "RenderType" = "Opaque" 
             "RenderPipeline" = "UniversalPipeline" 
             "Queue" = "Geometry" 
-       
         }
 
         Pass
@@ -62,10 +66,8 @@ Shader "Custom/ToonLit"
 
             float4 _GlobalAmbientColor;
 
-            // Unified CBUFFER for SRP Batcher.
             CBUFFER_START(UnityPerMaterial)
                 half4 _BaseColor;
-                // Palette system variables.
                 half4 _HighlightColor;
                 half4 _ShadowColor;
                 float _UsePalette;
@@ -74,6 +76,7 @@ Shader "Custom/ToonLit"
                 float _Steepness;
                 float _Wrap;
                 float _ThresholdGradientSize;
+            
                 float _ShadowReceiverBias;
                 float _ShadowNormalBias;
                 float _ReceiveShadowMap;
@@ -123,9 +126,7 @@ Shader "Custom/ToonLit"
                     Light light = GetAdditionalLight(lightIndex, positionWS, shadowMask);
                     float ndotlSat = saturate(dot(normalWS, light.direction));
                     float sinNL = sqrt(max(0.0, 1.0 - ndotlSat * ndotlSat));
-                    float3 biasedWS = positionWS
-                        + light.direction * _ShadowReceiverBias
-                        + normalWS * (_ShadowNormalBias * max(sinNL, 0.2));
+                    float3 biasedWS = positionWS + light.direction * _ShadowReceiverBias + normalWS * (_ShadowNormalBias * max(sinNL, 0.2));
                     return GetAdditionalLight(lightIndex, biasedWS, shadowMask);
                 }
                 return GetAdditionalLight(lightIndex, positionWS);
@@ -133,10 +134,10 @@ Shader "Custom/ToonLit"
 
             float3 ShadeToonPunctual(Light light, float3 normalWS)
             {
-#ifdef _LIGHT_LAYERS
-                if (!IsMatchingLightLayer(light.layerMask, GetMeshRenderingLayer()))
-                    return 0;
-#endif
+                #ifdef _LIGHT_LAYERS
+                    if (!IsMatchingLightLayer(light.layerMask, GetMeshRenderingLayer()))
+                        return 0;
+                #endif
                 float ndotl = dot(normalWS, light.direction) + _Wrap;
                 ndotl *= _Steepness;
                 float stepped = ToonDiffuse(ndotl);
@@ -254,6 +255,7 @@ Shader "Custom/ToonLit"
                 float _Steepness;
                 float _Wrap;
                 float _ThresholdGradientSize;
+            
                 float _ShadowReceiverBias;
                 float _ShadowNormalBias;
                 float _ReceiveShadowMap;
@@ -310,6 +312,7 @@ Shader "Custom/ToonLit"
                 float _Steepness;
                 float _Wrap;
                 float _ThresholdGradientSize;
+            
                 float _ShadowReceiverBias;
                 float _ShadowNormalBias;
                 float _ReceiveShadowMap;
@@ -363,6 +366,7 @@ Shader "Custom/ToonLit"
                 float _Steepness;
                 float _Wrap;
                 float _ThresholdGradientSize;
+            
                 float _ShadowReceiverBias;
                 float _ShadowNormalBias;
                 float _ReceiveShadowMap;

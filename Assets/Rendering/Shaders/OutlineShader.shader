@@ -161,7 +161,7 @@ Shader "Hidden/OutlineShader"
                     if (vid[idx] != vid[4])
                     {
                         crease_weight = 0;
-                        has_line = zDelta > 0.0001;
+                        has_line = (zDelta > 0.000001) || has_line;
                     }
                     
                     // Track the closest neighbor to use its color for the line.
