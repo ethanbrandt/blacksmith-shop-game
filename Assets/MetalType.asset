@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MetalType
   displayName: Metal
   metalColor: {r: 0.3018868, g: 0.2867985, b: 0.28052688, a: 1}
-  coolRate: 0.08
+  coolRate: 0
   holdHeatRate: 0.35
   mobilityByHeat:
     serializedVersion: 2
@@ -22,20 +22,29 @@ MonoBehaviour:
     - serializedVersion: 3
       time: 0
       value: 0.15
-      inSlope: 0
-      outSlope: 0.85
+      inSlope: 0.1760964
+      outSlope: 0.1760964
       tangentMode: 0
       weightedMode: 0
       inWeight: 0
-      outWeight: 0
+      outWeight: 0.40227973
+    - serializedVersion: 3
+      time: 0.32707205
+      value: 0.5479034
+      inSlope: 1.7775557
+      outSlope: 1.7775557
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.07864958
+      outWeight: 0.07369977
     - serializedVersion: 3
       time: 1
       value: 1
-      inSlope: 0.85
-      outSlope: 0
+      inSlope: 0.066403404
+      outSlope: 0.066403404
       tangentMode: 0
       weightedMode: 0
-      inWeight: 0
+      inWeight: 0.51946795
       outWeight: 0
     m_PreInfinity: 2
     m_PostInfinity: 2
@@ -47,19 +56,28 @@ MonoBehaviour:
       time: 0
       value: 0.1
       inSlope: 0
-      outSlope: 0.9
+      outSlope: 0
       tangentMode: 0
       weightedMode: 0
       inWeight: 0
       outWeight: 0
     - serializedVersion: 3
-      time: 1
-      value: 1
-      inSlope: 0.9
-      outSlope: 0
+      time: 0.42804092
+      value: 0.24186872
+      inSlope: 0.8198298
+      outSlope: 0.8198298
       tangentMode: 0
       weightedMode: 0
-      inWeight: 0
+      inWeight: 0.22125824
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0.0411036
+      outSlope: 0.0411036
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.4370942
       outWeight: 0
     m_PreInfinity: 2
     m_PostInfinity: 2
@@ -70,29 +88,38 @@ MonoBehaviour:
     - serializedVersion: 3
       time: 0
       value: 1.2
-      inSlope: 0
-      outSlope: -0.35000002
+      inSlope: -0.008256771
+      outSlope: -0.008256771
       tangentMode: 0
       weightedMode: 0
       inWeight: 0
-      outWeight: 0
+      outWeight: 0.61992294
+    - serializedVersion: 3
+      time: 0.6506185
+      value: 1.0318502
+      inSlope: -0.53598684
+      outSlope: -0.53598684
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.09829384
+      outWeight: 0.18360105
     - serializedVersion: 3
       time: 1
       value: 0.85
-      inSlope: -0.35000002
-      outSlope: 0
+      inSlope: -0.52806956
+      outSlope: -0.52806956
       tangentMode: 0
       weightedMode: 0
-      inWeight: 0
+      inWeight: 0.20035386
       outWeight: 0
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  minHeatToForge: 0.2
-  coldStrikeScale: 0.15
+  minHeatToForge: 0.149
+  coldStrikeScale: 0
   workingTempMin: 220
-  overheatTemp: 780
-  referenceMaxTemp: 1000
+  overheatTemp: 800
+  referenceMaxTemp: 800
   furnaceHeatTransferRate: 55
   worldAmbientCoolRate: 18
   overheatGraceDuration: 1.25

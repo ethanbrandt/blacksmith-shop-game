@@ -21,11 +21,24 @@ public class PlayerController : MonoBehaviour
 
     void FixedUpdate()
     {
+        if (ForgeSessionController.IsBlockingPlayer)
+        {
+            moveDir = Vector3.zero;
+            rb.linearVelocity = new Vector3(0f, rb.linearVelocity.y, 0f);
+            return;
+        }
+
         rb.linearVelocity = new Vector3(moveDir.x * moveSpeed, rb.linearVelocity.y, moveDir.z * moveSpeed);
     }
 
     void OnMove(InputValue _value)
     {
+        if (ForgeSessionController.IsBlockingPlayer)
+        {
+            moveDir = Vector3.zero;
+            return;
+        }
+
         Vector3 camForward = Camera.main.transform.forward;
         camForward.y = 0f;
         camForward.Normalize();
@@ -38,8 +51,18 @@ public class PlayerController : MonoBehaviour
 
     void OnInteract()
     {
+        if (ForgeSessionController.IsBlockingPlayer)
+            return;
+
         if (held != null)
         {
+            Anvil anvil = Anvil.FindClosestInRange(transform.position, pickupRange);
+            if (anvil != null && anvil.TryPlaceHeld(held))
+            {
+                held = null;
+                return;
+            }
+
             Vector3 facing = GetFacing();
             Vector3 dropPos = transform.position + facing * dropForward + Vector3.up * 0.35f;
             held.Drop(dropPos, rb.linearVelocity + facing * 1.5f);
@@ -58,6 +81,9 @@ public class PlayerController : MonoBehaviour
 
     void OnAttack()
     {
+        if (ForgeSessionController.IsBlockingPlayer)
+            return;
+
         if (held == null)
             return;
 

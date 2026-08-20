@@ -72,7 +72,7 @@ public class Furnace : MonoBehaviour
 
 	public bool TryAcceptPickable(Pickable pickable)
 	{
-		if (pickable == null || pickable.IsHeld || pickable.IsInFurnace)
+		if (pickable == null || pickable.IsHeld || pickable.IsInFurnace || pickable.IsOnAnvil)
 			return false;
 
 		if (pickable.TryGetComponent(out FuelItem fuelItem))

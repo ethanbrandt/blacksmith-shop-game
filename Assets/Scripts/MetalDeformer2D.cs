@@ -31,7 +31,7 @@ namespace ForgingPrototype
         [SerializeField] Vector2 shapeCenter = Vector2.zero;
 
         [Header("Spatial Brush")]
-        [SerializeField] float impactRadius = 0.9f;
+        [SerializeField] float impactRadius = 0.74f;
         [SerializeField] float falloffExponent = 1.8f;
         [SerializeField] float minStrikeStrength = 0.16f;
         [SerializeField] float maxStrikeStrength = 0.7f;
@@ -40,7 +40,7 @@ namespace ForgingPrototype
 
         [Header("Edge Split")]
         [SerializeField] bool splitEdgeUnderHammer = true;
-        [SerializeField] float splitIfFartherThan = 0.18f;
+        [SerializeField] float splitIfFartherThan = 0.08f;
         [SerializeField] int maxVertices = 48;
 
         [Header("Local Surface Tension (hot-metal feel)")]
@@ -55,11 +55,11 @@ namespace ForgingPrototype
         [Header("Local Outline Magnet")]
         [Tooltip("Outline alignment wins over smoothing. Magnet runs last; near-outline verts are protected from tension.")]
         [SerializeField] bool outlineMagnetEnabled = true;
-        [SerializeField] float magnetRadius = 0.4f;
-        [SerializeField, Range(0f, 1f)] float magnetStrength = 0.4f;
+        [SerializeField] float magnetRadius = 0.5f;
+        [SerializeField, Range(0f, 1f)] float magnetStrength = 0.365f;
         [SerializeField] float magnetFalloff = 1.4f;
         [Tooltip("Magnet strength fades smoothly with distance from the hammer (as a multiple of impact radius).")]
-        [SerializeField] float magnetHitFalloffMultiplier = 1.5f;
+        [SerializeField] float magnetHitFalloffMultiplier = 2f;
         [Tooltip("Within this distance of the outline, surface tension is reduced/disabled so verts aren't pulled inward.")]
         [SerializeField] float outlineProtectDistance = 0.28f;
 
@@ -91,7 +91,6 @@ namespace ForgingPrototype
         [Header("Metal Type + Heat")]
         [SerializeField] MetalType metalType;
         [SerializeField, Range(0f, 1f)] float heat = 0.55f;
-        [SerializeField] bool applyHeatFeel = true;
 
         readonly List<Vector2> _vertices = new List<Vector2>();
         readonly List<Vector2> _initialVertices = new List<Vector2>();
@@ -116,6 +115,11 @@ namespace ForgingPrototype
         {
             get => heat;
             set => heat = Mathf.Clamp01(value);
+        }
+        public Vector2 ShapeCenter
+        {
+            get => shapeCenter;
+            set => shapeCenter = value;
         }
         public MetalType MetalType => metalType;
         public string MetalDisplayName => metalType != null ? metalType.displayName : "Metal";
@@ -168,17 +172,6 @@ namespace ForgingPrototype
 
         public MetalFeel SampleFeel()
         {
-            if (!applyHeatFeel || metalType == null)
-            {
-                return new MetalFeel
-                {
-                    mobility = 1f,
-                    magnet = 1f,
-                    tension = 1f,
-                    canForge = true
-                };
-            }
-
             return metalType.Sample(heat);
         }
 
@@ -270,15 +263,39 @@ namespace ForgingPrototype
             VerticesChanged?.Invoke();
         }
 
+        public Vector2 GetCentroid() => ComputeCentroid();
+
+        public Vector2 GetResolvedStrikeDirection(Vector2 impactPoint, Vector2 requestedDirection, bool explicitAim)
+        {
+            if (explicitAim && requestedDirection.sqrMagnitude >= 0.0001f)
+                return requestedDirection.normalized;
+
+            if (_vertices.Count < 3)
+            {
+                if (requestedDirection.sqrMagnitude >= 0.0001f)
+                    return requestedDirection.normalized;
+                return Vector2.up;
+            }
+
+            Vector2 centroid = ComputeCentroid();
+            Vector2 fromCenter = impactPoint - centroid;
+            if (fromCenter.sqrMagnitude >= 0.0001f)
+                return fromCenter.normalized;
+
+            return EstimateOutwardAt(impactPoint, centroid);
+        }
+
         public bool TryStrike(Vector2 impactPoint, Vector2 direction, float charge01)
+        {
+            return TryStrike(impactPoint, direction, charge01, false);
+        }
+
+        public bool TryStrike(Vector2 impactPoint, Vector2 direction, float charge01, bool explicitAim)
         {
             if (_vertices.Count < 3)
                 return false;
 
-            if (direction.sqrMagnitude < 0.0001f)
-                direction = Vector2.right;
-
-            direction.Normalize();
+            direction = GetResolvedStrikeDirection(impactPoint, direction, explicitAim);
             charge01 = Mathf.Clamp01(charge01);
 
             MetalFeel feel = SampleFeel();
@@ -296,7 +313,7 @@ namespace ForgingPrototype
             Vector2 centroid = ComputeCentroid();
             Vector2 localOutward = EstimateOutwardAt(impactPoint, centroid);
             float outwardDot = Vector2.Dot(direction, localOutward);
-            bool inwardStrike = outwardDot <= -inwardDotThreshold;
+            bool inwardStrike = !explicitAim && outwardDot <= -inwardDotThreshold;
 
             bool allowSplit = splitEdgeUnderHammer && !(inwardStrike && disableSplitOnInward);
             int focusIndex = EnsureVertexNearImpact(impactPoint, allowSplit);

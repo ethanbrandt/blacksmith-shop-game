@@ -44,6 +44,11 @@ namespace ForgingPrototype
 			return unforgedSprite;
 		}
 
+		public Vector2[] BuildForgeOutline(Vector2 forgeOrigin)
+		{
+			return BuildWorldOutline(forgeOrigin);
+		}
+
 		public Vector2[] BuildWorldOutline(Vector2 anvilCenter)
 		{
 			if (!HasValidOutline)

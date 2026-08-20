@@ -91,6 +91,9 @@ namespace ForgingPrototype
 
             metal = deformer;
             targetVertices = target;
+            if (metal != null)
+                metal.SetTargetOutline(target);
+
             EnsureOutline();
             EnsureGhostOutline();
             EnsureGhostFill();
@@ -348,6 +351,7 @@ namespace ForgingPrototype
 
             var go = new GameObject("TargetOutline");
             go.transform.SetParent(transform, false);
+            go.layer = gameObject.layer;
             targetOutline = go.AddComponent<LineRenderer>();
             ConfigureOutlineLine(targetOutline, targetOutlineColor, targetLineWidth, outlineSortingOrder, -0.05f);
         }
@@ -361,6 +365,7 @@ namespace ForgingPrototype
 
             var go = new GameObject("TargetGhostOutline");
             go.transform.SetParent(transform, false);
+            go.layer = gameObject.layer;
             targetGhostOutline = go.AddComponent<LineRenderer>();
             ConfigureOutlineLine(targetGhostOutline, targetGhostOutlineColor, ghostLineWidth, ghostOutlineSortingOrder, -0.9f);
         }
@@ -374,12 +379,15 @@ namespace ForgingPrototype
 
             var go = new GameObject("TargetGhostFill");
             go.transform.SetParent(transform, false);
+            go.layer = gameObject.layer;
             ghostFillFilter = go.AddComponent<MeshFilter>();
             ghostFillRenderer = go.AddComponent<MeshRenderer>();
             _ghostFillMesh = new Mesh { name = "TargetGhostFill" };
             ghostFillFilter.sharedMesh = _ghostFillMesh;
-            //! _ghostFillMaterial = ForgingVisualUtility.CreateColorMaterial(targetGhostFillColor);
+            _ghostFillMaterial = ForgingVisualUtility.CreateColorMaterial(targetGhostFillColor);
             ghostFillRenderer.sharedMaterial = _ghostFillMaterial;
+            ghostFillRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            ghostFillRenderer.receiveShadows = false;
             ghostFillRenderer.sortingOrder = ghostFillSortingOrder;
         }
 
@@ -388,7 +396,7 @@ namespace ForgingPrototype
             line.useWorldSpace = true;
             line.loop = true;
             line.widthMultiplier = width;
-            //! line.material = ForgingVisualUtility.GetSpritesDefaultMaterial();
+            ForgingVisualUtility.ApplyLineRendererDefaults(line, color, width, sortingOrder);
             line.startColor = color;
             line.endColor = color;
             line.sortingOrder = sortingOrder;
@@ -490,8 +498,8 @@ namespace ForgingPrototype
             {
                 int t = i * 3;
                 tris[t] = 0;
-                tris[t + 1] = i + 1;
-                tris[t + 2] = (i + 1) % targetVertices.Length + 1;
+                tris[t + 1] = (i + 1) % targetVertices.Length + 1;
+                tris[t + 2] = i + 1;
             }
 
             _ghostFillMesh.Clear();

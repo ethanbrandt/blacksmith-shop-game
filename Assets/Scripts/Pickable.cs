@@ -11,14 +11,16 @@ public class Pickable : MonoBehaviour
 	Renderer visualRenderer;
 	Transform defaultParent;
 	Furnace containingFurnace;
+	Anvil containingAnvil;
 	Transform followTarget;
 	Vector3 followLocalOffset;
 	Collider[] ignoredHolderColliders;
 	bool isHeld;
 
-	public bool CanBePickedUp => canBePickedUp && !isHeld;
+	public bool CanBePickedUp => canBePickedUp && !isHeld && !(IsOnAnvil && ForgeSessionController.IsBlockingPlayer);
 	public bool IsHeld => isHeld;
 	public bool IsInFurnace => containingFurnace != null;
+	public bool IsOnAnvil => containingAnvil != null;
 	public Renderer VisualRenderer => visualRenderer;
 
 	void Awake()
@@ -50,7 +52,7 @@ public class Pickable : MonoBehaviour
 			return;
 
 		CancelInvoke(nameof(ClearHolderCollisionIgnore));
-		ClearFurnaceContainment();
+		ClearStationContainment();
 		isHeld = true;
 		SetPhysicsActive(false);
 		IgnoreHolderCollisions(holder, true);
@@ -65,7 +67,27 @@ public class Pickable : MonoBehaviour
 		if (furnace == null || socket == null || isHeld)
 			return;
 
+		ClearAnvilContainment();
 		containingFurnace = furnace;
+		isHeld = false;
+		followTarget = null;
+		SetPhysicsActive(false);
+
+		transform.SetParent(socket, true);
+		transform.localPosition = Vector3.zero;
+		transform.localRotation = Quaternion.identity;
+	}
+
+	public void PlaceOnAnvil(Anvil anvil, Transform socket)
+	{
+		if (anvil == null || socket == null)
+			return;
+
+		CancelInvoke(nameof(ClearHolderCollisionIgnore));
+		SetHolderCollisionIgnored(false);
+		ignoredHolderColliders = null;
+		ClearFurnaceContainment();
+		containingAnvil = anvil;
 		isHeld = false;
 		followTarget = null;
 		SetPhysicsActive(false);
@@ -93,7 +115,7 @@ public class Pickable : MonoBehaviour
 
 	void Release(Vector3 worldPosition, Vector3 velocity)
 	{
-		ClearFurnaceContainment();
+		ClearStationContainment();
 		isHeld = false;
 		followTarget = null;
 		transform.SetParent(defaultParent, true);
@@ -132,6 +154,12 @@ public class Pickable : MonoBehaviour
 		}
 	}
 
+	void ClearStationContainment()
+	{
+		ClearFurnaceContainment();
+		ClearAnvilContainment();
+	}
+
 	void ClearFurnaceContainment()
 	{
 		if (containingFurnace == null)
@@ -139,6 +167,15 @@ public class Pickable : MonoBehaviour
 
 		containingFurnace.NotifyItemRemoved(this);
 		containingFurnace = null;
+	}
+
+	void ClearAnvilContainment()
+	{
+		if (containingAnvil == null)
+			return;
+
+		containingAnvil.NotifyItemRemoved(this);
+		containingAnvil = null;
 	}
 
 	void SetPhysicsActive(bool active)

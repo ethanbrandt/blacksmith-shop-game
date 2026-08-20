@@ -67,9 +67,12 @@ public class MetalType : ScriptableObject
 	{
 		heat01 = Mathf.Clamp01(heat01);
 		bool canForge = heat01 >= minHeatToForge;
-		float mobility = Mathf.Max(0f, mobilityByHeat.Evaluate(heat01));
-		float magnet = Mathf.Max(0f, magnetByHeat.Evaluate(heat01));
-		float tension = Mathf.Max(0.05f, tensionByHeat.Evaluate(heat01));
+		// World heat is temperature / referenceMaxTemp, so "just workable" is only ~0.27.
+		// The forge curves were authored for the old 0-1 overlay slider that started at 0.55.
+		float curveHeat = RemapWorldHeatToForgeCurve(heat01);
+		float mobility = Mathf.Max(0f, mobilityByHeat.Evaluate(curveHeat));
+		float magnet = Mathf.Max(0f, magnetByHeat.Evaluate(curveHeat));
+		float tension = Mathf.Max(0.05f, tensionByHeat.Evaluate(curveHeat));
 
 		if (!canForge)
 		{
@@ -84,5 +87,15 @@ public class MetalType : ScriptableObject
 			tension = tension,
 			canForge = canForge
 		};
+	}
+
+	float RemapWorldHeatToForgeCurve(float heat01)
+	{
+		float working01 = Mathf.Clamp01(workingTempMin / Mathf.Max(0.0001f, referenceMaxTemp));
+		const float workingCurveHeat = 0.55f;
+		if (heat01 <= working01)
+			return working01 <= 0.0001f ? 0f : workingCurveHeat * (heat01 / working01);
+
+		return Mathf.Lerp(workingCurveHeat, 1f, Mathf.InverseLerp(working01, 1f, heat01));
 	}
 }
