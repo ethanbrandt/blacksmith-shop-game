@@ -372,23 +372,51 @@ namespace ForgingPrototype
 
         void EnsureGhostFill()
         {
-            if (ghostFillFilter != null)
+            if (ghostFillFilter == null)
             {
-                return;
+                Transform existing = transform.Find("TargetGhostFill");
+                if (existing != null)
+                {
+                    ghostFillFilter = existing.GetComponent<MeshFilter>();
+                    ghostFillRenderer = existing.GetComponent<MeshRenderer>();
+                }
             }
 
-            var go = new GameObject("TargetGhostFill");
-            go.transform.SetParent(transform, false);
-            go.layer = gameObject.layer;
-            ghostFillFilter = go.AddComponent<MeshFilter>();
-            ghostFillRenderer = go.AddComponent<MeshRenderer>();
-            _ghostFillMesh = new Mesh { name = "TargetGhostFill" };
+            if (ghostFillFilter == null)
+            {
+                var go = new GameObject("TargetGhostFill");
+                go.transform.SetParent(transform, false);
+                go.layer = gameObject.layer;
+                ghostFillFilter = go.AddComponent<MeshFilter>();
+                ghostFillRenderer = go.AddComponent<MeshRenderer>();
+            }
+
+            if (_ghostFillMesh == null)
+            {
+                _ghostFillMesh = ghostFillFilter.sharedMesh != null && ghostFillFilter.sharedMesh.name == "TargetGhostFill"
+                    ? ghostFillFilter.sharedMesh
+                    : new Mesh { name = "TargetGhostFill" };
+                _ghostFillMesh.MarkDynamic();
+            }
+
             ghostFillFilter.sharedMesh = _ghostFillMesh;
-            _ghostFillMaterial = ForgingVisualUtility.CreateColorMaterial(targetGhostFillColor);
-            ghostFillRenderer.sharedMaterial = _ghostFillMaterial;
-            ghostFillRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            ghostFillRenderer.receiveShadows = false;
-            ghostFillRenderer.sortingOrder = ghostFillSortingOrder;
+
+            if (_ghostFillMaterial == null)
+            {
+                if (ghostFillRenderer != null && ghostFillRenderer.sharedMaterial != null)
+                    _ghostFillMaterial = ghostFillRenderer.sharedMaterial;
+                else
+                    _ghostFillMaterial = ForgingVisualUtility.CreateColorMaterial(targetGhostFillColor);
+            }
+
+            ForgingVisualUtility.EnsureMeshFillMaterial(_ghostFillMaterial, targetGhostFillColor);
+            if (ghostFillRenderer != null)
+            {
+                ghostFillRenderer.sharedMaterial = _ghostFillMaterial;
+                ghostFillRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                ghostFillRenderer.receiveShadows = false;
+                ghostFillRenderer.sortingOrder = ghostFillSortingOrder;
+            }
         }
 
         static void ConfigureOutlineLine(LineRenderer line, Color color, float width, int sortingOrder, float z)
@@ -485,12 +513,20 @@ namespace ForgingPrototype
 
             centroid /= targetVertices.Length;
 
+            Transform fillTx = ghostFillFilter.transform;
+            float worldZ = fillTx.position.z - 0.05f;
             var verts = new Vector3[targetVertices.Length + 1];
-            verts[0] = new Vector3(centroid.x, centroid.y, 0.2f);
+            var uvs = new Vector2[targetVertices.Length + 1];
+            var colors = new Color[targetVertices.Length + 1];
+            verts[0] = fillTx.InverseTransformPoint(new Vector3(centroid.x, centroid.y, worldZ));
+            uvs[0] = Vector2.one * 0.5f;
+            colors[0] = Color.white;
             for (int i = 0; i < targetVertices.Length; i++)
             {
                 Vector2 v = targetVertices[i];
-                verts[i + 1] = new Vector3(v.x, v.y, 0.2f);
+                verts[i + 1] = fillTx.InverseTransformPoint(new Vector3(v.x, v.y, worldZ));
+                uvs[i + 1] = Vector2.one * 0.5f;
+                colors[i + 1] = Color.white;
             }
 
             var tris = new int[targetVertices.Length * 3];
@@ -498,14 +534,17 @@ namespace ForgingPrototype
             {
                 int t = i * 3;
                 tris[t] = 0;
-                tris[t + 1] = (i + 1) % targetVertices.Length + 1;
-                tris[t + 2] = i + 1;
+                tris[t + 1] = i + 1;
+                tris[t + 2] = (i + 1) % targetVertices.Length + 1;
             }
 
             _ghostFillMesh.Clear();
             _ghostFillMesh.SetVertices(verts);
+            _ghostFillMesh.SetUVs(0, uvs);
+            _ghostFillMesh.SetColors(colors);
             _ghostFillMesh.SetTriangles(tris, 0);
             _ghostFillMesh.RecalculateBounds();
+            _ghostFillMesh.RecalculateNormals();
         }
 
         void RebuildTargetOutline()

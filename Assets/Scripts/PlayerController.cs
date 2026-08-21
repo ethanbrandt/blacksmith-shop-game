@@ -90,6 +90,9 @@ public class PlayerController : MonoBehaviour
         Vector3 facing = GetFacing();
         Vector3 throwPos = transform.position + facing * dropForward + Vector3.up * 0.55f;
         held.Throw(throwPos, rb.linearVelocity + facing * throwSpeed + Vector3.up * throwUpSpeed);
+        
+        if (held.TryGetComponent(out HeatableMetal x))
+            x.ClearForgeProgress();
         held = null;
     }
 

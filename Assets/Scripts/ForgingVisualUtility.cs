@@ -61,14 +61,36 @@ namespace ForgingPrototype
 		{
 			Shader shader = ResolveUnlitShader();
 			var material = new Material(shader) { name = "ForgeColor" };
+			ApplySolidColor(material, color);
+			material.renderQueue = (int)RenderQueue.Transparent;
+			return material;
+		}
+
+		/// <summary>
+		/// Sprites/Default samples _MainTex; a null texture makes MeshRenderer fills invisible
+		/// (LineRenderers still draw because they supply UVs/geometry differently).
+		/// </summary>
+		public static void EnsureMeshFillMaterial(Material material, Color? color = null)
+		{
+			if (material == null)
+				return;
+
+			if (material.HasProperty("_MainTex") && material.mainTexture == null)
+				material.mainTexture = Texture2D.whiteTexture;
+
+			if (color.HasValue)
+				ApplySolidColor(material, color.Value);
+		}
+
+		static void ApplySolidColor(Material material, Color color)
+		{
 			material.color = color;
 			if (material.HasProperty("_BaseColor"))
 				material.SetColor("_BaseColor", color);
 			if (material.HasProperty("_Color"))
 				material.SetColor("_Color", color);
-
-			material.renderQueue = (int)RenderQueue.Transparent;
-			return material;
+			if (material.HasProperty("_RendererColor"))
+				material.SetColor("_RendererColor", Color.white);
 		}
 
 		public static void ApplyLineRendererDefaults(LineRenderer line, Color color, float width, int sortingOrder)
@@ -94,11 +116,12 @@ namespace ForgingPrototype
 			if (cachedUnlitShader != null)
 				return cachedUnlitShader;
 
-			cachedUnlitShader = Shader.Find("Sprites/Default");
-			if (cachedUnlitShader == null)
-				cachedUnlitShader = Shader.Find("Universal Render Pipeline/Unlit");
+			// Prefer URP Unlit for MeshRenderer fills; Sprites/Default needs a white _MainTex.
+			cachedUnlitShader = Shader.Find("Universal Render Pipeline/Unlit");
 			if (cachedUnlitShader == null)
 				cachedUnlitShader = Shader.Find("Unlit/Color");
+			if (cachedUnlitShader == null)
+				cachedUnlitShader = Shader.Find("Sprites/Default");
 			if (cachedUnlitShader == null)
 				cachedUnlitShader = Shader.Find("Hidden/InternalErrorShader");
 

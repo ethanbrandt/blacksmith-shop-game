@@ -17,6 +17,7 @@ public class ForgeSessionController : MonoBehaviour
 	[Tooltip("Assign your stylized forge frame art here. Leave empty to use the placeholder panel.")]
 	[SerializeField] Sprite frameSprite;
 	[SerializeField] TextMeshProUGUI statusText;
+	[SerializeField] TextMeshProUGUI qualityText;
 	[SerializeField] RectTransform overlayRoot;
 	[SerializeField] MetalDeformer2D deformer;
 	[SerializeField] ShapeMatchEvaluator evaluator;
@@ -34,10 +35,17 @@ public class ForgeSessionController : MonoBehaviour
 	[SerializeField] Color plateColor = new Color(0.22f, 0.18f, 0.16f, 1f);
 	[SerializeField] bool autoFitCamera = true;
 
+	[Header("Quality Text Colors")]
+	[SerializeField] Color incompleteColor;
+	[SerializeField] Color flawedColor;
+	[SerializeField] Color goodColor;
+	[SerializeField] Color excellentColor;
+	[SerializeField] Color perfectColor;
+	
 	[Header("Hammer")]
 	[SerializeField] float minChargeTime = 0.08f;
 	[SerializeField] float maxChargeTime = 0.45f;
-	[SerializeField] float minDragForAim = 12f;
+	//[SerializeField] float minDragForAim = 12f;
 
 	[Header("Controller")]
 	[SerializeField] float cursorSpeed = 5.5f;
@@ -109,8 +117,8 @@ public class ForgeSessionController : MonoBehaviour
 			return;
 
 		if (deformer != null)
-			deformer.TickHeat(Time.unscaledDeltaTime, false);
-
+			deformer.Heat = activeMetal.Heat01;
+		
 		UpdateStatus();
 		HandleForgeInput();
 	}
@@ -128,11 +136,10 @@ public class ForgeSessionController : MonoBehaviour
 
 		activeAnvil = anvil;
 		activeMetal = metal;
-		metal.SuspendWorldTicks = true;
 		forgeOrigin = stageRoot != null ? new Vector2(stageRoot.position.x, stageRoot.position.y) : new Vector2(stageWorldPosition.x, stageWorldPosition.y);
 
 		deformer.ShapeCenter = forgeOrigin;
-		deformer.SetMetalType(metal.MetalType, metal.Heat01);
+		deformer.SetMetalType(metal.MetalType);
 		if (metal.HasForgeProgress)
 			LoadLocalVertices(metal.ForgedVertices);
 		else
@@ -168,9 +175,7 @@ public class ForgeSessionController : MonoBehaviour
 			return;
 
 		SaveActiveMetal();
-		if (activeMetal != null)
-			activeMetal.SuspendWorldTicks = false;
-
+		
 		activeAnvil = null;
 		activeMetal = null;
 		charging = false;
@@ -202,11 +207,7 @@ public class ForgeSessionController : MonoBehaviour
 			vertexScratch[i] -= forgeOrigin;
 
 		ShapeQuality quality = evaluator != null ? evaluator.Quality : ShapeQuality.Incomplete;
-		activeMetal.SaveForgeProgress(
-			vertexScratch,
-			deformer.Heat,
-			quality,
-			activeMetal.PartDefinition);
+		activeMetal.SaveForgeProgress(vertexScratch, deformer.Heat, quality, activeMetal.PartDefinition);
 	}
 
 	void LoadLocalVertices(IReadOnlyList<Vector2> local)
@@ -314,12 +315,12 @@ public class ForgeSessionController : MonoBehaviour
 		Mouse mouse = Mouse.current;
 		if (!usingGamepad && mouse != null)
 		{
+			// TODO Fix mouse input
+			/*
 			Vector2 screen = mouse.position.ReadValue();
-			if (IsScreenOver(viewport != null ? viewport.rectTransform : null, screen) &&
-			    TryScreenToForgePoint(screen, out Vector2 mouseForge))
-			{
+			if (IsScreenOver(viewport != null ? viewport.rectTransform : null, screen) && TryScreenToForgePoint(screen, out Vector2 mouseForge))
 				hammerPos = mouseForge;
-			}
+			*/
 		}
 
 		hammerPos = ClampToForgeView(hammerPos);
@@ -350,8 +351,11 @@ public class ForgeSessionController : MonoBehaviour
 		{
 			charging = true;
 			pressTime = Time.unscaledTime;
+			/*
+			 TODO fix mouse input
 			if (mouse != null)
 				pressScreen = mouseScreen;
+			*/	
 		}
 
 		if (!charging || !released)
@@ -359,8 +363,8 @@ public class ForgeSessionController : MonoBehaviour
 
 		float charge01 = CurrentCharge01();
 		charging = false;
-		ResolveStrike(out Vector2 impact, out Vector2 direction, out _, out bool explicitAim);
-		deformer.TryStrike(impact, direction, charge01, explicitAim);
+		ResolveStrike(out Vector2 impact, out Vector2 direction, out _);
+		deformer.TryStrike(impact, direction, charge01);
 		if (hammerPreview != null)
 			hammerPreview.PlayStrikeFlash(impact, direction, deformer.ImpactRadius);
 	}
@@ -370,13 +374,18 @@ public class ForgeSessionController : MonoBehaviour
 		Gamepad pad = Gamepad.current;
 		if (pad != null && (pad.rightTrigger.wasPressedThisFrame || pad.buttonWest.wasPressedThisFrame))
 			return true;
-
+		
+		return false;
+		
+		//TODO Fix mouse input
+		/*
 		Mouse mouse = Mouse.current;
 		if (mouse != null && mouse.leftButton.wasPressedThisFrame)
 			return true;
 
 		Keyboard keyboard = Keyboard.current;
 		return keyboard != null && keyboard.enterKey.wasPressedThisFrame;
+		*/
 	}
 
 	bool StrikeReleased()
@@ -384,13 +393,18 @@ public class ForgeSessionController : MonoBehaviour
 		Gamepad pad = Gamepad.current;
 		if (pad != null && (pad.rightTrigger.wasReleasedThisFrame || pad.buttonWest.wasReleasedThisFrame))
 			return true;
-
+		
+		return false;
+		
+		//TODO Fix mouse input	
+		/*
 		Mouse mouse = Mouse.current;
 		if (mouse != null && mouse.leftButton.wasReleasedThisFrame)
 			return true;
 
 		Keyboard keyboard = Keyboard.current;
 		return keyboard != null && keyboard.enterKey.wasReleasedThisFrame;
+		*/
 	}
 
 	void UpdateHammerPreview()
@@ -401,7 +415,7 @@ public class ForgeSessionController : MonoBehaviour
 		if (!charging && hammerPreview.IsFlashing)
 			return;
 
-		ResolveStrike(out Vector2 impact, out Vector2 direction, out _, out _);
+		ResolveStrike(out Vector2 impact, out Vector2 direction, out _);
 		hammerPreview.ShowAim(impact, direction, deformer.ImpactRadius, CurrentCharge01());
 	}
 
@@ -413,10 +427,9 @@ public class ForgeSessionController : MonoBehaviour
 		return Mathf.InverseLerp(minChargeTime, maxChargeTime, Time.unscaledTime - pressTime);
 	}
 
-	void ResolveStrike(out Vector2 impact, out Vector2 direction, out float charge01, out bool explicitAim)
+	void ResolveStrike(out Vector2 impact, out Vector2 direction, out float charge01)
 	{
 		impact = hammerPos;
-		explicitAim = false;
 		charge01 = CurrentCharge01();
 		Vector2 requested = Vector2.zero;
 
@@ -426,37 +439,33 @@ public class ForgeSessionController : MonoBehaviour
 			Vector2 aimStick = pad.rightStick.ReadValue();
 			if (aimStick.sqrMagnitude > stickDeadzone * stickDeadzone)
 			{
-				explicitAim = true;
 				requested = aimStick;
 				lastAimDir = aimStick;
 				hasStickAim = true;
 			}
 			else if (hasStickAim)
-			{
-				explicitAim = true;
 				requested = lastAimDir;
-			}
 		}
 
 		if (!usingGamepad && charging)
 		{
+			// TODO Fix mouse forging controls
+			/*
 			Mouse mouse = Mouse.current;
 			if (mouse != null)
 			{
 				Vector2 screen = mouse.position.ReadValue();
 				Vector2 drag = screen - pressScreen;
-				if (drag.sqrMagnitude >= minDragForAim * minDragForAim &&
-				    TryScreenToForgePoint(pressScreen, out Vector2 pressForge) &&
-				    TryScreenToForgePoint(screen, out Vector2 aimForge))
+				if (drag.sqrMagnitude >= minDragForAim * minDragForAim && TryScreenToForgePoint(pressScreen, out Vector2 pressForge) && TryScreenToForgePoint(screen, out Vector2 aimForge))
 				{
 					impact = pressForge;
-					explicitAim = true;
 					requested = aimForge - pressForge;
 				}
 			}
+			*/
 		}
-
-		direction = deformer.GetResolvedStrikeDirection(impact, requested, explicitAim);
+		
+		direction = requested.sqrMagnitude >= 0.0001f ? requested.normalized : Vector2.zero;
 	}
 
 	void UpdateStatus()
@@ -464,16 +473,25 @@ public class ForgeSessionController : MonoBehaviour
 		if (statusText == null)
 			return;
 
-		string partName = activeMetal != null && activeMetal.PartDefinition != null
-			? activeMetal.PartDefinition.DisplayLabel
-			: "Billet";
+		string partName = activeMetal != null && activeMetal.PartDefinition != null ? activeMetal.PartDefinition.DisplayLabel : "Billet";
 		string metalName = deformer != null ? deformer.MetalDisplayName : "Metal";
 		float heat01 = deformer != null ? deformer.Heat : 0f;
 		bool canForge = deformer == null || deformer.CurrentFeel.canForge;
-		string quality = evaluator != null ? evaluator.Quality.ToString() : "Incomplete";
+		ShapeQuality quality = evaluator != null ? evaluator.Quality : ShapeQuality.Incomplete;
 		int match = evaluator != null ? Mathf.RoundToInt(evaluator.MatchPercent * 100f) : 0;
 		string heatLabel = canForge ? "Working" : "Too cold";
-		statusText.text = $"{partName}  ·  {metalName}\nHeat {Mathf.RoundToInt(heat01 * 100f)}%  {heatLabel}\n{quality}  {match}%\nLS move  ·  RS aim  ·  RT / X swing  ·  B / Y finish";
+		statusText.text = $"{partName}  ·  {metalName}\nHeat {Mathf.RoundToInt(heat01 * 100f)}%  {heatLabel}\n{quality.ToString()}  {match}%\nLS move  ·  RS aim  ·  RT / X swing  ·  B / Y finish";
+		qualityText.text = quality.ToString().ToUpper();
+		if (quality == ShapeQuality.Flawed)
+			qualityText.color = flawedColor;
+		else if (quality == ShapeQuality.Good)
+    			qualityText.color = goodColor;
+		else if (quality == ShapeQuality.Excellent)
+        			qualityText.color = excellentColor;
+		else if (quality == ShapeQuality.Perfect)
+			qualityText.color = perfectColor;
+		else
+			qualityText.color = incompleteColor;
 	}
 
 	void FitCamera()
@@ -505,43 +523,6 @@ public class ForgeSessionController : MonoBehaviour
 			overlayRoot.gameObject.SetActive(visible);
 		if (overlayCanvas != null)
 			overlayCanvas.enabled = visible;
-	}
-
-	static bool IsScreenOver(RectTransform rect, Vector2 screen)
-	{
-		if (rect == null)
-			return false;
-
-		return RectTransformUtility.RectangleContainsScreenPoint(rect, screen, null);
-	}
-
-	bool TryScreenToForgePoint(Vector2 screen, out Vector2 forgePoint)
-	{
-		forgePoint = default;
-		if (viewport == null || forgeCamera == null)
-			return false;
-
-		if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(viewport.rectTransform, screen, null, out Vector2 local))
-			return false;
-
-		Rect rect = viewport.rectTransform.rect;
-		if (rect.width < 0.001f || rect.height < 0.001f)
-			return false;
-
-		float u = (local.x - rect.x) / rect.width;
-		float v = (local.y - rect.y) / rect.height;
-		if (u < 0f || u > 1f || v < 0f || v > 1f)
-			return false;
-
-		Ray ray = forgeCamera.ViewportPointToRay(new Vector3(u, v, 0f));
-		Vector3 planePoint = stageRoot != null ? stageRoot.position : stageWorldPosition;
-		var plane = new Plane(Vector3.forward, planePoint);
-		if (!plane.Raycast(ray, out float enter))
-			return false;
-
-		Vector3 hit = ray.GetPoint(enter);
-		forgePoint = new Vector2(hit.x, hit.y);
-		return true;
 	}
 
 	void EnsureStage()
@@ -745,30 +726,10 @@ public class ForgeSessionController : MonoBehaviour
 		var tmp = go.GetComponent<TextMeshProUGUI>();
 		tmp.fontSize = size;
 		tmp.alignment = align;
-		tmp.enableWordWrapping = true;
+		tmp.textWrappingMode = TextWrappingModes.Normal;
 		tmp.raycastTarget = false;
 		if (TMP_Settings.defaultFontAsset != null)
 			tmp.font = TMP_Settings.defaultFontAsset;
 		return tmp;
-	}
-
-	static Button CreateButton(Transform parent, string name, string label)
-	{
-		var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
-		go.transform.SetParent(parent, false);
-		var image = go.GetComponent<Image>();
-		image.color = new Color(0.45f, 0.28f, 0.14f, 1f);
-		var button = go.GetComponent<Button>();
-		var colors = button.colors;
-		colors.highlightedColor = new Color(0.6f, 0.38f, 0.18f, 1f);
-		colors.pressedColor = new Color(0.32f, 0.18f, 0.1f, 1f);
-		button.colors = colors;
-
-		var text = CreateTmp(go.transform, "Label", 26f, TextAlignmentOptions.Center);
-		Stretch(text.rectTransform, Vector2.zero, Vector2.one);
-		text.text = label;
-		text.color = new Color(1f, 0.92f, 0.78f, 1f);
-		text.fontStyle = FontStyles.Bold;
-		return button;
 	}
 }

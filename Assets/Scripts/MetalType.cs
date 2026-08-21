@@ -18,11 +18,11 @@ public class MetalType : ScriptableObject
 	public string displayName = "Metal";
 	public Color metalColor = new Color(1f, 0.35f, 0.08f, 1f);
 
-	[Header("Forging Heat Rates (0-1 heat)")]
-	[Tooltip("Heat lost per second while not heating on the forging screen.")]
-	public float coolRate = 0.08f;
-	[Tooltip("Heat gained per second while hold-to-heat is pressed (forging stand-in).")]
-	public float holdHeatRate = 0.35f;
+	[Header("World Heat Transfer")]
+	[Tooltip("How fast temperature moves toward the furnace internal temp (units/sec).")]
+	public float furnaceHeatTransferRate = 55f;
+	[Tooltip("How fast temperature falls toward ambient when outside a furnace (units/sec).")]
+	public float worldAmbientCoolRate = 18f;
 
 	[Header("Forging Heat Curves (X = heat 0-1, Y = multiplier)")]
 	public AnimationCurve mobilityByHeat = AnimationCurve.Linear(0f, 0.15f, 1f, 1f);
@@ -41,12 +41,6 @@ public class MetalType : ScriptableObject
 	public float overheatTemp = 780f;
 	[Tooltip("Reference max used for tint / 0-1 normalization.")]
 	public float referenceMaxTemp = 1000f;
-
-	[Header("World Heat Transfer")]
-	[Tooltip("How fast temperature moves toward the furnace internal temp (units/sec).")]
-	public float furnaceHeatTransferRate = 55f;
-	[Tooltip("How fast temperature falls toward ambient when outside a furnace (units/sec).")]
-	public float worldAmbientCoolRate = 18f;
 
 	[Header("Overheat Damage Defaults")]
 	[Tooltip("Seconds above overheatTemp before damage starts accumulating.")]

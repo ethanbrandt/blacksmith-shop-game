@@ -307,6 +307,8 @@ public static class ForgeRigBuilder
 			AssetDatabase.CreateAsset(material, path);
 		}
 
+		ForgingVisualUtility.EnsureMeshFillMaterial(material, color);
+		EditorUtility.SetDirty(material);
 		return material;
 	}
 

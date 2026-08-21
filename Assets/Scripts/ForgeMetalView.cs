@@ -98,13 +98,21 @@ namespace ForgingPrototype
 					? fillFilter.sharedMesh
 					: new Mesh { name = "ForgeMetalFill" };
 				fillMesh.MarkDynamic();
-				fillFilter.sharedMesh = fillMesh;
 			}
+
+			fillFilter.sharedMesh = fillMesh;
 
 			if (fillMaterial == null)
 				fillMaterial = ForgingVisualUtility.CreateColorMaterial(Color.white);
-			if (fillRenderer != null && fillRenderer.sharedMaterial == null)
+			ForgingVisualUtility.EnsureMeshFillMaterial(fillMaterial, Color.white);
+			if (fillRenderer != null)
+			{
 				fillRenderer.sharedMaterial = fillMaterial;
+				fillRenderer.shadowCastingMode = ShadowCastingMode.Off;
+				fillRenderer.receiveShadows = false;
+				fillRenderer.sortingOrder = fillSortingOrder;
+				fillRenderer.enabled = true;
+			}
 
 			if (outline == null)
 			{
@@ -145,31 +153,44 @@ namespace ForgingPrototype
 			var source = deformer.Vertices;
 			int count = source.Count;
 			var verts = new Vector3[count + 1];
+			var uvs = new Vector2[count + 1];
+			var colors = new Color[count + 1];
 			Vector2 centroid = Vector2.zero;
 			for (int i = 0; i < count; i++)
 				centroid += source[i];
 			centroid /= count;
 
-			verts[0] = new Vector3(centroid.x, centroid.y, fillZ);
+			// Deformer verts are world XY; MeshFilter is under ForgeStage, so convert to local.
+			Transform fillTx = fillFilter.transform;
+			float worldZ = fillTx.position.z + fillZ;
+			verts[0] = fillTx.InverseTransformPoint(new Vector3(centroid.x, centroid.y, worldZ));
+			uvs[0] = Vector2.one * 0.5f;
+			colors[0] = Color.white;
 			for (int i = 0; i < count; i++)
 			{
 				Vector2 v = source[i];
-				verts[i + 1] = new Vector3(v.x, v.y, fillZ);
+				verts[i + 1] = fillTx.InverseTransformPoint(new Vector3(v.x, v.y, worldZ));
+				uvs[i + 1] = Vector2.one * 0.5f;
+				colors[i + 1] = Color.white;
 			}
 
+			// Winding faces the forge camera (normal -Z).
 			var tris = new int[count * 3];
 			for (int i = 0; i < count; i++)
 			{
 				int t = i * 3;
 				tris[t] = 0;
-				tris[t + 1] = (i + 1) % count + 1;
-				tris[t + 2] = i + 1;
+				tris[t + 1] = i + 1;
+				tris[t + 2] = (i + 1) % count + 1;
 			}
 
 			fillMesh.Clear();
 			fillMesh.SetVertices(verts);
+			fillMesh.SetUVs(0, uvs);
+			fillMesh.SetColors(colors);
 			fillMesh.SetTriangles(tris, 0);
 			fillMesh.RecalculateBounds();
+			fillMesh.RecalculateNormals();
 
 			outline.positionCount = count;
 			for (int i = 0; i < count; i++)
@@ -196,6 +217,9 @@ namespace ForgingPrototype
 				fillRenderer.GetPropertyBlock(tintBlock);
 				tintBlock.SetColor("_Color", heated);
 				tintBlock.SetColor("_BaseColor", heated);
+				tintBlock.SetColor("_RendererColor", Color.white);
+				if (fillMaterial != null && fillMaterial.HasProperty("_MainTex"))
+					tintBlock.SetTexture("_MainTex", Texture2D.whiteTexture);
 				fillRenderer.SetPropertyBlock(tintBlock);
 			}
 

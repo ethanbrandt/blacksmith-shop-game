@@ -45,7 +45,6 @@ public class HeatableMetal : MonoBehaviour
 	Renderer visualRenderer;
 	MaterialPropertyBlock tintBlock;
 	float overheatTimer;
-	bool suspendWorldTicks;
 
 	public MetalType MetalType => metalType;
 	public PartDefinition PartDefinition => partDefinition;
@@ -57,29 +56,21 @@ public class HeatableMetal : MonoBehaviour
 	public bool HasForgeProgress => hasForgeProgress && forgedVertices != null && forgedVertices.Count >= 3;
 	public IReadOnlyList<Vector2> ForgedVertices => forgedVertices;
 	public ShapeQuality ForgeQuality => forgeQuality;
-	public bool SuspendWorldTicks
-	{
-		get => suspendWorldTicks;
-		set => suspendWorldTicks = value;
-	}
 
 	void Awake()
 	{
 		pickable = GetComponent<Pickable>();
+		visualRenderer = GetComponentInChildren<Renderer>();
 	}
 
 	void Start()
 	{
-		ResolveRenderer();
 		ApplyQualityVisual();
 		RefreshTint();
 	}
 
 	void Update()
 	{
-		if (suspendWorldTicks)
-			return;
-
 		if (pickable != null && pickable.IsInFurnace)
 			return;
 
@@ -161,16 +152,7 @@ public class HeatableMetal : MonoBehaviour
 
 	void ApplyQualityVisual()
 	{
-		ResolveRenderer();
-		if (visualRenderer is not SpriteRenderer spriteRenderer)
-			return;
-
-		Sprite next = null;
-		if (partDefinition != null)
-			next = partDefinition.GetSpriteForQuality(hasForgeProgress ? forgeQuality : ShapeQuality.Incomplete);
-
-		if (next != null)
-			spriteRenderer.sprite = next;
+		// TODO Add quality visuals
 	}
 
 	void TickOutsideFurnace(float deltaTime)
@@ -182,9 +164,7 @@ public class HeatableMetal : MonoBehaviour
 
 		if (temperature > metalType.overheatTemp)
 		{
-			float coolRate = coolToMeltRateOverride >= 0f
-				? coolToMeltRateOverride
-				: metalType.worldAmbientCoolRate;
+			float coolRate = coolToMeltRateOverride >= 0f ? coolToMeltRateOverride : metalType.worldAmbientCoolRate;
 			temperature = Mathf.MoveTowards(temperature, metalType.overheatTemp, coolRate * deltaTime);
 			return;
 		}
@@ -222,10 +202,6 @@ public class HeatableMetal : MonoBehaviour
 		if (!applyHeatTint)
 			return;
 
-		ResolveRenderer();
-		if (visualRenderer == null)
-			return;
-
 		Color baseColor = metalType != null ? metalType.metalColor : Color.white;
 		float heat01 = Heat01;
 		Color heated = Color.Lerp(Color.Lerp(coldTint, baseColor, 0.65f), hotTint, heat01);
@@ -252,16 +228,5 @@ public class HeatableMetal : MonoBehaviour
 		tintBlock.SetColor(BaseColorId, heated);
 		tintBlock.SetColor(ColorId, heated);
 		visualRenderer.SetPropertyBlock(tintBlock);
-	}
-
-	void ResolveRenderer()
-	{
-		if (visualRenderer != null)
-			return;
-
-		if (pickable != null)
-			visualRenderer = pickable.VisualRenderer;
-		if (visualRenderer == null)
-			visualRenderer = GetComponentInChildren<Renderer>();
 	}
 }
