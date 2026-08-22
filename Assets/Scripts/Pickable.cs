@@ -16,12 +16,15 @@ public class Pickable : MonoBehaviour
 	Vector3 followLocalOffset;
 	Collider[] ignoredHolderColliders;
 	bool isHeld;
+	public bool isQuenched;
+	bool isOnFinalTable;
 
-	public bool CanBePickedUp => canBePickedUp && !isHeld && !(IsOnAnvil && ForgeSessionController.IsBlockingPlayer);
+	public bool CanBePickedUp => canBePickedUp && !isHeld && !(IsOnAnvil && ForgeSessionController.IsBlockingPlayer) && !isOnFinalTable;
 	public bool IsHeld => isHeld;
+	public bool IsQuenched => isQuenched;
 	public bool IsInFurnace => containingFurnace != null;
 	public bool IsOnAnvil => containingAnvil != null;
-	public Renderer VisualRenderer => visualRenderer;
+	
 
 	void Awake()
 	{
@@ -31,7 +34,6 @@ public class Pickable : MonoBehaviour
 		if (itemCollider == null)
 			itemCollider = gameObject.AddComponent<SphereCollider>();
 
-		visualRenderer = GetComponentInChildren<Renderer>();
 		defaultParent = transform.parent;
 		rb.interpolation = RigidbodyInterpolation.Interpolate;
 	}
@@ -62,12 +64,11 @@ public class Pickable : MonoBehaviour
 		followLocalOffset = localHoldOffset;
 	}
 
-	public void PlaceInFurnace(Furnace furnace, Transform socket)
+	public bool TryPlaceInFurnace(Furnace furnace, Transform socket)
 	{
-		if (furnace == null || socket == null || isHeld)
-			return;
+		if (furnace == null || socket == null || isHeld || isQuenched)
+			return false;
 
-		ClearAnvilContainment();
 		containingFurnace = furnace;
 		isHeld = false;
 		followTarget = null;
@@ -76,17 +77,17 @@ public class Pickable : MonoBehaviour
 		transform.SetParent(socket, true);
 		transform.localPosition = Vector3.zero;
 		transform.localRotation = Quaternion.identity;
+		return true;
 	}
 
-	public void PlaceOnAnvil(Anvil anvil, Transform socket)
+	public bool TryPlaceOnAnvil(Anvil anvil, Transform socket)
 	{
-		if (anvil == null || socket == null)
-			return;
-
+		if (anvil == null || socket == null || isQuenched)
+			return false;
+		
 		CancelInvoke(nameof(ClearHolderCollisionIgnore));
 		SetHolderCollisionIgnored(false);
 		ignoredHolderColliders = null;
-		ClearFurnaceContainment();
 		containingAnvil = anvil;
 		isHeld = false;
 		followTarget = null;
@@ -95,6 +96,45 @@ public class Pickable : MonoBehaviour
 		transform.SetParent(socket, true);
 		transform.localPosition = Vector3.zero;
 		transform.localRotation = Quaternion.identity;
+		return true;
+	}
+
+	public bool TryPlaceInQuenchVat(Transform socket)
+	{
+		if (socket == null || isQuenched)
+			return false;
+		
+		CancelInvoke(nameof(ClearHolderCollisionIgnore));
+		SetHolderCollisionIgnored(false);
+		ignoredHolderColliders = null;
+		isHeld = false;
+		isQuenched = true;
+		followTarget = null;
+		SetPhysicsActive(false);
+		
+		transform.SetParent(socket, true);
+		transform.localPosition = Vector3.zero;
+		transform.localRotation = Quaternion.identity;
+		return true;
+	}
+
+	public bool TryPlaceOnFinalTable(Transform socket)
+	{
+		if (socket == null || !isQuenched)
+			return false;
+
+		CancelInvoke(nameof(ClearHolderCollisionIgnore));
+		SetHolderCollisionIgnored(false);
+		ignoredHolderColliders = null;
+		isHeld = false;
+		isOnFinalTable = true;
+		followTarget = null;
+		SetPhysicsActive(false);
+
+		transform.SetParent(socket, true);
+		transform.localPosition = Vector3.zero;
+		transform.localRotation = Quaternion.identity;
+		return true;
 	}
 
 	public void Drop(Vector3 worldPosition, Vector3 velocity)

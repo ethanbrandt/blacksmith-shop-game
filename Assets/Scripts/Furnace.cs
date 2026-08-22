@@ -164,7 +164,9 @@ public class Furnace : MonoBehaviour
 			return false;
 
 		EnsureSocket();
-		pickable.PlaceInFurnace(this, metalSocket);
+		if (!pickable.TryPlaceInFurnace(this, metalSocket))
+			return false;
+		
 		containedMetal = metal;
 		return true;
 	}
@@ -182,7 +184,6 @@ public class Furnace : MonoBehaviour
 
 	void UpdateVisuals()
 	{
-		bool shouldLit = fuel > minFuelToStayLit || internalTemperature > ambientTemperature + 40f;
 		fuelAreaPointLight.intensity = Mathf.Lerp(fuelLightMinIntensity, fuelLightMaxIntensity, TemperatureNormalized) + Mathf.Sin(Time.time * 0.5f) * 0.2f;
 
 		fuelAreaPointLight.color = fuelLightColorGradient.Evaluate(TemperatureNormalized);

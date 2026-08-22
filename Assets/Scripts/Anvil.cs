@@ -46,7 +46,9 @@ public class Anvil : MonoBehaviour
 			return false;
 
 		EnsureSocket();
-		pickable.PlaceOnAnvil(this, metalSocket);
+		if (!pickable.TryPlaceOnAnvil(this, metalSocket))
+			return false;
+		
 		containedMetal = metal;
 		OpenForge(metal);
 		return true;
@@ -54,7 +56,7 @@ public class Anvil : MonoBehaviour
 
 	public bool TryAcceptPickable(Pickable pickable)
 	{
-		if (pickable == null || pickable.IsHeld || pickable.IsInFurnace || pickable.IsOnAnvil)
+		if (pickable == null || pickable.IsHeld || pickable.IsInFurnace || pickable.IsOnAnvil || pickable.IsQuenched)
 			return false;
 
 		if (containedMetal != null)
@@ -64,7 +66,9 @@ public class Anvil : MonoBehaviour
 			return false;
 
 		EnsureSocket();
-		pickable.PlaceOnAnvil(this, metalSocket);
+		if (!pickable.TryPlaceOnAnvil(this, metalSocket))
+			return false;
+		
 		containedMetal = metal;
 		OpenForge(metal);
 		return true;
