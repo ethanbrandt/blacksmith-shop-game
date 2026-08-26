@@ -30,6 +30,7 @@ public class HeatableMetal : MonoBehaviour
 	[SerializeField] bool applyHeatTint = true;
 	[SerializeField] Color coldTint = new Color(0.45f, 0.48f, 0.55f, 1f);
 	[SerializeField] Color hotTint = new Color(1f, 0.45f, 0.12f, 1f);
+	[SerializeField] Color quenchedTint = new Color(0.2f, 0.1f, 0.35f);
 	[SerializeField] float damageDarken = 0.35f;
 
 	[Header("Overheat Indicator")]
@@ -106,6 +107,18 @@ public class HeatableMetal : MonoBehaviour
 		RefreshTint();
 	}
 
+	public void Quench()
+	{
+		temperature = ambientTemperature;
+
+		var quenchColor = Color.Lerp(quenchedTint, metalType.metalColor, 0.65f);
+		tintBlock ??= new MaterialPropertyBlock();
+		visualRenderer.GetPropertyBlock(tintBlock);
+		tintBlock.SetColor(BaseColorId, quenchColor);
+		tintBlock.SetColor(ColorId, quenchColor);
+		visualRenderer.SetPropertyBlock(tintBlock);
+	}
+
 	public void SaveForgeProgress(
 		IReadOnlyList<Vector2> vertices,
 		float heat01,
@@ -125,14 +138,6 @@ public class HeatableMetal : MonoBehaviour
 			partDefinition = forgedPart;
 
 		SetHeat01(heat01);
-		ApplyQualityVisual();
-	}
-
-	public void ClearForgeProgress()
-	{
-		forgedVertices.Clear();
-		hasForgeProgress = false;
-		forgeQuality = ShapeQuality.Incomplete;
 		ApplyQualityVisual();
 	}
 
@@ -199,7 +204,7 @@ public class HeatableMetal : MonoBehaviour
 
 	void RefreshTint()
 	{
-		if (!applyHeatTint)
+		if (!applyHeatTint || pickable.IsQuenched)
 			return;
 
 		Color baseColor = metalType != null ? metalType.metalColor : Color.white;

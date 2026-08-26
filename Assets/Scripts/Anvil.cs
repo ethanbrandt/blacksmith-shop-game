@@ -56,8 +56,14 @@ public class Anvil : MonoBehaviour
 
 	public bool TryAcceptPickable(Pickable pickable)
 	{
-		if (pickable == null || pickable.IsHeld || pickable.IsInFurnace || pickable.IsOnAnvil || pickable.IsQuenched)
+		if (pickable == null || pickable.IsHeld || pickable.IsInFurnace || pickable.IsOnAnvil)
 			return false;
+		
+		if (pickable.IsQuenched)
+        {
+        	LogText.Instance.SetText("CANNOT PLACE QUENCHED METAL ON ANVIL");
+        	return false;
+        }
 
 		if (containedMetal != null)
 			return false;

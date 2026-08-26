@@ -10,25 +10,26 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7d3c45066358a0242a7f4c2793673225, type: 3}
-  m_Name: Spearhead
+  m_Name: Rod
   m_EditorClassIdentifier: Assembly-CSharp::ForgingPrototype.PartDefinition
-  displayName: Part
+  displayName: Rod
   unforgedSprite: {fileID: 0}
   qualitySprites:
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
-  partSocketSprite: {fileID: 21300000, guid: b43b923a758fb97438de3459222b64c3, type: 3}
+  partSocketSprite: {fileID: 21300000, guid: a678f250bf5ad92489b95ebae73a334e, type: 3}
   outlineLocal:
-  - {x: 0, y: 1.6}
-  - {x: 0.31625, y: 0.576}
-  - {x: 0.575, y: -0.16}
-  - {x: 0.20125, y: -0.896}
-  - {x: 0.1265, y: -1.6}
-  - {x: -0.1265, y: -1.6}
-  - {x: -0.20125, y: -0.896}
-  - {x: -0.575, y: -0.16}
-  - {x: -0.31625, y: 0.576}
-  outlineCenterOffset: {x: 0, y: 0.15}
+  - {x: 1.2173486, y: 0.14888297}
+  - {x: 1.2577088, y: 0.09450025}
+  - {x: 1.2795527, y: 0.02444318}
+  - {x: 1.2576821, y: -0.05383984}
+  - {x: 1.2186258, y: -0.1006269}
+  - {x: -1.206527, y: -0.10877954}
+  - {x: -1.25276, y: -0.05850936}
+  - {x: -1.2772537, y: 0.01561662}
+  - {x: -1.2551732, y: 0.08789021}
+  - {x: -1.2078042, y: 0.14073034}
+  outlineCenterOffset: {x: 0, y: 0}
   defaultMetalType: {fileID: 0}

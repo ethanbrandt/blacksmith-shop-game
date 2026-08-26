@@ -244,7 +244,6 @@ namespace ForgingPrototype
             Vector2 localOutward = EstimateOutwardAt(impactPoint, centroid);
             float outwardDot = Vector2.Dot(direction, localOutward);
             bool inwardStrike = outwardDot <= -inwardDotThreshold;
-            print(inwardStrike);
 
             bool allowSplit = splitEdgeUnderHammer && !(inwardStrike && disableSplitOnInward);
             int focusIndex = EnsureVertexNearImpact(impactPoint, allowSplit);

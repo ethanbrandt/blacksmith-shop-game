@@ -2,6 +2,9 @@ using UnityEngine;
 
 public class QuenchVat : MonoBehaviour
 {
+	[Range(0, 1)]
+	[SerializeField] float heatPercentToQuench = 0.8f;
+	
 	[Header("References")]
 	[SerializeField] Transform metalSocket;
 
@@ -25,6 +28,12 @@ public class QuenchVat : MonoBehaviour
 
 		return false;
 	}
+	
+	public void NotifyItemRemoved(Pickable pickable)
+	{
+		if (containedMetal != null && containedMetal.GetComponent<Pickable>() == pickable)
+			containedMetal = null;
+	}
 
 	bool TryInsertPart(Pickable pickable, HeatableMetal metal)
 	{
@@ -32,9 +41,19 @@ public class QuenchVat : MonoBehaviour
 			return false;
 
 		EnsureSocket();
-		if (!pickable.TryPlaceInQuenchVat(metalSocket))
+
+		bool shouldQuench = metal.Heat01 >= heatPercentToQuench;
+		if (!shouldQuench)
+		{
+			// TODO add clear feedback that the metal is too cold to quench
+			LogText.Instance.SetText("TOO COLD TO QUENCH");
+			return false;
+		}
+		
+		if (!pickable.TryPlaceInQuenchVat(this, metalSocket))
 			return false;
 		
+		metal.Quench();	
 		containedMetal = metal;
 		return true;
 	}

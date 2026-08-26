@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7d3c45066358a0242a7f4c2793673225, type: 3}
+  m_Name: Part
+  m_EditorClassIdentifier: Assembly-CSharp::ForgingPrototype.PartDefinition
+  displayName: Cooler Part
+  unforgedSprite: {fileID: 0}
+  qualitySprites:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  partSocketSprite: {fileID: 21300000, guid: 1e6492be9a8d0c04da6d1e4694684312, type: 3}
+  outlineLocal:
+  - {x: -0.04624167, y: 0.8208883}
+  - {x: -0.20637806, y: 1.1333495}
+  - {x: 0.48233864, y: 0.9133248}
+  - {x: 0.9184825, y: 0.3521964}
+  - {x: 0.88723636, y: -0.35474718}
+  - {x: 0.6670608, y: -0.8302669}
+  - {x: 0.30137148, y: -1.1515234}
+  - {x: 0.02406212, y: -1.2686964}
+  - {x: 0.05921401, y: -0.98357546}
+  - {x: -0.04048295, y: -0.66779387}
+  - {x: -0.28839913, y: -0.38989908}
+  - {x: -0.5007309, y: -0.30711275}
+  - {x: -0.79476494, y: -0.27302185}
+  - {x: -0.84236586, y: 0.00830347}
+  - {x: -0.7819809, y: 0.2596486}
+  - {x: -0.52629906, y: 0.28095543}
+  - {x: -0.22981267, y: 0.34829065}
+  - {x: -0.10861679, y: 0.5743385}
+  outlineCenterOffset: {x: 0.0978309, y: 0.00271113}
+  defaultMetalType: {fileID: 0}

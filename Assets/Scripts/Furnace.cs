@@ -163,6 +163,12 @@ public class Furnace : MonoBehaviour
 		if (containedMetal != null)
 			return false;
 
+		if (pickable.IsQuenched)
+		{
+			LogText.Instance.SetText("CANNOT INSERT QUENCHED METAL INTO FURNACE");
+			return false;
+		}
+
 		EnsureSocket();
 		if (!pickable.TryPlaceInFurnace(this, metalSocket))
 			return false;

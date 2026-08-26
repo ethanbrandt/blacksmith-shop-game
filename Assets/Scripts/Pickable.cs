@@ -12,11 +12,12 @@ public class Pickable : MonoBehaviour
 	Transform defaultParent;
 	Furnace containingFurnace;
 	Anvil containingAnvil;
+	QuenchVat containingVat;
 	Transform followTarget;
 	Vector3 followLocalOffset;
 	Collider[] ignoredHolderColliders;
 	bool isHeld;
-	public bool isQuenched;
+	bool isQuenched;
 	bool isOnFinalTable;
 
 	public bool CanBePickedUp => canBePickedUp && !isHeld && !(IsOnAnvil && ForgeSessionController.IsBlockingPlayer) && !isOnFinalTable;
@@ -99,14 +100,15 @@ public class Pickable : MonoBehaviour
 		return true;
 	}
 
-	public bool TryPlaceInQuenchVat(Transform socket)
+	public bool TryPlaceInQuenchVat(QuenchVat vat, Transform socket)
 	{
-		if (socket == null || isQuenched)
+		if (socket == null || vat == null || isQuenched)
 			return false;
 		
 		CancelInvoke(nameof(ClearHolderCollisionIgnore));
 		SetHolderCollisionIgnored(false);
 		ignoredHolderColliders = null;
+		containingVat = vat;
 		isHeld = false;
 		isQuenched = true;
 		followTarget = null;
@@ -174,9 +176,7 @@ public class Pickable : MonoBehaviour
 
 	void IgnoreHolderCollisions(Transform holder, bool ignore)
 	{
-		ignoredHolderColliders = holder != null
-			? holder.GetComponentsInChildren<Collider>()
-			: null;
+		ignoredHolderColliders = holder != null ? holder.GetComponentsInChildren<Collider>() : null;
 		SetHolderCollisionIgnored(ignore);
 	}
 
@@ -198,6 +198,7 @@ public class Pickable : MonoBehaviour
 	{
 		ClearFurnaceContainment();
 		ClearAnvilContainment();
+		ClearQuenchVatContainment();
 	}
 
 	void ClearFurnaceContainment()
@@ -218,13 +219,19 @@ public class Pickable : MonoBehaviour
 		containingAnvil = null;
 	}
 
+	void ClearQuenchVatContainment()
+	{
+		if (containingVat == null)
+			return;
+		
+		containingVat.NotifyItemRemoved(this);
+	}
+
 	void SetPhysicsActive(bool active)
 	{
 		rb.isKinematic = !active;
 		rb.detectCollisions = active;
-		rb.interpolation = active
-			? RigidbodyInterpolation.Interpolate
-			: RigidbodyInterpolation.None;
+		rb.interpolation = active ? RigidbodyInterpolation.Interpolate : RigidbodyInterpolation.None;
 
 		if (itemCollider != null)
 			itemCollider.enabled = active;

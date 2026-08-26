@@ -18,6 +18,7 @@ namespace ForgingPrototype
 		public Sprite unforgedSprite;
 		[Tooltip("Index 0=Flawed, 1=Good, 2=Excellent, 3=Perfect")]
 		public Sprite[] qualitySprites = new Sprite[4];
+		public Sprite partSocketSprite;
 
 		[Header("Forge Outline")]
 		[Tooltip("Outline vertices in local part space (relative to outline origin).")]
