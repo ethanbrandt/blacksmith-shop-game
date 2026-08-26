@@ -115,8 +115,6 @@ public class FinishPartTable : MonoBehaviour
 
 		if (pickable == null)
 			return;
-		
-		print($"FINISHED ACCEPTING PART: {TryAcceptPickable(pickable)}");
 	}
 
 	void Finish()
