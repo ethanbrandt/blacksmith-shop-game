@@ -12,6 +12,8 @@ namespace ForgingPrototype
 	{
 		[Header("Identity")]
 		public string displayName = "Part";
+		[Tooltip("Bladed parts can use the grindstone after quench.")]
+		public bool isBladed;
 
 		[Header("World Sprites")]
 		[Tooltip("Shown when Incomplete / not forged to a quality tier.")]
@@ -25,6 +27,8 @@ namespace ForgingPrototype
 		public Vector2[] outlineLocal = System.Array.Empty<Vector2>();
 		[Tooltip("Added to anvil center when placing this outline in the forge.")]
 		public Vector2 outlineCenterOffset = new Vector2(0f, 0.15f);
+		[Tooltip("One flag per outline edge. Edge i runs from outlineLocal[i] to outlineLocal[(i+1) % count].")]
+		public bool[] outlineEdgeNeedsSharpening = System.Array.Empty<bool>();
 
 		[Header("Optional Defaults")]
 		public MetalType defaultMetalType;
@@ -32,6 +36,32 @@ namespace ForgingPrototype
 		public string DisplayLabel => string.IsNullOrWhiteSpace(displayName) ? name : displayName;
 
 		public bool HasValidOutline => outlineLocal != null && outlineLocal.Length >= 3;
+		public int OutlineEdgeCount => HasValidOutline ? outlineLocal.Length : 0;
+
+		public bool HasSharpeningTargets
+		{
+			get
+			{
+				if (!HasValidOutline || outlineEdgeNeedsSharpening == null)
+					return false;
+
+				for (int i = 0; i < OutlineEdgeCount; i++)
+				{
+					if (OutlineEdgeNeedsSharpening(i))
+						return true;
+				}
+
+				return false;
+			}
+		}
+
+		public bool OutlineEdgeNeedsSharpening(int edgeIndex)
+		{
+			return outlineEdgeNeedsSharpening != null
+				&& edgeIndex >= 0
+				&& edgeIndex < outlineEdgeNeedsSharpening.Length
+				&& outlineEdgeNeedsSharpening[edgeIndex];
+		}
 
 		public Sprite GetSpriteForQuality(ShapeQuality quality)
 		{
@@ -67,12 +97,42 @@ namespace ForgingPrototype
 			if (points == null || points.Count < 3)
 			{
 				outlineLocal = System.Array.Empty<Vector2>();
+				outlineEdgeNeedsSharpening = System.Array.Empty<bool>();
 				return;
 			}
 
+			var oldEdgeFlags = outlineEdgeNeedsSharpening;
 			outlineLocal = new Vector2[points.Count];
+			outlineEdgeNeedsSharpening = new bool[points.Count];
 			for (int i = 0; i < points.Count; i++)
+			{
 				outlineLocal[i] = points[i];
+				if (oldEdgeFlags != null && i < oldEdgeFlags.Length)
+					outlineEdgeNeedsSharpening[i] = oldEdgeFlags[i];
+			}
+		}
+
+		public void EnsureSharpeningFlagsMatchOutline()
+		{
+			int edgeCount = OutlineEdgeCount;
+			if (edgeCount <= 0)
+			{
+				outlineEdgeNeedsSharpening = System.Array.Empty<bool>();
+				return;
+			}
+
+			if (outlineEdgeNeedsSharpening != null && outlineEdgeNeedsSharpening.Length == edgeCount)
+				return;
+
+			var resized = new bool[edgeCount];
+			if (outlineEdgeNeedsSharpening != null)
+			{
+				int copy = Mathf.Min(edgeCount, outlineEdgeNeedsSharpening.Length);
+				for (int i = 0; i < copy; i++)
+					resized[i] = outlineEdgeNeedsSharpening[i];
+			}
+
+			outlineEdgeNeedsSharpening = resized;
 		}
 
 		public bool Validate(out string message)
@@ -108,6 +168,13 @@ namespace ForgingPrototype
 			if (!HasValidOutline)
 			{
 				message = "Forge outline needs at least 3 vertices.";
+				return false;
+			}
+
+			EnsureSharpeningFlagsMatchOutline();
+			if (isBladed && !HasSharpeningTargets)
+			{
+				message = "Bladed parts need at least one outline edge marked for sharpening.";
 				return false;
 			}
 

@@ -12,7 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7d3c45066358a0242a7f4c2793673225, type: 3}
   m_Name: Axe
   m_EditorClassIdentifier: Assembly-CSharp::ForgingPrototype.PartDefinition
-  displayName: Part
+  displayName: Axe Head
+  isBladed: 1
   unforgedSprite: {fileID: 0}
   qualitySprites:
   - {fileID: 0}
@@ -34,8 +35,26 @@ MonoBehaviour:
   - {x: -0.6347542, y: 0.41926923}
   - {x: -0.37432897, y: 0.38664833}
   - {x: -0.06914869, y: 0.4407831}
-  - {x: 0.031130522, y: 0.6227578}
-  - {x: 0.023874104, y: 0.98340213}
-  - {x: -0.009980708, y: 1.3788013}
+  - {x: 0.03113052, y: 0.6227578}
+  - {x: 0.0238741, y: 0.98340213}
+  - {x: -0.00998071, y: 1.3788013}
   outlineCenterOffset: {x: 0, y: 0.1}
+  outlineEdgeNeedsSharpening:
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 1
   defaultMetalType: {fileID: 0}

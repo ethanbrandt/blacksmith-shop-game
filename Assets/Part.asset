@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: Part
   m_EditorClassIdentifier: Assembly-CSharp::ForgingPrototype.PartDefinition
   displayName: Cooler Part
+  isBladed: 1
   unforgedSprite: {fileID: 0}
   qualitySprites:
   - {fileID: 0}
@@ -40,4 +41,23 @@ MonoBehaviour:
   - {x: -0.22981267, y: 0.34829065}
   - {x: -0.10861679, y: 0.5743385}
   outlineCenterOffset: {x: 0.0978309, y: 0.00271113}
+  outlineEdgeNeedsSharpening:
+  - 0
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
   defaultMetalType: {fileID: 0}

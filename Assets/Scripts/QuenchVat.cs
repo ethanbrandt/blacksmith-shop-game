@@ -20,7 +20,7 @@ public class QuenchVat : MonoBehaviour
 
 	public bool TryAcceptPickable(Pickable pickable)
 	{
-		if (pickable == null || pickable.IsHeld || pickable.IsInFurnace || pickable.IsOnAnvil || pickable.IsQuenched)
+		if (pickable == null || pickable.IsHeld || pickable.IsInFurnace || pickable.IsOnAnvil || pickable.IsOnGrindstone || pickable.IsQuenched)
 			return false;
 
 		if (pickable.TryGetComponent(out HeatableMetal metal))

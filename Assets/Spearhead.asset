@@ -12,7 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7d3c45066358a0242a7f4c2793673225, type: 3}
   m_Name: Spearhead
   m_EditorClassIdentifier: Assembly-CSharp::ForgingPrototype.PartDefinition
-  displayName: Part
+  displayName: Spearhead
+  isBladed: 1
   unforgedSprite: {fileID: 0}
   qualitySprites:
   - {fileID: 0}
@@ -31,4 +32,14 @@ MonoBehaviour:
   - {x: -0.575, y: -0.16}
   - {x: -0.31625, y: 0.576}
   outlineCenterOffset: {x: 0, y: 0.15}
+  outlineEdgeNeedsSharpening:
+  - 1
+  - 1
+  - 1
+  - 0
+  - 0
+  - 0
+  - 1
+  - 1
+  - 1
   defaultMetalType: {fileID: 0}

@@ -13,6 +13,7 @@ public class Pickable : MonoBehaviour
 	Furnace containingFurnace;
 	Anvil containingAnvil;
 	QuenchVat containingVat;
+	Grindstone containingGrindstone;
 	Transform followTarget;
 	Vector3 followLocalOffset;
 	Collider[] ignoredHolderColliders;
@@ -20,11 +21,12 @@ public class Pickable : MonoBehaviour
 	bool isQuenched;
 	bool isOnFinalTable;
 
-	public bool CanBePickedUp => canBePickedUp && !isHeld && !(IsOnAnvil && ForgeSessionController.IsBlockingPlayer) && !isOnFinalTable;
+	public bool CanBePickedUp => canBePickedUp && !isHeld && !(IsOnAnvil && ForgeSessionController.IsBlockingPlayer) && !(IsOnGrindstone && GrindSessionController.IsBlockingPlayer) && !isOnFinalTable;
 	public bool IsHeld => isHeld;
 	public bool IsQuenched => isQuenched;
 	public bool IsInFurnace => containingFurnace != null;
 	public bool IsOnAnvil => containingAnvil != null;
+	public bool IsOnGrindstone => containingGrindstone != null;
 	
 
 	void Awake()
@@ -120,6 +122,26 @@ public class Pickable : MonoBehaviour
 		return true;
 	}
 
+	public bool TryPlaceOnGrindstone(Grindstone grindstone, Transform socket)
+	{
+		if (grindstone == null || socket == null || !isQuenched)
+			return false;
+
+		CancelInvoke(nameof(ClearHolderCollisionIgnore));
+		SetHolderCollisionIgnored(false);
+		ignoredHolderColliders = null;
+		ClearStationContainment();
+		containingGrindstone = grindstone;
+		isHeld = false;
+		followTarget = null;
+		SetPhysicsActive(false);
+
+		transform.SetParent(socket, true);
+		transform.localPosition = Vector3.zero;
+		transform.localRotation = Quaternion.identity;
+		return true;
+	}
+
 	public bool TryPlaceOnFinalTable(Transform socket)
 	{
 		if (socket == null || !isQuenched)
@@ -199,6 +221,7 @@ public class Pickable : MonoBehaviour
 		ClearFurnaceContainment();
 		ClearAnvilContainment();
 		ClearQuenchVatContainment();
+		ClearGrindstoneContainment();
 	}
 
 	void ClearFurnaceContainment()
@@ -225,6 +248,16 @@ public class Pickable : MonoBehaviour
 			return;
 		
 		containingVat.NotifyItemRemoved(this);
+		containingVat = null;
+	}
+
+	void ClearGrindstoneContainment()
+	{
+		if (containingGrindstone == null)
+			return;
+
+		containingGrindstone.NotifyItemRemoved(this);
+		containingGrindstone = null;
 	}
 
 	void SetPhysicsActive(bool active)

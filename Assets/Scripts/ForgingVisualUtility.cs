@@ -8,7 +8,9 @@ namespace ForgingPrototype
 		public const int ForgeLayer = 6;
 
 		static Material spritesMaterial;
+		static Material vertexColorMaterial;
 		static Shader cachedUnlitShader;
+		static Shader cachedVertexColorShader;
 
 		public static int ResolveForgeLayer()
 		{
@@ -35,26 +37,56 @@ namespace ForgingPrototype
 				ApplyLayerRecursively(t.GetChild(i).gameObject, layer);
 		}
 
+		/// <summary>
+		/// LineRenderer / particle friendly material. Avoids Resources.GetBuiltinResource
+		/// ("Sprites-Default.mat"), which errors on newer Unity versions.
+		/// </summary>
 		public static Material GetSpritesDefaultMaterial()
 		{
 			if (spritesMaterial != null)
 				return spritesMaterial;
 
-			Material shared = Resources.GetBuiltinResource<Material>("Sprites-Default.mat");
-			if (shared != null)
-			{
-				spritesMaterial = new Material(shared) { name = "ForgeSpritesDefault" };
-				return spritesMaterial;
-			}
-
 			Shader shader = Shader.Find("Sprites/Default");
-			if (shader != null)
+			if (shader == null)
+				shader = Shader.Find("Universal Render Pipeline/2D/Sprite-Unlit-Default");
+			if (shader == null)
+				return CreateColorMaterial(Color.white);
+
+			spritesMaterial = new Material(shader) { name = "ForgeSpritesDefault" };
+			EnsureMeshFillMaterial(spritesMaterial, Color.white);
+			return spritesMaterial;
+		}
+
+		/// <summary>
+		/// Mesh material that multiplies vertex colors (grind bands / highlights).
+		/// </summary>
+		public static Material CreateVertexColorMaterial(Color tint)
+		{
+			if (vertexColorMaterial != null)
 			{
-				spritesMaterial = new Material(shader) { name = "ForgeSpritesDefault" };
-				return spritesMaterial;
+				var clone = new Material(vertexColorMaterial) { name = "ForgeVertexColor" };
+				ApplySolidColor(clone, tint);
+				return clone;
 			}
 
-			return CreateColorMaterial(Color.white);
+			Shader shader = ResolveVertexColorShader();
+			var material = new Material(shader) { name = "ForgeVertexColor" };
+			EnsureMeshFillMaterial(material, tint);
+			material.renderQueue = (int)RenderQueue.Transparent;
+			vertexColorMaterial = material;
+			return new Material(material) { name = "ForgeVertexColor" };
+		}
+
+		public static Material GetSharedVertexColorMaterial()
+		{
+			if (vertexColorMaterial != null)
+				return vertexColorMaterial;
+
+			Shader shader = ResolveVertexColorShader();
+			vertexColorMaterial = new Material(shader) { name = "ForgeVertexColorShared" };
+			EnsureMeshFillMaterial(vertexColorMaterial, Color.white);
+			vertexColorMaterial.renderQueue = (int)RenderQueue.Transparent;
+			return vertexColorMaterial;
 		}
 
 		public static Material CreateColorMaterial(Color color)
@@ -77,6 +109,8 @@ namespace ForgingPrototype
 
 			if (material.HasProperty("_MainTex") && material.mainTexture == null)
 				material.mainTexture = Texture2D.whiteTexture;
+			if (material.HasProperty("_BaseMap") && material.GetTexture("_BaseMap") == null)
+				material.SetTexture("_BaseMap", Texture2D.whiteTexture);
 
 			if (color.HasValue)
 				ApplySolidColor(material, color.Value);
@@ -116,7 +150,6 @@ namespace ForgingPrototype
 			if (cachedUnlitShader != null)
 				return cachedUnlitShader;
 
-			// Prefer URP Unlit for MeshRenderer fills; Sprites/Default needs a white _MainTex.
 			cachedUnlitShader = Shader.Find("Universal Render Pipeline/Unlit");
 			if (cachedUnlitShader == null)
 				cachedUnlitShader = Shader.Find("Unlit/Color");
@@ -126,6 +159,20 @@ namespace ForgingPrototype
 				cachedUnlitShader = Shader.Find("Hidden/InternalErrorShader");
 
 			return cachedUnlitShader;
+		}
+
+		static Shader ResolveVertexColorShader()
+		{
+			if (cachedVertexColorShader != null)
+				return cachedVertexColorShader;
+
+			cachedVertexColorShader = Shader.Find("ForgingPrototype/UnlitVertexColor");
+			if (cachedVertexColorShader == null)
+				cachedVertexColorShader = Shader.Find("Sprites/Default");
+			if (cachedVertexColorShader == null)
+				cachedVertexColorShader = ResolveUnlitShader();
+
+			return cachedVertexColorShader;
 		}
 	}
 }

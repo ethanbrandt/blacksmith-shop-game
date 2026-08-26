@@ -23,7 +23,7 @@ public class FinishPartTable : MonoBehaviour
 
 	public bool TryAcceptPickable(Pickable pickable)
 	{
-		if (pickable == null || pickable.IsHeld || pickable.IsInFurnace || pickable.IsOnAnvil)
+		if (pickable == null || pickable.IsHeld || pickable.IsInFurnace || pickable.IsOnAnvil || pickable.IsOnGrindstone)
 			return false;
 		
 		if (!pickable.IsQuenched)
@@ -41,6 +41,9 @@ public class FinishPartTable : MonoBehaviour
 	bool TryInsertPart(Pickable pickable, HeatableMetal metal)
 	{
 		int partSocketIndex = FindCorrectPartSocketIndex(metal.PartDefinition);
+
+		if (partSocketIndex < 0)
+			return false;
 
 		if (partSockets[partSocketIndex].partSocket == null)
 			return false;
@@ -115,6 +118,8 @@ public class FinishPartTable : MonoBehaviour
 
 		if (pickable == null)
 			return;
+
+		TryAcceptPickable(pickable);
 	}
 
 	void Finish()

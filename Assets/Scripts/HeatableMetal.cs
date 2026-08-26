@@ -18,6 +18,13 @@ public class HeatableMetal : MonoBehaviour
 	[SerializeField] bool hasForgeProgress;
 	[SerializeField] ShapeQuality forgeQuality = ShapeQuality.Incomplete;
 
+	[Header("Grind Progress")]
+	[Tooltip("Baseline silhouette used by the grindstone (usually the forged outline).")]
+	[SerializeField] List<Vector2> groundVertices = new List<Vector2>();
+	[SerializeField] List<float> grindAmounts = new List<float>();
+	[SerializeField] bool hasGrindProgress;
+	[SerializeField] SharpnessQuality sharpnessQuality = SharpnessQuality.Blunt;
+
 	[Header("Overheat Overrides")]
 	[Tooltip("If >= 0, overrides MetalType.overheatGraceDuration.")]
 	[SerializeField] float overheatGraceOverride = -1f;
@@ -57,6 +64,10 @@ public class HeatableMetal : MonoBehaviour
 	public bool HasForgeProgress => hasForgeProgress && forgedVertices != null && forgedVertices.Count >= 3;
 	public IReadOnlyList<Vector2> ForgedVertices => forgedVertices;
 	public ShapeQuality ForgeQuality => forgeQuality;
+	public bool HasGrindProgress => hasGrindProgress && groundVertices != null && groundVertices.Count >= 3;
+	public IReadOnlyList<Vector2> GroundVertices => groundVertices;
+	public IReadOnlyList<float> GrindAmounts => grindAmounts;
+	public SharpnessQuality SharpnessQuality => sharpnessQuality;
 
 	void Awake()
 	{
@@ -141,16 +152,39 @@ public class HeatableMetal : MonoBehaviour
 		ApplyQualityVisual();
 	}
 
+	public void SaveGrindProgress(
+		IReadOnlyList<Vector2> baselineVertices,
+		IReadOnlyList<float> amounts,
+		SharpnessQuality sharpness)
+	{
+		if (baselineVertices == null || baselineVertices.Count < 3)
+			return;
+
+		groundVertices.Clear();
+		grindAmounts.Clear();
+		for (int i = 0; i < baselineVertices.Count; i++)
+			groundVertices.Add(baselineVertices[i]);
+
+		for (int i = 0; i < baselineVertices.Count; i++)
+		{
+			float amount = amounts != null && i < amounts.Count ? Mathf.Max(0f, amounts[i]) : 0f;
+			grindAmounts.Add(amount);
+		}
+
+		hasGrindProgress = true;
+		sharpnessQuality = sharpness;
+	}
+
 	public void TickTowardFurnace(float furnaceTemperature, float deltaTime)
 	{
 		if (metalType == null || deltaTime <= 0f)
 			return;
 
-		temperature = Mathf.MoveTowards(
-			temperature,
-			furnaceTemperature,
-			metalType.furnaceHeatTransferRate * deltaTime);
-
+		if (temperature <= furnaceTemperature)
+			temperature = Mathf.MoveTowards(temperature, furnaceTemperature, metalType.furnaceHeatTransferRate * deltaTime);
+		else
+			TickOutsideFurnace(deltaTime);
+		
 		TickOverheatDamage(deltaTime);
 		RefreshTint();
 	}

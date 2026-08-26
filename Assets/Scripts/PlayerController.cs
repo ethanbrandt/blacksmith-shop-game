@@ -19,9 +19,12 @@ public class PlayerController : MonoBehaviour
         rb = GetComponent<Rigidbody>();
     }
 
+    static bool IsMinigameBlocking =>
+        ForgeSessionController.IsBlockingPlayer || GrindSessionController.IsBlockingPlayer;
+
     void FixedUpdate()
     {
-        if (ForgeSessionController.IsBlockingPlayer)
+        if (IsMinigameBlocking)
         {
             moveDir = Vector3.zero;
             rb.linearVelocity = new Vector3(0f, rb.linearVelocity.y, 0f);
@@ -33,7 +36,7 @@ public class PlayerController : MonoBehaviour
 
     void OnMove(InputValue _value)
     {
-        if (ForgeSessionController.IsBlockingPlayer)
+        if (IsMinigameBlocking)
         {
             moveDir = Vector3.zero;
             return;
@@ -51,13 +54,20 @@ public class PlayerController : MonoBehaviour
 
     void OnInteract()
     {
-        if (ForgeSessionController.IsBlockingPlayer)
+        if (IsMinigameBlocking)
             return;
 
         if (held != null)
         {
             Anvil anvil = Anvil.FindClosestInRange(transform.position, pickupRange);
             if (anvil != null && anvil.TryPlaceHeld(held))
+            {
+                held = null;
+                return;
+            }
+
+            Grindstone grindstone = Grindstone.FindClosestInRange(transform.position, pickupRange);
+            if (grindstone != null && grindstone.TryPlaceHeld(held))
             {
                 held = null;
                 return;
@@ -81,7 +91,7 @@ public class PlayerController : MonoBehaviour
 
     void OnAttack()
     {
-        if (ForgeSessionController.IsBlockingPlayer)
+        if (IsMinigameBlocking)
             return;
 
         if (held == null)
