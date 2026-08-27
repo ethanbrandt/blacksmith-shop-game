@@ -130,11 +130,7 @@ public class HeatableMetal : MonoBehaviour
 		visualRenderer.SetPropertyBlock(tintBlock);
 	}
 
-	public void SaveForgeProgress(
-		IReadOnlyList<Vector2> vertices,
-		float heat01,
-		ShapeQuality quality,
-		PartDefinition forgedPart)
+	public void SaveForgeProgress(IReadOnlyList<Vector2> vertices, float heat01, ShapeQuality quality, PartDefinition forgedPart)
 	{
 		if (vertices == null || vertices.Count < 3)
 			return;
@@ -152,10 +148,7 @@ public class HeatableMetal : MonoBehaviour
 		ApplyQualityVisual();
 	}
 
-	public void SaveGrindProgress(
-		IReadOnlyList<Vector2> baselineVertices,
-		IReadOnlyList<float> amounts,
-		SharpnessQuality sharpness)
+	public void SaveGrindProgress(IReadOnlyList<Vector2> baselineVertices, IReadOnlyList<float> amounts, SharpnessQuality sharpness)
 	{
 		if (baselineVertices == null || baselineVertices.Count < 3)
 			return;

@@ -20,10 +20,14 @@ namespace ForgingPrototype
 		[Tooltip("Extra slowdown multiplier at ideal, before true overgrind resistance kicks in.")]
 		[SerializeField, Min(1f)] float approachSlowdownStrength = 3.5f;
 		[SerializeField] float contactFalloff = 1.6f;
+		[Tooltip("Edge outward normal must face the stone above this dot product to receive grind.")]
+		[SerializeField, Range(0f, 1f)] float stoneFacingThreshold = 0.25f;
 
 		readonly List<Vector2> localVertices = new List<Vector2>();
 		readonly List<float> grindAmounts = new List<float>();
 		readonly List<Vector2> worldScratch = new List<Vector2>();
+		readonly List<bool> edgeFacesStoneScratch = new List<bool>();
+		readonly List<bool> vertexCanGrindScratch = new List<bool>();
 
 		Vector2 position;
 		float rotationDegrees;
@@ -204,10 +208,13 @@ namespace ForgingPrototype
 		public float IdealGrindAmount => Mathf.Max(0.05f, idealGrindAmount);
 		public float MaxGrindAmount => maxGrindAmount;
 
-		public float ApplyGrind(Vector2 worldContact, float radius, float amountDelta)
+		public float ApplyGrind(Vector2 worldContact, Vector2 stoneCenter, float radius, float amountDelta)
 		{
 			if (amountDelta <= 0f || radius <= 0.0001f || localVertices.Count < 3)
 				return 0f;
+
+			GetWorldVertices(worldScratch);
+			BuildVertexGrindMask(worldScratch, stoneCenter);
 
 			float rad = rotationDegrees * Mathf.Deg2Rad;
 			float cos = Mathf.Cos(rad);
@@ -223,6 +230,9 @@ namespace ForgingPrototype
 			float radiusSq = radius * radius;
 			for (int i = 0; i < localVertices.Count; i++)
 			{
+				if (i >= vertexCanGrindScratch.Count || !vertexCanGrindScratch[i])
+					continue;
+
 				float distSq = (localVertices[i] - localContact).sqrMagnitude;
 				if (distSq > radiusSq)
 					continue;
@@ -244,6 +254,63 @@ namespace ForgingPrototype
 				RaiseChanged();
 
 			return totalApplied;
+		}
+
+		void BuildVertexGrindMask(IReadOnlyList<Vector2> worldVerts, Vector2 stoneCenter)
+		{
+			edgeFacesStoneScratch.Clear();
+			vertexCanGrindScratch.Clear();
+
+			int n = worldVerts.Count;
+			if (n < 3)
+				return;
+
+			bool ccw = SignedArea(worldVerts) > 0f;
+			for (int i = 0; i < n; i++)
+			{
+				int j = (i + 1) % n;
+				Vector2 a = worldVerts[i];
+				Vector2 b = worldVerts[j];
+				Vector2 outward = OutwardNormal(a, b, ccw);
+				Vector2 mid = (a + b) * 0.5f;
+				Vector2 toStone = stoneCenter - mid;
+				bool facesStone = outward.sqrMagnitude > 0.000001f
+					&& toStone.sqrMagnitude > 0.000001f
+					&& Vector2.Dot(outward, toStone.normalized) > stoneFacingThreshold;
+				edgeFacesStoneScratch.Add(facesStone);
+			}
+
+			for (int v = 0; v < n; v++)
+			{
+				int prevEdge = (v - 1 + n) % n;
+				bool canGrind = edgeFacesStoneScratch[prevEdge] || edgeFacesStoneScratch[v];
+				vertexCanGrindScratch.Add(canGrind);
+			}
+		}
+
+		static Vector2 OutwardNormal(Vector2 edgeStart, Vector2 edgeEnd, bool ccw)
+		{
+			Vector2 edge = edgeEnd - edgeStart;
+			if (edge.sqrMagnitude < 0.000001f)
+				return Vector2.zero;
+
+			// Inward for CCW is (-y, x); outward is the opposite.
+			return ccw
+				? new Vector2(edge.y, -edge.x).normalized
+				: new Vector2(-edge.y, edge.x).normalized;
+		}
+
+		static float SignedArea(IReadOnlyList<Vector2> verts)
+		{
+			float area = 0f;
+			for (int i = 0; i < verts.Count; i++)
+			{
+				Vector2 a = verts[i];
+				Vector2 b = verts[(i + 1) % verts.Count];
+				area += a.x * b.y - b.x * a.y;
+			}
+
+			return area * 0.5f;
 		}
 
 		float GrindResistance(float currentGrind, float ideal)

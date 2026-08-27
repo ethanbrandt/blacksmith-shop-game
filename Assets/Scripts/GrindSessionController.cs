@@ -335,7 +335,7 @@ public class GrindSessionController : MonoBehaviour
 		blade.Position = ClampToView(blade.Position);
 
 		float pressure = Mathf.Clamp01(penetration / Mathf.Max(0.05f, wheel.Radius * 0.45f));
-		float applied = blade.ApplyGrind(contact, grindRadius, grindRate * pressure * Time.unscaledDeltaTime);
+		float applied = blade.ApplyGrind(contact, wheel.Center, grindRadius, grindRate * pressure * Time.unscaledDeltaTime);
 
 		if (sparks != null)
 		{

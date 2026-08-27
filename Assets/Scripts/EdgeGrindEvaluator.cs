@@ -51,9 +51,7 @@ namespace ForgingPrototype
 
 		public bool EdgeNeedsSharpening(int silhouetteEdgeIndex)
 		{
-			return silhouetteEdgeIndex >= 0
-				&& silhouetteEdgeIndex < silhouetteEdgeNeedsSharpening.Count
-				&& silhouetteEdgeNeedsSharpening[silhouetteEdgeIndex];
+			return silhouetteEdgeIndex >= 0 && silhouetteEdgeIndex < silhouetteEdgeNeedsSharpening.Count && silhouetteEdgeNeedsSharpening[silhouetteEdgeIndex];
 		}
 
 		void LateUpdate()
@@ -140,10 +138,10 @@ namespace ForgingPrototype
 					if (grind > ideal)
 						overSum += Mathf.Clamp01((grind - ideal) / overRange);
 				}
-				else if (grind > 0.001f)
+				else if (!IsSharpenTransitionEdge(i, n) && TryGetWasteGrind(i, n, out float wasteGrind) && wasteGrind > 0.001f)
 				{
 					wasteCount++;
-					wasteSum += Mathf.Clamp01(grind / ideal);
+					wasteSum += Mathf.Clamp01(wasteGrind / ideal);
 				}
 			}
 
@@ -161,6 +159,31 @@ namespace ForgingPrototype
 			score *= 1f - overgrind * overgrindPenaltyWeight;
 			MatchPercent = Mathf.Clamp01(score);
 			Quality = ResolveQuality(MatchPercent, overgrind);
+		}
+
+		bool VertexTouchesSharpenEdge(int vertexIndex, int vertexCount)
+		{
+			int prevEdge = (vertexIndex - 1 + vertexCount) % vertexCount;
+			return silhouetteEdgeNeedsSharpening[prevEdge] || silhouetteEdgeNeedsSharpening[vertexIndex];
+		}
+
+		bool IsSharpenTransitionEdge(int edgeIndex, int edgeCount)
+		{
+			if (silhouetteEdgeNeedsSharpening[edgeIndex])
+				return false;
+
+			int nextVertex = (edgeIndex + 1) % edgeCount;
+			return VertexTouchesSharpenEdge(edgeIndex, edgeCount)
+				|| VertexTouchesSharpenEdge(nextVertex, edgeCount);
+		}
+
+		bool TryGetWasteGrind(int edgeIndex, int edgeCount, out float wasteGrind)
+		{
+			int nextVertex = (edgeIndex + 1) % edgeCount;
+			float start = VertexTouchesSharpenEdge(edgeIndex, edgeCount) ? 0f : blade.GrindAmounts[edgeIndex];
+			float end = VertexTouchesSharpenEdge(nextVertex, edgeCount) ? 0f : blade.GrindAmounts[nextVertex];
+			wasteGrind = (start + end) * 0.5f;
+			return true;
 		}
 
 		SharpnessQuality ResolveQuality(float match, float overgrind)
