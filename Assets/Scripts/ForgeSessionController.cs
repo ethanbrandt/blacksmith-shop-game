@@ -207,7 +207,7 @@ public class ForgeSessionController : MonoBehaviour
 			vertexScratch[i] -= forgeOrigin;
 
 		ShapeQuality quality = evaluator != null ? evaluator.Quality : ShapeQuality.Incomplete;
-		activeMetal.SaveForgeProgress(vertexScratch, deformer.Heat, quality, activeMetal.PartDefinition);
+		activeMetal.SaveForgeProgress(vertexScratch, deformer.Heat, quality, evaluator.MatchPercent, activeMetal.PartDefinition);
 	}
 
 	void LoadLocalVertices(IReadOnlyList<Vector2> local)

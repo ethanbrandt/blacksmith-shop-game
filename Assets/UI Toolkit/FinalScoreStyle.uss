@@ -1,0 +1,45 @@
+.root {
+    -unity-font-definition: url("../TextMesh Pro/Fonts/Inkbit.ttf");
+    font-size: 32px;
+}
+
+.root .unity-label {
+    color: rgb(51, 40, 31);
+}
+
+.score-heading {
+    margin-top: 10px;
+    padding-top: 0;
+    padding-bottom: 0;
+    font-size: 18px;
+    -unity-text-align: middle-left;
+}
+
+.part-score-list {
+    align-self: stretch;
+    margin-left: 18px;
+    margin-right: 24px;
+    margin-bottom: 8px;
+}
+
+.part-score-row {
+    align-self: stretch;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.part-score-row .unity-label {
+    padding-top: 1px;
+    padding-bottom: 1px;
+    font-size: 14px;
+}
+
+.part-score-name {
+    flex-grow: 1;
+    -unity-text-align: middle-left;
+}
+
+.part-score-value {
+    min-width: 55px;
+    -unity-text-align: middle-right;
+}

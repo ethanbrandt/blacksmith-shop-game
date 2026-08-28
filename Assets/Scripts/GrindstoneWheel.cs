@@ -48,7 +48,7 @@ namespace ForgingPrototype
 			{
 				var cylinder = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
 				cylinder.name = "WheelVisual";
-				Object.Destroy(cylinder.GetComponent<Collider>());
+				Destroy(cylinder.GetComponent<Collider>());
 				wheelVisual = cylinder.transform;
 				wheelVisual.SetParent(transform, false);
 				wheelRenderer = cylinder.GetComponent<MeshRenderer>();
@@ -56,7 +56,6 @@ namespace ForgingPrototype
 
 			wheelVisual.localPosition = Vector3.zero;
 			wheelVisual.localRotation = Quaternion.identity;
-			// Flatten on Z so the 3D cylinder does not poke in front of the blade.
 			wheelVisual.localScale = new Vector3(radius * 2f, height * 0.5f, visualThicknessZ);
 
 			if (wheelRenderer == null)

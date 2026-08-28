@@ -181,15 +181,5 @@ namespace ForgingPrototype
 			message = "OK";
 			return true;
 		}
-
-		public static Vector2[] CreateDefaultSpearOutlineLocal()
-		{
-			return ShapeMatchEvaluator.CreateSpearheadTarget(Vector2.zero);
-		}
-
-		public static Vector2[] CreateDefaultAxeOutlineLocal()
-		{
-			return ShapeMatchEvaluator.CreateAxeHeadTarget(Vector2.zero);
-		}
 	}
 }

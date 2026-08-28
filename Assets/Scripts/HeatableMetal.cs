@@ -53,6 +53,8 @@ public class HeatableMetal : MonoBehaviour
 	Renderer visualRenderer;
 	MaterialPropertyBlock tintBlock;
 	float overheatTimer;
+	float forgeMatchPercent;
+	float grindMatchPercent;
 
 	public MetalType MetalType => metalType;
 	public PartDefinition PartDefinition => partDefinition;
@@ -64,10 +66,12 @@ public class HeatableMetal : MonoBehaviour
 	public bool HasForgeProgress => hasForgeProgress && forgedVertices != null && forgedVertices.Count >= 3;
 	public IReadOnlyList<Vector2> ForgedVertices => forgedVertices;
 	public ShapeQuality ForgeQuality => forgeQuality;
+	public float ForgeMatchPercent => forgeMatchPercent;
 	public bool HasGrindProgress => hasGrindProgress && groundVertices != null && groundVertices.Count >= 3;
 	public IReadOnlyList<Vector2> GroundVertices => groundVertices;
 	public IReadOnlyList<float> GrindAmounts => grindAmounts;
 	public SharpnessQuality SharpnessQuality => sharpnessQuality;
+	public float GrindMatchPercent => grindMatchPercent;
 
 	void Awake()
 	{
@@ -130,7 +134,7 @@ public class HeatableMetal : MonoBehaviour
 		visualRenderer.SetPropertyBlock(tintBlock);
 	}
 
-	public void SaveForgeProgress(IReadOnlyList<Vector2> vertices, float heat01, ShapeQuality quality, PartDefinition forgedPart)
+	public void SaveForgeProgress(IReadOnlyList<Vector2> vertices, float heat01, ShapeQuality quality, float matchPercent, PartDefinition forgedPart)
 	{
 		if (vertices == null || vertices.Count < 3)
 			return;
@@ -141,6 +145,7 @@ public class HeatableMetal : MonoBehaviour
 
 		hasForgeProgress = true;
 		forgeQuality = quality;
+		forgeMatchPercent = matchPercent;
 		if (forgedPart != null)
 			partDefinition = forgedPart;
 
@@ -148,7 +153,7 @@ public class HeatableMetal : MonoBehaviour
 		ApplyQualityVisual();
 	}
 
-	public void SaveGrindProgress(IReadOnlyList<Vector2> baselineVertices, IReadOnlyList<float> amounts, SharpnessQuality sharpness)
+	public void SaveGrindProgress(IReadOnlyList<Vector2> baselineVertices, IReadOnlyList<float> amounts, SharpnessQuality sharpness, float matchPercent)
 	{
 		if (baselineVertices == null || baselineVertices.Count < 3)
 			return;
@@ -166,6 +171,7 @@ public class HeatableMetal : MonoBehaviour
 
 		hasGrindProgress = true;
 		sharpnessQuality = sharpness;
+		grindMatchPercent = matchPercent;
 	}
 
 	public void TickTowardFurnace(float furnaceTemperature, float deltaTime)
@@ -201,10 +207,7 @@ public class HeatableMetal : MonoBehaviour
 			return;
 		}
 
-		temperature = Mathf.MoveTowards(
-			temperature,
-			ambientTemperature,
-			metalType.worldAmbientCoolRate * deltaTime);
+		temperature = Mathf.MoveTowards(temperature, ambientTemperature, metalType.worldAmbientCoolRate * deltaTime);
 	}
 
 	void TickOverheatDamage(float deltaTime)

@@ -138,13 +138,15 @@ public class GrindSessionController : MonoBehaviour
 		PartDefinition part = metal.PartDefinition;
 		if (part != null)
 			part.EnsureSharpeningFlagsMatchOutline();
-
-		Vector2[] outline = part != null && part.HasValidOutline
-			? part.outlineLocal
-			: PartDefinition.CreateDefaultAxeOutlineLocal();
-		bool[] edgeSharpenFlags = part != null && part.outlineEdgeNeedsSharpening != null
-			? part.outlineEdgeNeedsSharpening
-			: System.Array.Empty<bool>();
+/*
+		if (part != null && part.HasValidOutline)
+		{
+			Debug.LogError("[GRIND SESSION] Invalid part or outline");
+			return;
+		}
+*/		
+		Vector2[] outline = part.outlineLocal;
+		bool[] edgeSharpenFlags = part != null && part.outlineEdgeNeedsSharpening != null ? part.outlineEdgeNeedsSharpening : System.Array.Empty<bool>();
 
 		evaluator.Configure(blade, outline, edgeSharpenFlags);
 		metalView.Configure(blade, evaluator);
@@ -216,19 +218,15 @@ public class GrindSessionController : MonoBehaviour
 		}
 		else
 		{
-			Vector2[] fallback = PartDefinition.CreateDefaultAxeOutlineLocal();
-			for (int i = 0; i < fallback.Length; i++)
-				vertexScratch.Add(fallback[i]);
+			Debug.LogError("[GRIND SESSION] Unable to create or load part shape");
 		}
 
 		while (grindScratch.Count < vertexScratch.Count)
 			grindScratch.Add(0f);
 
-		// Finer perimeter so one edge can show multiple grind bands along its length.
 		if (!metal.HasGrindProgress)
 			GrindBladeBody.DensifyShape(vertexScratch, grindScratch, 0.18f, 72);
 
-		// Spawn low and fully outside the stone's contact range.
 		Vector2 spawn = stageOrigin + new Vector2(0f, -1.35f);
 		blade.LoadShape(vertexScratch, grindScratch, spawn, -20f);
 		EnsureBladeSpawnedBelowStone();
@@ -255,11 +253,10 @@ public class GrindSessionController : MonoBehaviour
 		if (activeMetal == null || blade == null || blade.VertexCount < 3)
 			return;
 
-		// Persist the pre-grind silhouette + amounts so reload does not double-apply inward carve.
 		blade.CopyInitialLocalVerticesTo(vertexScratch);
 		blade.CopyGrindAmountsTo(grindScratch);
 		SharpnessQuality quality = evaluator != null ? evaluator.Quality : SharpnessQuality.Blunt;
-		activeMetal.SaveGrindProgress(vertexScratch, grindScratch, quality);
+		activeMetal.SaveGrindProgress(vertexScratch, grindScratch, quality, evaluator.MatchPercent);
 	}
 
 	void HandleGrindInput()
@@ -330,7 +327,6 @@ public class GrindSessionController : MonoBehaviour
 			return;
 		}
 
-		// Kickback only pushes the part downward.
 		blade.Position += Vector2.down * (penetration * kickbackStrength * Time.unscaledDeltaTime);
 		blade.Position = ClampToView(blade.Position);
 
@@ -364,9 +360,7 @@ public class GrindSessionController : MonoBehaviour
 		if (statusText == null)
 			return;
 
-		string partName = activeMetal != null && activeMetal.PartDefinition != null
-			? activeMetal.PartDefinition.DisplayLabel
-			: "Blade";
+		string partName = activeMetal != null && activeMetal.PartDefinition != null ? activeMetal.PartDefinition.DisplayLabel : "Blade";
 		SharpnessQuality quality = evaluator != null ? evaluator.Quality : SharpnessQuality.Blunt;
 		int match = evaluator != null ? Mathf.RoundToInt(evaluator.MatchPercent * 100f) : 0;
 		int waste = evaluator != null ? Mathf.RoundToInt(evaluator.WastePercent * 100f) : 0;
@@ -399,10 +393,7 @@ public class GrindSessionController : MonoBehaviour
 		Rect viewRect = viewport != null ? viewport.rectTransform.rect : new Rect(0f, 0f, 1f, 1f);
 		if (viewRect.height > 0.001f)
 			grindCamera.aspect = viewRect.width / viewRect.height;
-		grindCamera.transform.position = new Vector3(
-			bounds.center.x,
-			bounds.center.y,
-			(stageRoot != null ? stageRoot.position.z : stageWorldPosition.z) - cameraDistance);
+		grindCamera.transform.position = new Vector3(bounds.center.x, bounds.center.y, (stageRoot != null ? stageRoot.position.z : stageWorldPosition.z) - cameraDistance);
 		grindCamera.transform.rotation = Quaternion.identity;
 	}
 
@@ -499,7 +490,7 @@ public class GrindSessionController : MonoBehaviour
 		plate.transform.localPosition = new Vector3(0f, 0f, 0.45f);
 		plate.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
 		plate.transform.localScale = new Vector3(8f, 8f, 1f);
-		Object.Destroy(plate.GetComponent<Collider>());
+		Destroy(plate.GetComponent<Collider>());
 		var renderer = plate.GetComponent<MeshRenderer>();
 		renderer.sharedMaterial = ForgingVisualUtility.CreateColorMaterial(plateColor);
 		renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;

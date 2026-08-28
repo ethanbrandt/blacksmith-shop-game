@@ -13,6 +13,7 @@ public class FinishPartTable : MonoBehaviour
 	
 	[Header("References")]
 	[SerializeField] Canvas partTableCanvas;
+	[SerializeField] RoundManager roundManager;
 	
 	PartSocket[] partSockets;	
 	
@@ -125,6 +126,17 @@ public class FinishPartTable : MonoBehaviour
 	void Finish()
 	{
 		LogText.Instance.SetText("PIECE COMPLETE");
+
+		HeatableMetal[] finishedParts = new HeatableMetal[partSockets.Length];
+		PartDefinition[] partDefinitions = new PartDefinition[partSockets.Length];
+
+		for (int i = 0; i < partSockets.Length; i++)
+		{
+			finishedParts[i] = partSockets[i].containedPart;
+			partDefinitions[i] = partSockets[i].partDefinition;
+		}
+		
+		roundManager.EndRound(finishedParts, partDefinitions);
 	}
 	
 	bool IsFinished()

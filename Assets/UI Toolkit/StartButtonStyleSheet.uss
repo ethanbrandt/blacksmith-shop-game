@@ -1,0 +1,42 @@
+:root {
+}
+
+.start_option {
+    margin-top: 10px;
+    margin-bottom: 10px;
+    align-self: auto;
+    flex-shrink: 1;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    flex-basis: 10%;
+    align-content: auto;
+    -unity-text-align: middle-center;
+    text-overflow: clip;
+    white-space: normal;
+    align-items: auto;
+}
+
+.start_option .unity-radio-button:checked .unity-radio-button__text {
+    color: #dcdcdc;
+}
+
+.start_option:focus .unity-label {
+    color: #FFFFFF;
+    -unity-background-image-tint-color: #FF00FF;
+}
+
+.start_option:focus {
+    border-left-color: chartreuse;
+    border-right-color: chartreuse;
+    border-top-color: chartreuse;
+    border-bottom-color: chartreuse;
+
+    border-left-width: 3px;
+    border-right-width: 3px;
+    border-top-width: 3px;
+    border-bottom-width: 3px;
+}
+
+.start_option .unity-radio-button:focus .unity-radio-button__text {
+    color: chartreuse;
+}

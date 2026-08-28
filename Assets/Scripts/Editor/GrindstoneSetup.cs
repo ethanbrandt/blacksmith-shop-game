@@ -55,8 +55,11 @@ public static class GrindstoneSetup
 		Undo.RecordObject(part, "Seed Bladed Grind Defaults");
 		part.isBladed = true;
 		if (part.outlineLocal == null || part.outlineLocal.Length < 3)
-			part.outlineLocal = PartDefinition.CreateDefaultAxeOutlineLocal();
-
+		{
+			Debug.LogError("[GRIND SETUP] Invalid part outline");
+			return;
+		}
+		
 		part.EnsureSharpeningFlagsMatchOutline();
 		if (!part.HasSharpeningTargets)
 		{

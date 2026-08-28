@@ -169,29 +169,21 @@ namespace ForgingPrototype
                     {
                         totalTargetSamples++;
                         if (inMetal)
-                        {
                             coveredTargetSamples++;
-                        }
                     }
 
                     if (inMetal)
                     {
                         totalMetalSamples++;
                         if (!inTarget)
-                        {
                             overflowMetalSamples++;
-                        }
                     }
                 }
             }
 
-            CoveragePercent = totalTargetSamples > 0
-                ? coveredTargetSamples / (float)totalTargetSamples
-                : 0f;
+            CoveragePercent = totalTargetSamples > 0 ? coveredTargetSamples / (float)totalTargetSamples : 0f;
 
-            OverflowPercent = totalMetalSamples > 0
-                ? overflowMetalSamples / (float)totalMetalSamples
-                : 0f;
+            OverflowPercent = totalMetalSamples > 0 ? overflowMetalSamples / (float)totalMetalSamples : 0f;
 
             MaxVertexProtrusion = ComputeMaxVertexProtrusion();
             float spikeScore = ComputeSpikeScore(MaxVertexProtrusion);
@@ -210,8 +202,7 @@ namespace ForgingPrototype
                 wSum = 3f;
             }
 
-            MatchPercent = Mathf.Clamp01(
-                (coverageScore * wC + overflowScore * wO + spikeScore * wS) / wSum);
+            MatchPercent = Mathf.Clamp01((coverageScore * wC + overflowScore * wO + spikeScore * wS) / wSum);
 
             Quality = ResolveQuality(MatchPercent, MaxVertexProtrusion);
         }
@@ -224,15 +215,11 @@ namespace ForgingPrototype
             {
                 Vector2 p = verts[i];
                 if (PointInPolygon(p, targetVertices))
-                {
                     continue;
-                }
 
                 float dist = DistanceToPolygonBoundary(p, targetVertices);
                 if (dist > maxDist)
-                {
                     maxDist = dist;
-                }
             }
 
             return maxDist;
@@ -243,9 +230,7 @@ namespace ForgingPrototype
             float free = Mathf.Max(0f, spikeFreeDistance);
             float fail = Mathf.Max(free + 0.001f, spikeFailDistance);
             if (maxProtrusion <= free)
-            {
                 return 1f;
-            }
 
             float t = Mathf.InverseLerp(free, fail, maxProtrusion);
             return 1f - Mathf.Pow(Mathf.Clamp01(t), Mathf.Max(0.01f, spikePenaltyExponent));
@@ -259,24 +244,16 @@ namespace ForgingPrototype
             bool canFlawed = maxProtrusion <= flawedMaxSpikeDistance;
 
             if (match >= perfectThreshold && canPerfect)
-            {
                 return ShapeQuality.Perfect;
-            }
 
             if (match >= excellentThreshold && canExcellent)
-            {
                 return ShapeQuality.Excellent;
-            }
 
             if (match >= goodThreshold && canGood)
-            {
                 return ShapeQuality.Good;
-            }
 
             if (match >= flawedThreshold && canFlawed)
-            {
                 return ShapeQuality.Flawed;
-            }
 
             return ShapeQuality.Incomplete;
         }
@@ -305,41 +282,6 @@ namespace ForgingPrototype
 
             float t = Mathf.Clamp01(Vector2.Dot(p - a, ab) / denom);
             return Vector2.Distance(p, a + ab * t);
-        }
-
-        public static Vector2[] CreateSpearheadTarget(Vector2 center, float length = 3.2f, float width = 1.15f)
-        {
-            // Pointy tip at top, flared shoulders, narrow tang at bottom.
-            float halfW = width * 0.5f;
-            return new[]
-            {
-                center + new Vector2(0f, length * 0.5f),
-                center + new Vector2(halfW * 0.55f, length * 0.18f),
-                center + new Vector2(halfW, -length * 0.05f),
-                center + new Vector2(halfW * 0.35f, -length * 0.28f),
-                center + new Vector2(halfW * 0.22f, -length * 0.5f),
-                center + new Vector2(-halfW * 0.22f, -length * 0.5f),
-                center + new Vector2(-halfW * 0.35f, -length * 0.28f),
-                center + new Vector2(-halfW, -length * 0.05f),
-                center + new Vector2(-halfW * 0.55f, length * 0.18f),
-            };
-        }
-
-        public static Vector2[] CreateAxeHeadTarget(Vector2 center, float height = 2.4f, float width = 2.0f)
-        {
-            float halfH = height * 0.5f;
-            float halfW = width * 0.5f;
-            return new[]
-            {
-                center + new Vector2(-halfW * 0.15f, halfH),
-                center + new Vector2(halfW * 0.35f, halfH * 0.75f),
-                center + new Vector2(halfW, halfH * 0.15f),
-                center + new Vector2(halfW * 0.85f, -halfH * 0.35f),
-                center + new Vector2(halfW * 0.2f, -halfH),
-                center + new Vector2(-halfW * 0.35f, -halfH * 0.7f),
-                center + new Vector2(-halfW * 0.55f, -halfH * 0.1f),
-                center + new Vector2(-halfW * 0.4f, halfH * 0.45f),
-            };
         }
 
         void EnsureOutline()

@@ -1,0 +1,24 @@
+<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="project://database/Assets/UI%20Toolkit/FinalScoreStyle.uss?fileID=7433441132597879392&amp;guid=7dbccec34970c894d97b89c2a299e7b3&amp;type=3#FinalScoreStyle"/>
+    <ui:VisualElement style="flex-grow: 1; height: 100px;"/>
+    <ui:VisualElement name="VisualElement" class="root" style="flex-grow: 1; color: rgb(255, 255, 255); width: 600px; height: 500px; -unity-text-align: middle-center; min-width: 0; min-height: 0; max-width: 100%; max-height: 100%; aspect-ratio: auto; align-self: center; align-items: center; flex-direction: row;">
+        <ui:Image source="project://database/Packages/com.unity.render-pipelines.core/Runtime/Debugging/Prefabs/Textures/White1px.png?fileID=21300000&amp;guid=127279d577f25ac4ea17dae3782e5074&amp;type=3#White1px" scale-mode="StretchToFill" language-direction="Inherit" tint-color="rgb(236, 241, 210)" style="height: 100%; width: 100%; -unity-text-align: middle-center;">
+            <ui:VisualElement style="flex-grow: 1;">
+                <ui:Label text="FINAL SCORE"/>
+                <ui:VisualElement style="flex-grow: 1; flex-direction: row;">
+                    <ui:VisualElement name="LEFT_HALF" style="flex-grow: 1; justify-content: center; align-items: center;">
+                        <ui:Image source="project://database/Assets/A_RANK_ICON.png?fileID=21300000&amp;guid=c3edc4a9f0cfb7548bc412c340acae02&amp;type=3#A_RANK_ICON" name="RankImage"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement name="RIGHT_HALF" class="breakdown" style="flex-grow: 3; justify-content: center; align-items: flex-start; flex-direction: column; align-self: center;">
+                        <ui:Label text="Time Taken:" name="TimeTaken" class="score-heading"/>
+                        <ui:Label text="Forging Score:" name="ForgingScore" class="score-heading"/>
+                        <ui:VisualElement name="ForgingPartScores" class="part-score-list"/>
+                        <ui:Label text="Grinding Score:" name="GrindingScore" class="score-heading"/>
+                        <ui:VisualElement name="GrindingPartScores" class="part-score-list"/>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:Image>
+    </ui:VisualElement>
+    <ui:VisualElement style="flex-grow: 1; height: 100px;"/>
+</ui:UXML>
