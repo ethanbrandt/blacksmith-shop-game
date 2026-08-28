@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7650d61009c284c4fbd0baf5efd9a9f3, type: 3}
+  m_Name: Hatchet Part Layout
+  m_EditorClassIdentifier: Assembly-CSharp::PartTableLayout
+  partTableSlots:
+  - part: {fileID: 11400000, guid: dd87e689b98ec10419873f3bb29dbb9f, type: 2}
+    positionOffset: {x: 0.25, y: 1}
+  - part: {fileID: 11400000, guid: 282717b25fa4b7245b6761cd7dd741bb, type: 2}
+    positionOffset: {x: -0.25, y: -1}
+  timeRankSeconds:
+    c: 420
+    b: 310
+    a: 200
+    s: 120
+  forgingRankScores:
+    c: 0.7
+    b: 0.8
+    a: 0.925
+    s: 0.95
+  grindingRankScores:
+    c: 0.65
+    b: 0.75
+    a: 0.85
+    s: 0.9

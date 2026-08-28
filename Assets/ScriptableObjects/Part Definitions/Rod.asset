@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: Rod
   m_EditorClassIdentifier: Assembly-CSharp::ForgingPrototype.PartDefinition
   displayName: Rod
+  isBladed: 0
   unforgedSprite: {fileID: 0}
   qualitySprites:
   - {fileID: 0}
@@ -32,4 +33,5 @@ MonoBehaviour:
   - {x: -1.2551732, y: 0.08789021}
   - {x: -1.2078042, y: 0.14073034}
   outlineCenterOffset: {x: 0, y: 0}
+  outlineEdgeNeedsSharpening: 
   defaultMetalType: {fileID: 0}

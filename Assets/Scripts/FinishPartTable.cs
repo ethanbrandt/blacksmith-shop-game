@@ -136,7 +136,7 @@ public class FinishPartTable : MonoBehaviour
 			partDefinitions[i] = partSockets[i].partDefinition;
 		}
 		
-		roundManager.EndRound(finishedParts, partDefinitions);
+		roundManager.EndRound(finishedParts, partDefinitions, partLayout);
 	}
 	
 	bool IsFinished()

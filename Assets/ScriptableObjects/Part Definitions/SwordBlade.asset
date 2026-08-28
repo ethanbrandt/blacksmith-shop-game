@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7d3c45066358a0242a7f4c2793673225, type: 3}
+  m_Name: SwordBlade
+  m_EditorClassIdentifier: Assembly-CSharp::ForgingPrototype.PartDefinition
+  displayName: Sword Blade
+  isBladed: 1
+  unforgedSprite: {fileID: 0}
+  qualitySprites:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  partSocketSprite: {fileID: 21300000, guid: 8a7e16d8df84a1a42b940b4d3a69fa1d, type: 3}
+  outlineLocal:
+  - {x: -0.33269665, y: 1}
+  - {x: -0.00426136, y: 1.4957386}
+  - {x: 0.33269665, y: 1}
+  - {x: 0.5, y: -1}
+  - {x: 0.5, y: -1.2}
+  - {x: -0.5, y: -1.2}
+  - {x: -0.5, y: -1}
+  outlineCenterOffset: {x: 0, y: 0}
+  outlineEdgeNeedsSharpening: 01010100000001
+  defaultMetalType: {fileID: 0}

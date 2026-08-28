@@ -10,12 +10,25 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7650d61009c284c4fbd0baf5efd9a9f3, type: 3}
-  m_Name: Hatchet Part Layout
+  m_Name: Broadsword Part Layout
   m_EditorClassIdentifier: Assembly-CSharp::PartTableLayout
   partTableSlots:
-  - part: {fileID: 11400000, guid: dd87e689b98ec10419873f3bb29dbb9f, type: 2}
+  - part: {fileID: 11400000, guid: 630e2a13aacf90d409234aa80c88d123, type: 2}
     positionOffset: {x: 0.25, y: 1}
-    partOffset: {x: 0, y: 0}
-  - part: {fileID: 11400000, guid: 282717b25fa4b7245b6761cd7dd741bb, type: 2}
+  - part: {fileID: 11400000, guid: 7bd2cd856bb90644bb0f64f787618f43, type: 2}
     positionOffset: {x: -0.25, y: -1}
-    partOffset: {x: 0, y: 0}
+  timeRankSeconds:
+    c: 420
+    b: 310
+    a: 200
+    s: 120
+  forgingRankScores:
+    c: 0.7
+    b: 0.8
+    a: 0.925
+    s: 0.95
+  grindingRankScores:
+    c: 0.65
+    b: 0.75
+    a: 0.85
+    s: 0.9

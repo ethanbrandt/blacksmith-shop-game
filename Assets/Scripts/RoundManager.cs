@@ -23,12 +23,15 @@ public class RoundManager : MonoBehaviour
         startTime = Time.time;
     }
 
-    public void EndRound(HeatableMetal[] _finishedParts, PartDefinition[] _partDefinitions)
+    public void EndRound(
+        HeatableMetal[] finishedParts,
+        PartDefinition[] partDefinitions,
+        PartTableLayout partLayout)
     {
         if (uiHandler == null)
             uiHandler = GetComponent<RoundUIHandler>();
 
         float elapsedSeconds = startTime >= 0f ? Time.time - startTime : 0f;
-        uiHandler.ShowFinalScores(_finishedParts, _partDefinitions, elapsedSeconds);
+        uiHandler.ShowFinalScores(finishedParts, partDefinitions, partLayout, elapsedSeconds);
     }
 }

@@ -1,16 +1,22 @@
 using ForgingPrototype;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 public class RoundUIHandler : MonoBehaviour
 {
+    [Tooltip("Rank icons in D, C, B, A, S order.")]
     [SerializeField] Sprite[] rankSprites;
+    [SerializeField] PartTableLayout[] layoutOptions;
     [SerializeField] UIDocument document;
     [SerializeField] UIDocument finalScoreDocument;
+    [SerializeField] TextMeshProUGUI timeElapsedText;
     
     RoundManager roundManager;
     Button button;
     Image rankImage;
+
+    bool endScreen;
     
     void Start()
     {
@@ -24,8 +30,6 @@ public class RoundUIHandler : MonoBehaviour
         button.clicked += OnStartGame;
 
         document.rootVisualElement.schedule.Execute(() => button.Focus());
-        
-        rankImage = document.rootVisualElement.Q<Image>("RankImage");
     }
 
     void OnDisable()
@@ -39,10 +43,23 @@ public class RoundUIHandler : MonoBehaviour
         print("CLICKED START");
         roundManager.BeginRound();
         document.gameObject.SetActive(false);
+        timeElapsedText.text = "0.00";
     }
 
-    public void ShowFinalScores(HeatableMetal[] finishedParts, PartDefinition[] partDefinitions, float elapsedSeconds)
+    void Update()
     {
+        if (endScreen)
+            return;
+        
+        float timeElapsed = roundManager.TimeElapsed;
+        string timeString = timeElapsed.ToString("F2");
+        timeElapsedText.text = timeString;
+    }
+
+    public void ShowFinalScores(HeatableMetal[] finishedParts, PartDefinition[] partDefinitions, PartTableLayout partLayout, float elapsedSeconds)
+    {
+        endScreen = true;
+        
         if (finalScoreDocument == null)
         {
             Debug.LogError("RoundUIHandler is missing its Final Score UIDocument reference.", this);
@@ -57,6 +74,7 @@ public class RoundUIHandler : MonoBehaviour
         Label grindingLabel = root.Q<Label>("GrindingScore");
         VisualElement forgingList = root.Q<VisualElement>("ForgingPartScores");
         VisualElement grindingList = root.Q<VisualElement>("GrindingPartScores");
+        rankImage = root.Q<Image>("RankImage");
 
         if (timeLabel == null || forgingLabel == null || grindingLabel == null || forgingList == null || grindingList == null)
         {
@@ -108,16 +126,9 @@ public class RoundUIHandler : MonoBehaviour
         forgingLabel.text = $"Forging Score: {FormatPercent(forgingAverage)}";
         grindingLabel.text = grindingCount > 0 ? $"Grinding Score: {FormatPercent(grindingAverage)}" : "Grinding Score: N/A";
 
-        if (forgingAverage < 0.5f)
-            rankImage.sprite = rankSprites[0];
-        else if (forgingAverage < 0.65)
-            rankImage.sprite = rankSprites[1];
-        else if (forgingAverage < 0.8)
-            rankImage.sprite = rankSprites[2];
-        else if (forgingAverage < 0.925)
-            rankImage.sprite = rankSprites[3];
-        else
-            rankImage.sprite = rankSprites[4];
+        FinalRank rank = partLayout.EvaluateRank(elapsedSeconds, forgingAverage, grindingAverage, grindingCount > 0);
+
+        SetRankIcon(rank);
     }
 
     static void AddScoreRow(VisualElement container, string partName, string score)
@@ -139,5 +150,23 @@ public class RoundUIHandler : MonoBehaviour
     static string FormatPercent(float value)
     {
         return $"{Mathf.RoundToInt(Mathf.Clamp01(value) * 100f)}%";
+    }
+
+    void SetRankIcon(FinalRank rank)
+    {
+        int spriteIndex = (int)rank;
+        if (rankImage == null)
+        {
+            Debug.LogError("FinalScoreVisualTree is missing the RankImage element.", this);
+            return;
+        }
+
+        if (rankSprites == null || spriteIndex < 0 || spriteIndex >= rankSprites.Length || rankSprites[spriteIndex] == null)
+        {
+            Debug.LogError($"RoundUIHandler is missing the {rank} rank icon.", this);
+            return;
+        }
+
+        rankImage.sprite = rankSprites[spriteIndex];
     }
 }
