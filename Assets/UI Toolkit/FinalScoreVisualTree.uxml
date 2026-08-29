@@ -7,7 +7,7 @@
                 <ui:Label text="FINAL SCORE"/>
                 <ui:VisualElement style="flex-grow: 1; flex-direction: row;">
                     <ui:VisualElement name="LEFT_HALF" style="flex-grow: 1; justify-content: center; align-items: center;">
-                        <ui:Image source="project://database/Assets/A_RANK_ICON.png?fileID=21300000&amp;guid=c3edc4a9f0cfb7548bc412c340acae02&amp;type=3#A_RANK_ICON" name="RankImage"/>
+                        <ui:Image source="project://database/Assets/Art/Rank%20Icons/D_RANK_ICON.png?fileID=21300000&amp;guid=626db1bf79d5a8c4c9eacfe630be8f77&amp;type=3#D_RANK_ICON" name="RankImage"/>
                     </ui:VisualElement>
                     <ui:VisualElement name="RIGHT_HALF" class="breakdown" style="flex-grow: 3; justify-content: center; align-items: flex-start; flex-direction: column; align-self: center;">
                         <ui:Label text="Time Taken:" name="TimeTaken" class="score-heading"/>

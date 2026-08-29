@@ -97,14 +97,9 @@ public class PartTableLayout : ScriptableObject
 		return partTableSlots;
 	}
 
-	public FinalRank EvaluateRank(
-		float elapsedSeconds,
-		float forgingAverage,
-		float grindingAverage,
-		bool hasGrindingScore)
+	public FinalRank EvaluateRank(float elapsedSeconds, float forgingAverage, float grindingAverage, bool hasGrindingScore)
 	{
-		int rankTotal = (int)timeRankSeconds.Evaluate(elapsedSeconds) +
-			(int)forgingRankScores.Evaluate(forgingAverage);
+		int rankTotal = (int)timeRankSeconds.Evaluate(elapsedSeconds) + (int)forgingRankScores.Evaluate(forgingAverage);
 		int rankCount = 2;
 
 		if (hasGrindingScore)

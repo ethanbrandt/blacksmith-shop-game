@@ -3,6 +3,11 @@ using UnityEngine;
 
 public class RoundManager : MonoBehaviour
 {
+    [Header("References")]
+    [SerializeField] FinishPartTable partTable;
+    [SerializeField] Transform[] metalSpawnPoints;
+    [SerializeField] GameObject metalPrefab;
+    
     public float TimeElapsed => Time.time - startTime;
     
     private RoundUIHandler uiHandler;
@@ -14,18 +19,32 @@ public class RoundManager : MonoBehaviour
         uiHandler = GetComponent<RoundUIHandler>();
     }
 
-    public void BeginRound()
+    public void BeginRound(Scenario _selectedScenario)
     {
         if (startTime > 0)
             return;
         
         startTime = Time.time;
+        
+        partTable.InitializePartLayout(_selectedScenario.PartLayout);
+
+        ScenarioPart[] scenarioParts = _selectedScenario.ScenarioParts;
+        if (metalSpawnPoints.Length < scenarioParts.Length)
+        {
+            Debug.LogError("Need more metal spawn points in the scene to load scenario");
+            return;
+        }
+        
+        for (int i = 0; i < scenarioParts.Length; i++)
+        {
+            var metalGO = Instantiate(metalPrefab, metalSpawnPoints[i].position, Quaternion.identity);
+            var heatableMetal = metalGO.GetComponent<HeatableMetal>();
+            heatableMetal.SetMetalType(scenarioParts[i].metalType);
+            heatableMetal.SetPartDefinition(scenarioParts[i].partDefinition);
+        }
     }
 
-    public void EndRound(
-        HeatableMetal[] finishedParts,
-        PartDefinition[] partDefinitions,
-        PartTableLayout partLayout)
+    public void EndRound(HeatableMetal[] finishedParts, PartDefinition[] partDefinitions, PartTableLayout partLayout)
     {
         if (uiHandler == null)
             uiHandler = GetComponent<RoundUIHandler>();

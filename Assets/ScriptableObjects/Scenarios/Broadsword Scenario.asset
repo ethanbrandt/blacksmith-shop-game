@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 00127e2c1473187408ca6d3462fca74b, type: 3}
+  m_Name: Broadsword Scenario
+  m_EditorClassIdentifier: Assembly-CSharp::Scenario
+  partLayout: {fileID: 11400000, guid: fa27f9c2e6376b84f96570c6e447cc69, type: 2}
+  scenarioParts:
+  - partDefinition: {fileID: 11400000, guid: 630e2a13aacf90d409234aa80c88d123, type: 2}
+    metalType: {fileID: 11400000, guid: f42027317e35fa645b79330363e510f2, type: 2}
+  - partDefinition: {fileID: 11400000, guid: 7bd2cd856bb90644bb0f64f787618f43, type: 2}
+    metalType: {fileID: 11400000, guid: f42027317e35fa645b79330363e510f2, type: 2}

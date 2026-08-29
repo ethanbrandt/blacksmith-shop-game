@@ -4,8 +4,6 @@ using UnityEngine.UI;
 
 public class FinishPartTable : MonoBehaviour
 {
-	[SerializeField] PartTableLayout partLayout;
-
 	[Header("Part Image Params")]
 	[SerializeField] Vector3 partImageRotationOffset;
 	[SerializeField] Vector2 partImageDimensions;
@@ -14,10 +12,12 @@ public class FinishPartTable : MonoBehaviour
 	[SerializeField] Canvas partTableCanvas;
 	[SerializeField] RoundManager roundManager;
 	
+	PartTableLayout partLayout;
 	PartSocket[] partSockets;	
 	
-	void Awake()
+	public void InitializePartLayout(PartTableLayout _partLayout)
 	{
+		partLayout = _partLayout;
 		EnsureSockets();
 	}
 
