@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using ForgingPrototype;
 using UnityEngine;
 
 [RequireComponent(typeof(Pickable))]

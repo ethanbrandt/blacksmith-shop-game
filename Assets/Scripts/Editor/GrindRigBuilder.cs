@@ -1,4 +1,3 @@
-using ForgingPrototype;
 using TMPro;
 using UnityEditor;
 using UnityEditor.SceneManagement;

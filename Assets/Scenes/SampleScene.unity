@@ -2633,7 +2633,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8f3c1a9e6b2047d5a0c4e7b2d1958036, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ForgingPrototype.ForgeHammerPreview
+  m_EditorClassIdentifier: Assembly-CSharp::ForgeHammerPreview
   ringSegments: 48
   previewZ: -0.92
   ringWidth: 0.035
@@ -2657,7 +2657,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2b9f6c3e8a1547d0b1c4e7f9a0d32581, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ForgingPrototype.ForgeMetalView
+  m_EditorClassIdentifier: Assembly-CSharp::ForgeMetalView
   deformer: {fileID: 448335671}
   fillZ: 0
   outlineZ: -0.02
@@ -2681,7 +2681,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 16704a6ad7b5e7747b3567c9ad6a061f, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ForgingPrototype.ShapeMatchEvaluator
+  m_EditorClassIdentifier: Assembly-CSharp::ShapeMatchEvaluator
   targetVertices: []
   targetOutlineColor: {r: 0.75, g: 0.9, b: 1, a: 0.55}
   targetGhostOutlineColor: {r: 0.7, g: 0.9, b: 1, a: 0.7}
@@ -2725,7 +2725,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 316098885f7cf9d4b8cb3854b6b734a1, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ForgingPrototype.MetalDeformer2D
+  m_EditorClassIdentifier: Assembly-CSharp::MetalDeformer2D
   startingShape: 0
   vertexCount: 24
   ovalRadii: {x: 1.4, y: 0.7}
@@ -4669,7 +4669,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6c3a350372c3d0043b627b41f7c2b742, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ForgingPrototype.GrindMetalView
+  m_EditorClassIdentifier: Assembly-CSharp::GrindMetalView
   blade: {fileID: 973958852}
   fillZ: 0
   bevelZ: -0.015
@@ -4713,7 +4713,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7729480805ecaf44e97239517c7dabfe, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ForgingPrototype.EdgeGrindEvaluator
+  m_EditorClassIdentifier: Assembly-CSharp::EdgeGrindEvaluator
   wastePenaltyWeight: 0.4
   overgrindPenaltyWeight: 0.45
   idealGrindAmount: 1
@@ -4734,7 +4734,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e54c487dfb62a7043a0380cea260acb3, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ForgingPrototype.GrindBladeBody
+  m_EditorClassIdentifier: Assembly-CSharp::GrindBladeBody
   maxGrindAmount: 1.75
   idealGrindAmount: 1
   overgrindResistance: 18
@@ -4785,7 +4785,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9ca1b8fde1b3b9a4b81352741a0385cc, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ForgingPrototype.GrindSparks
+  m_EditorClassIdentifier: Assembly-CSharp::GrindSparks
   sparks: {fileID: 0}
   sparkColorA: {r: 1, g: 0.72, b: 0.15, a: 1}
   sparkColorB: {r: 1, g: 0.92, b: 0.45, a: 1}
@@ -8264,7 +8264,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4bec4b6ef23ca2843802a5c22f95ee46, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ForgingPrototype.GrindstoneWheel
+  m_EditorClassIdentifier: Assembly-CSharp::GrindstoneWheel
   radius: 0.5
   height: 1.45
   stageOffsetY: 0.42
