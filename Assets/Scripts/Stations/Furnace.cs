@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class Furnace : MonoBehaviour
+public class Furnace : Station
 {
 	[Header("References")]
 	[SerializeField] Transform metalSocket;
@@ -33,6 +33,7 @@ public class Furnace : MonoBehaviour
 	HeatableMetal containedMetal;
 	Vector3 fuelGaugeFillBaseScale;
 	bool isLit;
+	Highlightable highlight;
 
 	public float Fuel => fuel;
 	public float MaxFuel => maxFuel;
@@ -54,9 +55,26 @@ public class Furnace : MonoBehaviour
 	public HeatableMetal ContainedMetal => containedMetal;
 	public bool HasFuel => fuel > 0f;
 
+	public override Highlightable Highlight { get { return highlight; } }
+	public override Transform InteractionPoint { get { return metalSocket; } }
 
+	public override bool CanAccept(Pickable _pickable)
+	{
+		if (containedMetal)
+			return _pickable.Type == Pickable.PickableType.Fuel;
+		
+		return _pickable.Type != Pickable.PickableType.QuenchedMetal;
+	}
+
+	public override bool TryUse(Pickable _pickable)
+	{
+		return TryAcceptPickable(_pickable);
+	}
+	
 	void Awake()
 	{
+		highlight = GetComponent<Highlightable>();
+		
 		EnsureSocket();
 
 		UpdateVisuals();
@@ -72,7 +90,7 @@ public class Furnace : MonoBehaviour
 
 	public bool TryAcceptPickable(Pickable pickable)
 	{
-		if (pickable == null || pickable.IsHeld || pickable.IsInFurnace || pickable.IsOnAnvil)
+		if (pickable == null || pickable.IsInFurnace || pickable.IsOnAnvil)
 			return false;
 
 		if (pickable.TryGetComponent(out FuelItem fuelItem))
@@ -163,7 +181,7 @@ public class Furnace : MonoBehaviour
 		if (containedMetal != null)
 			return false;
 
-		if (pickable.IsQuenched)
+		if (pickable.Type == Pickable.PickableType.QuenchedMetal)
 		{
 			LogText.Instance.SetText("CANNOT INSERT QUENCHED METAL INTO FURNACE");
 			return false;

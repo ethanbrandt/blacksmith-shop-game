@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MetalType
   displayName: Metal
   metalColor: {r: 0.3018868, g: 0.2867985, b: 0.28052688, a: 1}
-  furnaceHeatTransferRate: 100
-  worldAmbientCoolRate: 10
+  furnaceHeatTransferRate: 60
+  worldAmbientCoolRate: 15
   mobilityByHeat:
     serializedVersion: 2
     m_Curve:
@@ -115,7 +115,7 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  minHeatToForge: 0.149
+  minHeatToForge: 0.15
   coldStrikeScale: 0
   workingTempMin: 220
   overheatTemp: 800

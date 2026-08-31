@@ -32,6 +32,7 @@ Shader "Hidden/OutlineShader"
             // Preserved parameters for C# compatibility.
             float3 _LineTint;        
             float3 _CreaseTint;      
+            float3 _HighlightColor;
             float _FlipPalettes;     
             float _LineOverlay;      
             float _LineAlpha;        
@@ -43,6 +44,7 @@ Shader "Hidden/OutlineShader"
             float _AngleZScale;
             
             TEXTURE2D(_ObjectIdTexture);
+            TEXTURE2D(_HighlightMaskTexture);
 
             // Reconstruct position in view-space.
             float3 ReconstructViewPos(float2 uv, float rawDepth)
@@ -85,6 +87,7 @@ Shader "Hidden/OutlineShader"
                 float3 vn[9];
                 float2 sampleUVs[9];
                 float vid[9];
+                float highlighted[9];
 
                 // Extract 3x3 grid.
                 [unroll]
@@ -96,7 +99,8 @@ Shader "Hidden/OutlineShader"
                     float rawDepth = SampleSceneDepth(sampleUVs[k]);
                     vp[k] = ReconstructViewPos(sampleUVs[k], rawDepth);
 
-                    vid[k] = SAMPLE_TEXTURE2D(_ObjectIdTexture, sampler_PointClamp, sampleUVs[k]).x;
+                    vid[k] = SAMPLE_TEXTURE2D(_ObjectIdTexture, sampler_PointClamp, sampleUVs[k]).r;
+                    highlighted[k] = SAMPLE_TEXTURE2D(_HighlightMaskTexture, sampler_PointClamp, sampleUVs[k]).r;
                     
                     float3 normalWS = SampleSceneNormals(sampleUVs[k]);
                     vn[k] = mul((float3x3)UNITY_MATRIX_V, normalWS); 
@@ -141,6 +145,7 @@ Shader "Hidden/OutlineShader"
 
                 // Silhouette detection.
                 bool has_line = false;
+                bool hasHighlightLine = false;
                 int closest_idx = 4;
                 float max_z = vp[4].z; // Reversed-Z: Larger Z values are closer to the camera.
                 
@@ -161,8 +166,13 @@ Shader "Hidden/OutlineShader"
                     if (vid[idx] != vid[4])
                     {
                         crease_weight = 0;
-                        has_line = (zDelta > 0.000001) || has_line;
+
+                        bool visibleEdge = zDelta > 0.000001;
+                        has_line = visibleEdge || has_line;
                     }
+
+                    if (highlighted[idx] != highlighted[4] && highlighted[idx] > 0.5)
+                        hasHighlightLine = true;
                     
                     // Track the closest neighbor to use its color for the line.
                     if (vp[idx].z > max_z)
@@ -178,7 +188,14 @@ Shader "Hidden/OutlineShader"
                 float alpha = 0.0;
 
                 // Return strictly the mask.
-                if (has_line)
+                if (hasHighlightLine)
+                {
+                    float3 closest_color = SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, sampleUVs[closest_idx]).rgb;
+                    float3 darkened_color = closest_color * (1.0 - _LineDarken);
+                    result = (_HighlightColor * 0.6);
+                    alpha = 1.0;
+                }
+                else if (has_line)
                 {
                     // Darken the color of the closest pixel for the silhouette.
                     float3 closest_color = SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, sampleUVs[closest_idx]).rgb;

@@ -233,7 +233,7 @@ public class HeatableMetal : MonoBehaviour
 
 	void RefreshTint()
 	{
-		if (!applyHeatTint || pickable.IsQuenched)
+		if (!applyHeatTint || pickable.Type == Pickable.PickableType.QuenchedMetal)
 			return;
 
 		Color baseColor = metalType != null ? metalType.metalColor : Color.white;

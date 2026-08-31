@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class Grindstone : MonoBehaviour
+public class Grindstone : Station
 {
 	[Header("References")]
 	[SerializeField] Transform metalSocket;
@@ -14,14 +14,30 @@ public class Grindstone : MonoBehaviour
 	[SerializeField] float placeRange = 2.4f;
 
 	HeatableMetal containedMetal;
-
+	Highlightable highlight;
+	
 	public Transform MetalSocket => metalSocket;
 	public bool HasMetal => containedMetal != null;
 	public HeatableMetal ContainedMetal => containedMetal;
 	public float PlaceRange => placeRange;
+	
+	public override Highlightable Highlight { get { return highlight; } }
+    public override Transform InteractionPoint { get { return metalSocket; } }
 
+    public override bool CanAccept(Pickable _pickable)
+    {
+    	return !containedMetal && _pickable.Type == Pickable.PickableType.QuenchedMetal;
+    }
+
+    public override bool TryUse(Pickable _pickable)
+    {
+        return TryAcceptPickable(_pickable);
+    }
+	
 	void Awake()
 	{
+		highlight = GetComponent<Highlightable>();
+		
 		EnsureSocket();
 		EnsureCatchTrigger();
 	}
@@ -63,7 +79,7 @@ public class Grindstone : MonoBehaviour
 
 	public bool TryAcceptPickable(Pickable pickable)
 	{
-		if (pickable == null || pickable.IsHeld || pickable.IsInFurnace || pickable.IsOnAnvil || pickable.IsOnGrindstone)
+		if (pickable == null || pickable.IsInFurnace || pickable.IsOnAnvil || pickable.IsOnGrindstone)
 			return false;
 
 		if (containedMetal != null)
@@ -91,7 +107,7 @@ public class Grindstone : MonoBehaviour
 	bool CanAccept(HeatableMetal metal, Pickable pickable, out string failReason)
 	{
 		failReason = null;
-		if (!pickable.IsQuenched)
+		if (pickable.Type != Pickable.PickableType.QuenchedMetal)
 		{
 			failReason = "MUST BE QUENCHED TO GRIND";
 			return false;

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class QuenchVat : MonoBehaviour
+public class QuenchVat : Station
 {
 	[Range(0, 1)]
 	[SerializeField] float heatPercentToQuench = 0.8f;
@@ -12,15 +12,33 @@ public class QuenchVat : MonoBehaviour
 	[SerializeField] Vector3 metalSocketLocalOffset = new Vector3(0f, 0.35f, 0f);
 
 	HeatableMetal containedMetal;
+	Highlightable highlight;
+
+    public override Highlightable Highlight { get { return highlight; } }
+    public override Transform InteractionPoint { get { return metalSocket; } }
+
+    public override bool CanAccept(Pickable _pickable)
+    {
+	    if (!_pickable.TryGetComponent(out HeatableMetal heatableMetal))
+		    return false;
+	    
+        return !containedMetal && _pickable.Type == Pickable.PickableType.HeatableMetal && heatableMetal.Heat01 >= heatPercentToQuench;
+    }
+
+    public override bool TryUse(Pickable _pickable)
+    {
+        return TryAcceptPickable(_pickable);
+    }
 
 	void Awake()
 	{
+		highlight = GetComponent<Highlightable>();
 		EnsureSocket();
 	}
 
 	public bool TryAcceptPickable(Pickable pickable)
 	{
-		if (pickable == null || pickable.IsHeld || pickable.IsInFurnace || pickable.IsOnAnvil || pickable.IsOnGrindstone || pickable.IsQuenched)
+		if (pickable == null || pickable.IsInFurnace || pickable.IsOnAnvil || pickable.IsOnGrindstone || pickable.Type != Pickable.PickableType.HeatableMetal)
 			return false;
 
 		if (pickable.TryGetComponent(out HeatableMetal metal))

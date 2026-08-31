@@ -4,6 +4,13 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody))]
 public class Pickable : MonoBehaviour
 {
+	public enum PickableType
+	{
+		HeatableMetal,
+		QuenchedMetal,
+		Fuel
+	}
+	
 	[SerializeField] bool canBePickedUp = true;
 	[SerializeField] Collider itemCollider;
 
@@ -18,19 +25,23 @@ public class Pickable : MonoBehaviour
 	Vector3 followLocalOffset;
 	Collider[] ignoredHolderColliders;
 	bool isHeld;
-	bool isQuenched;
 	bool isOnFinalTable;
+	PickableType pickableType;
 
 	public bool CanBePickedUp => canBePickedUp && !isHeld && !(IsOnAnvil && ForgeSessionController.IsBlockingPlayer) && !(IsOnGrindstone && GrindSessionController.IsBlockingPlayer) && !isOnFinalTable;
 	public bool IsHeld => isHeld;
-	public bool IsQuenched => isQuenched;
 	public bool IsInFurnace => containingFurnace != null;
 	public bool IsOnAnvil => containingAnvil != null;
 	public bool IsOnGrindstone => containingGrindstone != null;
-	
+	public PickableType Type => pickableType;
 
 	void Awake()
 	{
+		if (TryGetComponent(out HeatableMetal heatableMetal))
+			pickableType = PickableType.HeatableMetal;
+		else if (TryGetComponent(out FuelItem fuelItem))
+			pickableType = PickableType.Fuel;
+		
 		rb = GetComponent<Rigidbody>();
 		if (itemCollider == null)
 			itemCollider = GetComponent<Collider>();
@@ -69,7 +80,7 @@ public class Pickable : MonoBehaviour
 
 	public bool TryPlaceInFurnace(Furnace furnace, Transform socket)
 	{
-		if (furnace == null || socket == null || isHeld || isQuenched)
+		if (furnace == null || socket == null || pickableType == PickableType.QuenchedMetal)
 			return false;
 
 		containingFurnace = furnace;
@@ -85,7 +96,7 @@ public class Pickable : MonoBehaviour
 
 	public bool TryPlaceOnAnvil(Anvil anvil, Transform socket)
 	{
-		if (anvil == null || socket == null || isQuenched)
+		if (anvil == null || socket == null || pickableType != PickableType.HeatableMetal)
 			return false;
 		
 		CancelInvoke(nameof(ClearHolderCollisionIgnore));
@@ -104,7 +115,7 @@ public class Pickable : MonoBehaviour
 
 	public bool TryPlaceInQuenchVat(QuenchVat vat, Transform socket)
 	{
-		if (socket == null || vat == null || isQuenched)
+		if (socket == null || vat == null || pickableType != PickableType.HeatableMetal)
 			return false;
 		
 		CancelInvoke(nameof(ClearHolderCollisionIgnore));
@@ -112,7 +123,7 @@ public class Pickable : MonoBehaviour
 		ignoredHolderColliders = null;
 		containingVat = vat;
 		isHeld = false;
-		isQuenched = true;
+		pickableType = PickableType.QuenchedMetal;
 		followTarget = null;
 		SetPhysicsActive(false);
 		
@@ -124,7 +135,7 @@ public class Pickable : MonoBehaviour
 
 	public bool TryPlaceOnGrindstone(Grindstone grindstone, Transform socket)
 	{
-		if (grindstone == null || socket == null || !isQuenched)
+		if (grindstone == null || socket == null || pickableType != PickableType.QuenchedMetal)
 			return false;
 
 		CancelInvoke(nameof(ClearHolderCollisionIgnore));
@@ -144,7 +155,7 @@ public class Pickable : MonoBehaviour
 
 	public bool TryPlaceOnFinalTable(Transform socket)
 	{
-		if (socket == null || !isQuenched)
+		if (socket == null || pickableType != PickableType.QuenchedMetal)
 			return false;
 
 		CancelInvoke(nameof(ClearHolderCollisionIgnore));

@@ -144,8 +144,7 @@ public class ObjectIdPass : ScriptableRenderPass
         idResources.idTexture = idTexture;
 
         ShaderTagId shadersToOverride = new ShaderTagId("UniversalForward");
-        DrawingSettings drawSettings = RenderingUtils.CreateDrawingSettings(
-            shadersToOverride, renderingData, cameraData, lightData, cameraData.defaultOpaqueSortFlags);
+        DrawingSettings drawSettings = RenderingUtils.CreateDrawingSettings(shadersToOverride, renderingData, cameraData, lightData, cameraData.defaultOpaqueSortFlags);
         drawSettings.overrideMaterial = _material;
         drawSettings.overrideMaterialPassIndex = 0;
         drawSettings.SetShaderPassName(1, new ShaderTagId("UniversalForwardOnly"));

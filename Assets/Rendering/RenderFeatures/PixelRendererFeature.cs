@@ -24,10 +24,12 @@ public class PixelRendererFeature : ScriptableRendererFeature
         public Material upscaleMaterial;
         [Tooltip("Hidden/ObjectId shader used to write per-object ids.")]
         public Shader objectIdShader;
+        public Shader highlightMaskShader;
 
         [Header("Outline - Colors")]
         public Color lineTint = new Color(0.05f, 0.05f, 0.08f, 1f);
         public Color creaseTint = new Color(1f, 0.55f, 0.1f, 1f);
+        public Color highlightColor = new Color(1f, 1f, 1f, 1f);
         public bool flipPalettes = false;
         
         [Header("Outline - Adaptive Colors")]
@@ -64,15 +66,19 @@ public class PixelRendererFeature : ScriptableRendererFeature
     public PixelSettings settings = new PixelSettings();
     private PixelRenderPass _pixelPass;
     private ObjectIdPass _objectIdPass;
+    private HighlightRenderPass _highlightPass;
     private Material _objectIdMaterial;
+    private Material _highlightMaterial;
 
     public override void Create()
     {
         if (settings == null) settings = new PixelSettings();
 
         EnsureObjectIdMaterial();
+        EnsureHighlightMaskMaterial();
 
         _objectIdPass = new ObjectIdPass(_objectIdMaterial);
+        _highlightPass = new HighlightRenderPass(_highlightMaterial);
         _pixelPass = new PixelRenderPass(settings)
         {
             renderPassEvent = RenderPassEvent.AfterRenderingPostProcessing
@@ -85,13 +91,21 @@ public class PixelRendererFeature : ScriptableRendererFeature
             return;
 
         EnsureObjectIdMaterial();
-        if (_objectIdPass != null)
-            _objectIdPass.SetMaterial(_objectIdMaterial);
-
+        EnsureHighlightMaskMaterial();
+        
         ObjectIdBinding.BindAll();
 
         if (_objectIdMaterial != null)
+        {
+            _objectIdPass.SetMaterial(_objectIdMaterial);
             renderer.EnqueuePass(_objectIdPass);
+        }
+
+        if (_highlightMaterial != null)
+        {
+            _highlightPass.SetMaterial(_highlightMaterial);
+            renderer.EnqueuePass(_highlightPass);
+        }
 
         renderer.EnqueuePass(_pixelPass);
     }
@@ -103,6 +117,12 @@ public class PixelRendererFeature : ScriptableRendererFeature
             CoreUtils.Destroy(_objectIdMaterial);
             _objectIdMaterial = null;
         }
+
+        if (_highlightMaterial != null)
+        {
+            CoreUtils.Destroy(_highlightMaterial);
+            _highlightMaterial = null;
+        }
     }
 
     void EnsureObjectIdMaterial()
@@ -110,11 +130,107 @@ public class PixelRendererFeature : ScriptableRendererFeature
         if (_objectIdMaterial != null)
             return;
 
-        Shader shader = settings != null ? settings.objectIdShader : null;
+        Shader shader = settings?.objectIdShader;
         if (shader == null)
             shader = Shader.Find("Hidden/ObjectId");
         if (shader != null)
             _objectIdMaterial = CoreUtils.CreateEngineMaterial(shader);
+    }
+
+    void EnsureHighlightMaskMaterial()
+    {
+        if (_highlightMaterial != null)
+            return;
+
+        Shader shader = settings?.highlightMaskShader;
+        if (shader == null)
+            shader = Shader.Find("Hidden/HighlightMask");
+        if (shader != null)
+            _highlightMaterial = CoreUtils.CreateEngineMaterial(shader);
+    }
+
+    public class HighlightMaskResources : ContextItem
+    {
+        public static readonly int TextureId = Shader.PropertyToID("_HighlightMaskTexture");
+
+        public TextureHandle texture;
+
+        public override void Reset()
+        {
+            texture = TextureHandle.nullHandle;
+        }
+    }
+    
+    private class HighlightRenderPass : ScriptableRenderPass
+    {
+        private Material _material;
+        
+        public HighlightRenderPass(Material material)
+        {
+            _material = material;
+            renderPassEvent = RenderPassEvent.AfterRenderingOpaques;
+        }
+        
+        public void SetMaterial(Material material)
+        {
+            _material = material;
+        }
+
+        private class PassData
+        {
+            public RendererListHandle rendererListHandle;
+        }
+
+        public override void RecordRenderGraph(RenderGraph renderGraph, ContextContainer frameData)
+        {
+            if (_material == null)
+                return;
+
+            UniversalRenderingData renderingData = frameData.Get<UniversalRenderingData>();
+            UniversalCameraData cameraData = frameData.Get<UniversalCameraData>();
+            UniversalLightData lightData = frameData.Get<UniversalLightData>();
+
+            TextureDesc maskDesc = new TextureDesc(cameraData.cameraTargetDescriptor.width, cameraData.cameraTargetDescriptor.height)
+            {
+                name = "_HighlightMaskTexture",
+                colorFormat = GraphicsFormat.R8_UNorm,
+                depthBufferBits = DepthBits.None,
+                msaaSamples = MSAASamples.None,
+                filterMode = FilterMode.Point,
+                clearBuffer = true,
+                clearColor = Color.black
+            };
+            
+            TextureHandle maskTexture = renderGraph.CreateTexture(maskDesc);
+
+            HighlightMaskResources resources = frameData.Create<HighlightMaskResources>();
+            resources.texture = maskTexture;
+            
+            ShaderTagId shadersToOverride = new ShaderTagId("UniversalForward");
+            DrawingSettings drawSettings = RenderingUtils.CreateDrawingSettings(shadersToOverride, renderingData, cameraData, lightData, cameraData.defaultOpaqueSortFlags);
+            drawSettings.overrideMaterial = _material;
+            drawSettings.overrideMaterialPassIndex = 0;
+            drawSettings.SetShaderPassName(1, new ShaderTagId("UniversalForwardOnly"));
+            drawSettings.SetShaderPassName(2, new ShaderTagId("SRPDefaultUnlit"));
+
+            FilteringSettings filterSettings = new FilteringSettings(RenderQueueRange.opaque, cameraData.camera.cullingMask);
+            var rendererListParameters = new RendererListParams(renderingData.cullResults, drawSettings, filterSettings);
+
+            using (var builder = renderGraph.AddRasterRenderPass<PassData>("Highlight Mask", out var passData))
+            {
+                passData.rendererListHandle = renderGraph.CreateRendererList(rendererListParameters);
+
+                builder.UseRendererList(passData.rendererListHandle);
+                builder.SetRenderAttachment(maskTexture, 0, AccessFlags.Write);
+                builder.SetGlobalTextureAfterPass(maskTexture, HighlightMaskResources.TextureId);
+                builder.AllowPassCulling(false);
+
+                builder.SetRenderFunc((PassData data, RasterGraphContext context) =>
+                {
+                    context.cmd.DrawRendererList(data.rendererListHandle);
+                });
+            }
+        }
     }
 
     private class PixelRenderPass : ScriptableRenderPass
@@ -216,6 +332,7 @@ public class PixelRendererFeature : ScriptableRendererFeature
                 // Apply base colors.
                 _settings.outlineMaterial.SetVector("_LineTint", new Vector4(_settings.lineTint.r, _settings.lineTint.g, _settings.lineTint.b, 0));
                 _settings.outlineMaterial.SetVector("_CreaseTint", new Vector4(_settings.creaseTint.r, _settings.creaseTint.g, _settings.creaseTint.b, 0));
+                _settings.outlineMaterial.SetVector("_HighlightColor", new Vector4(_settings.highlightColor.r, _settings.highlightColor.g, _settings.highlightColor.b));
                 _settings.outlineMaterial.SetFloat("_FlipPalettes", _settings.flipPalettes ? 1f : 0f);
                 
                 // Apply adaptive colors.

@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -5,6 +6,7 @@ public class PlayerController : MonoBehaviour
 {
     [SerializeField] float moveSpeed;
     [SerializeField] float pickupRange = 2.2f;
+    [SerializeField] float placeIntoStationRange = 3f;
     [SerializeField] Vector3 holdLocalOffset = new Vector3(0.45f, 0.15f, 0.7f);
     [SerializeField] float throwSpeed = 8f;
     [SerializeField] float throwUpSpeed = 2.5f;
@@ -13,14 +15,14 @@ public class PlayerController : MonoBehaviour
     Rigidbody rb;
     Vector3 moveDir;
     Pickable held;
+    Highlightable currentHighlight;
 
     void Start()
     {
         rb = GetComponent<Rigidbody>();
     }
 
-    static bool IsMinigameBlocking =>
-        ForgeSessionController.IsBlockingPlayer || GrindSessionController.IsBlockingPlayer;
+    static bool IsMinigameBlocking => ForgeSessionController.IsBlockingPlayer || GrindSessionController.IsBlockingPlayer;
 
     void FixedUpdate()
     {
@@ -32,6 +34,70 @@ public class PlayerController : MonoBehaviour
         }
 
         rb.linearVelocity = new Vector3(moveDir.x * moveSpeed, rb.linearVelocity.y, moveDir.z * moveSpeed);
+    }
+
+    void Update()
+    {
+        if (held)
+            StationHighlight(held);
+        else
+            PickableHighlight();
+    }
+
+    private void StationHighlight(Pickable _pickable)
+    {
+        Station closestStation = FindClosestStation();
+        if (!closestStation)
+        {
+            RemoveCurrentHighlight();
+            return;
+        }
+
+        if (!closestStation.CanAccept(_pickable))
+        {
+            RemoveCurrentHighlight();
+            return;
+        }
+        
+        Highlightable nextHighlight = closestStation.Highlight;
+        if (!nextHighlight)
+            return;
+
+        if (currentHighlight != nextHighlight)
+        {
+            RemoveCurrentHighlight();
+            nextHighlight.SetHighlighted(true);
+            currentHighlight = nextHighlight;
+        }
+    }
+
+    private void PickableHighlight()
+    {
+        Pickable closestPickup = FindClosestPickable();
+        if (!closestPickup)
+        {
+            RemoveCurrentHighlight();
+            return;
+        }
+        
+        if (!closestPickup.TryGetComponent(out Highlightable nextHighlight))
+            return;
+        
+        if (currentHighlight != nextHighlight)
+        {
+            RemoveCurrentHighlight();
+            nextHighlight.SetHighlighted(true);
+            currentHighlight = nextHighlight;
+        }
+    }
+
+    void RemoveCurrentHighlight()
+    {
+        if (!currentHighlight)
+            return;
+            
+        currentHighlight.SetHighlighted(false);
+        currentHighlight = null;
     }
 
     void OnMove(InputValue _value)
@@ -59,15 +125,9 @@ public class PlayerController : MonoBehaviour
 
         if (held != null)
         {
-            Anvil anvil = Anvil.FindClosestInRange(transform.position, pickupRange);
-            if (anvil != null && anvil.TryPlaceHeld(held))
-            {
-                held = null;
-                return;
-            }
-
-            Grindstone grindstone = Grindstone.FindClosestInRange(transform.position, pickupRange);
-            if (grindstone != null && grindstone.TryPlaceHeld(held))
+            Station station = FindClosestStation();
+            
+            if (station != null && station.TryUse(held))
             {
                 held = null;
                 return;
@@ -86,6 +146,12 @@ public class PlayerController : MonoBehaviour
             nearest.PickUp(transform, holdLocalOffset);
             if (nearest.IsHeld)
                 held = nearest;
+            if (nearest.TryGetComponent(out Highlightable highlightable))
+                if (highlightable == currentHighlight)
+                {
+                    highlightable.SetHighlighted(false);
+                    currentHighlight = null;
+                }
         }
     }
 
@@ -101,8 +167,6 @@ public class PlayerController : MonoBehaviour
         Vector3 throwPos = transform.position + facing * dropForward + Vector3.up * 0.55f;
         held.Throw(throwPos, rb.linearVelocity + facing * throwSpeed + Vector3.up * throwUpSpeed);
         
-        //if (held.TryGetComponent(out HeatableMetal x))
-        //    x.ClearForgeProgress();
         held = null;
     }
 
@@ -140,5 +204,28 @@ public class PlayerController : MonoBehaviour
         }
 
         return closest;
+    }
+
+    Station FindClosestStation()
+    {
+         Station closest = null;
+         float best = placeIntoStationRange * placeIntoStationRange;
+         var stations = FindObjectsByType<Station>(FindObjectsSortMode.None);
+         Vector3 origin = transform.position;
+         for (int i = 0; i < stations.Length; i++)
+         {
+             Station station = stations[i];
+             if (station == null)
+                 continue;
+ 
+             float distSq = (station.InteractionPoint.position - origin).sqrMagnitude;
+             if (distSq > best)
+                 continue;
+ 
+             best = distSq;
+             closest = station;
+         }
+ 
+         return closest;
     }
 }

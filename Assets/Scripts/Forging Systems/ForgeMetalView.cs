@@ -12,6 +12,8 @@ public class ForgeMetalView : MonoBehaviour
 	[SerializeField] int outlineSortingOrder = 9;
 	[SerializeField] Color coldTint = new Color(0.45f, 0.48f, 0.55f, 1f);
 	[SerializeField] Color hotTint = new Color(1f, 0.45f, 0.12f, 1f);
+	[SerializeField] Color hitFlashColor = Color.white;
+	[SerializeField, Min(0f)] float hitFlashDuration = 0.1f;
 
 	[Header("Scene Objects")]
 	[SerializeField] MeshFilter fillFilter;
@@ -19,6 +21,7 @@ public class ForgeMetalView : MonoBehaviour
 	[SerializeField] LineRenderer outline;
 	[SerializeField] Material fillMaterial;
 
+	float hitFlashStartTime = float.NegativeInfinity;
 	Mesh fillMesh;
 	MaterialPropertyBlock tintBlock;
 
@@ -35,14 +38,20 @@ public class ForgeMetalView : MonoBehaviour
 	void OnEnable()
 	{
 		if (deformer != null)
+		{
 			deformer.VerticesChanged += Rebuild;
+			deformer.Struck += OnStruck;
+		}
 		Rebuild();
 	}
 
 	void OnDisable()
 	{
 		if (deformer != null)
+		{
 			deformer.VerticesChanged -= Rebuild;
+			deformer.Struck -= OnStruck;
+		}
 	}
 
 	void LateUpdate()
@@ -53,7 +62,10 @@ public class ForgeMetalView : MonoBehaviour
 	public void Configure(MetalDeformer2D source)
 	{
 		if (deformer != null)
+		{
 			deformer.VerticesChanged -= Rebuild;
+			deformer.Struck -= OnStruck;
+		}
 
 		deformer = source;
 		EnsureVisuals();
@@ -62,6 +74,9 @@ public class ForgeMetalView : MonoBehaviour
 		{
 			deformer.VerticesChanged -= Rebuild;
 			deformer.VerticesChanged += Rebuild;
+			
+			deformer.Struck -= OnStruck;
+			deformer.Struck += OnStruck;
 		}
 
 		Rebuild();
@@ -134,6 +149,11 @@ public class ForgeMetalView : MonoBehaviour
 		}
 
 		ForgingVisualUtility.ApplyLayerRecursively(gameObject, gameObject.layer);
+	}
+
+	void OnStruck(Vector2 _, float __)
+	{
+		hitFlashStartTime = Time.unscaledTime;
 	}
 
 	void Rebuild()
@@ -209,6 +229,10 @@ public class ForgeMetalView : MonoBehaviour
 		float heat01 = deformer.Heat;
 		Color heated = Color.Lerp(Color.Lerp(coldTint, baseColor, 0.65f), hotTint, heat01);
 
+		float flash01 = 1f - Mathf.Clamp01((Time.unscaledTime - hitFlashStartTime) / hitFlashDuration);
+		flash01 *= flash01;
+		heated = (heated * 0.5f) + (0.5f * Color.Lerp(heated, hitFlashColor, flash01));
+		
 		if (fillRenderer != null)
 		{
 			tintBlock ??= new MaterialPropertyBlock();

@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class FinishPartTable : MonoBehaviour
+public class FinishPartTable : Station
 {
 	[Header("Part Image Params")]
 	[SerializeField] Vector3 partImageRotationOffset;
@@ -13,9 +13,28 @@ public class FinishPartTable : MonoBehaviour
 	[SerializeField] RoundManager roundManager;
 	
 	PartTableLayout partLayout;
-	PartSocket[] partSockets;	
-	
-	public void InitializePartLayout(PartTableLayout _partLayout)
+	PartSocket[] partSockets;
+	Highlightable highlight;
+
+	public override Highlightable Highlight { get { return highlight; } }
+    public override Transform InteractionPoint { get { return transform; } }
+
+    public override bool CanAccept(Pickable _pickable)
+    {
+    	return _pickable.Type == Pickable.PickableType.QuenchedMetal;
+    }
+
+    public override bool TryUse(Pickable _pickable)
+    {
+        return TryAcceptPickable(_pickable);
+    }
+
+    void Awake()
+    {
+	    highlight = GetComponent<Highlightable>();
+    }
+
+    public void InitializePartLayout(PartTableLayout _partLayout)
 	{
 		partLayout = _partLayout;
 		EnsureSockets();
@@ -26,7 +45,7 @@ public class FinishPartTable : MonoBehaviour
 		if (pickable == null || pickable.IsHeld || pickable.IsInFurnace || pickable.IsOnAnvil || pickable.IsOnGrindstone)
 			return false;
 		
-		if (!pickable.IsQuenched)
+		if (pickable.Type != Pickable.PickableType.QuenchedMetal)
 		{
 			LogText.Instance.SetText("MUST BE QUENCHED TO BE PUT ON TABLE");
 			return false;

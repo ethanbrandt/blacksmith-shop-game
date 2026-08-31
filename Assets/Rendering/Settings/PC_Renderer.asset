@@ -77,8 +77,10 @@ MonoBehaviour:
     compositeMaterial: {fileID: 2100000, guid: 82f651d49f5e0394183a705ea8272d4e, type: 2}
     upscaleMaterial: {fileID: 2100000, guid: 27447148c111968428eaf005b8a60d11, type: 2}
     objectIdShader: {fileID: 4800000, guid: 7b3e9c1a4d8f42e0b6a5c9d2e8f03147, type: 3}
+    highlightMaskShader: {fileID: 4800000, guid: 0ae9b4ad36bc8c844b2c5918b6b7b4ec, type: 3}
     lineTint: {r: 0.11877251, g: 0, b: 1, a: 1}
     creaseTint: {r: 1, g: 0.46519178, b: 0, a: 1}
+    highlightColor: {r: 0.9528302, g: 0.9033909, b: 0.9313993, a: 1}
     flipPalettes: 0
     lineDarken: 0.592
     creaseBrighten: 0.423

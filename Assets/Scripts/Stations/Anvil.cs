@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class Anvil : MonoBehaviour
+public class Anvil : Station
 {
 	[Header("References")]
 	[SerializeField] Transform metalSocket;
@@ -14,14 +14,29 @@ public class Anvil : MonoBehaviour
 	[SerializeField] float placeRange = 2.4f;
 
 	HeatableMetal containedMetal;
-
+	Highlightable highlight;
+	
 	public Transform MetalSocket => metalSocket;
 	public bool HasMetal => containedMetal != null;
 	public HeatableMetal ContainedMetal => containedMetal;
 	public float PlaceRange => placeRange;
 
+	public override Highlightable Highlight { get { return highlight; } }
+	public override Transform InteractionPoint { get { return metalSocket; } }
+
+	public override bool CanAccept(Pickable _pickable)
+	{
+		return !containedMetal && _pickable.Type == Pickable.PickableType.HeatableMetal;
+	}
+
+	public override bool TryUse(Pickable _pickable)
+    {
+    	return TryAcceptPickable(_pickable);
+    }
+		
 	void Awake()
 	{
+		highlight = GetComponent<Highlightable>();
 		EnsureSocket();
 		EnsureCatchTrigger();
 	}
@@ -56,10 +71,10 @@ public class Anvil : MonoBehaviour
 
 	public bool TryAcceptPickable(Pickable pickable)
 	{
-		if (pickable == null || pickable.IsHeld || pickable.IsInFurnace || pickable.IsOnAnvil)
+		if (pickable == null || pickable.IsInFurnace || pickable.IsOnAnvil)
 			return false;
 		
-		if (pickable.IsQuenched)
+		if (pickable.Type == Pickable.PickableType.QuenchedMetal)
         {
         	LogText.Instance.SetText("CANNOT PLACE QUENCHED METAL ON ANVIL");
         	return false;
