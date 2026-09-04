@@ -117,7 +117,7 @@ MonoBehaviour:
     m_RotationOrder: 4
   minHeatToForge: 0.15
   coldStrikeScale: 0
-  workingTempMin: 220
+  minHeatToQuench: 0.725
   overheatTemp: 800
   referenceMaxTemp: 800
   overheatGraceDuration: 1.25

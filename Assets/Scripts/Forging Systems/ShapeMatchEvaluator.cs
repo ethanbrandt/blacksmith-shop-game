@@ -10,9 +10,6 @@ public enum ShapeQuality
     Perfect
 }
 
-/// <summary>
-/// Approximates how well the current metal polygon matches the target outline.
-/// </summary>
 public class ShapeMatchEvaluator : MonoBehaviour
 {
     [Header("Target")]
@@ -83,9 +80,7 @@ public class ShapeMatchEvaluator : MonoBehaviour
     public void Configure(MetalDeformer2D deformer, Vector2[] target)
     {
         if (metal != null)
-        {
             metal.VerticesChanged -= Evaluate;
-        }
 
         metal = deformer;
         targetVertices = target;
@@ -109,17 +104,13 @@ public class ShapeMatchEvaluator : MonoBehaviour
     void OnEnable()
     {
         if (metal != null)
-        {
             metal.VerticesChanged += Evaluate;
-        }
     }
 
     void OnDisable()
     {
         if (metal != null)
-        {
             metal.VerticesChanged -= Evaluate;
-        }
     }
 
     public void Evaluate()
@@ -274,9 +265,7 @@ public class ShapeMatchEvaluator : MonoBehaviour
         Vector2 ab = b - a;
         float denom = Vector2.Dot(ab, ab);
         if (denom < 0.000001f)
-        {
             return Vector2.Distance(p, a);
-        }
 
         float t = Mathf.Clamp01(Vector2.Dot(p - a, ab) / denom);
         return Vector2.Distance(p, a + ab * t);
@@ -285,9 +274,7 @@ public class ShapeMatchEvaluator : MonoBehaviour
     void EnsureOutline()
     {
         if (targetOutline != null)
-        {
             return;
-        }
 
         var go = new GameObject("TargetOutline");
         go.transform.SetParent(transform, false);
@@ -299,9 +286,7 @@ public class ShapeMatchEvaluator : MonoBehaviour
     void EnsureGhostOutline()
     {
         if (targetGhostOutline != null)
-        {
             return;
-        }
 
         var go = new GameObject("TargetGhostOutline");
         go.transform.SetParent(transform, false);
@@ -333,9 +318,7 @@ public class ShapeMatchEvaluator : MonoBehaviour
 
         if (_ghostFillMesh == null)
         {
-            _ghostFillMesh = ghostFillFilter.sharedMesh != null && ghostFillFilter.sharedMesh.name == "TargetGhostFill"
-                ? ghostFillFilter.sharedMesh
-                : new Mesh { name = "TargetGhostFill" };
+            _ghostFillMesh = ghostFillFilter.sharedMesh != null && ghostFillFilter.sharedMesh.name == "TargetGhostFill" ? ghostFillFilter.sharedMesh : new Mesh { name = "TargetGhostFill" };
             _ghostFillMesh.MarkDynamic();
         }
 
@@ -398,9 +381,7 @@ public class ShapeMatchEvaluator : MonoBehaviour
             ApplyLine(targetGhostOutline, targetGhostOutlineColor, ghostLineWidth, ghostOutlineSortingOrder, -0.85f);
         }
         else
-        {
             targetGhostOutline.enabled = false;
-        }
 
         RebuildGhostFill();
     }
@@ -425,14 +406,10 @@ public class ShapeMatchEvaluator : MonoBehaviour
         if (!showGhostFill || ghostFillFilter == null || _ghostFillMesh == null || targetVertices.Length < 3)
         {
             if (_ghostFillMesh != null)
-            {
                 _ghostFillMesh.Clear();
-            }
 
             if (ghostFillRenderer != null)
-            {
                 ghostFillRenderer.enabled = false;
-            }
 
             return;
         }
@@ -515,12 +492,9 @@ public class ShapeMatchEvaluator : MonoBehaviour
         {
             Vector2 pi = polygon[i];
             Vector2 pj = polygon[j];
-            bool intersect = ((pi.y > point.y) != (pj.y > point.y)) &&
-                             (point.x < (pj.x - pi.x) * (point.y - pi.y) / ((pj.y - pi.y) + Mathf.Epsilon) + pi.x);
+            bool intersect = ((pi.y > point.y) != (pj.y > point.y)) && (point.x < (pj.x - pi.x) * (point.y - pi.y) / ((pj.y - pi.y) + Mathf.Epsilon) + pi.x);
             if (intersect)
-            {
                 inside = !inside;
-            }
 
             j = i;
         }
@@ -531,9 +505,7 @@ public class ShapeMatchEvaluator : MonoBehaviour
     void OnDrawGizmosSelected()
     {
         if (targetVertices == null || targetVertices.Length < 2)
-        {
             return;
-        }
 
         Gizmos.color = targetOutlineColor;
         for (int i = 0; i < targetVertices.Length; i++)

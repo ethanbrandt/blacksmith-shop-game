@@ -1,9 +1,9 @@
 using System.Collections.Generic;
-using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.UI;
+using UnityEngine.UIElements;
 
 public class ForgeSessionController : MonoBehaviour
 {
@@ -12,18 +12,11 @@ public class ForgeSessionController : MonoBehaviour
 	[Header("Optional Overrides")]
 	[SerializeField] Camera forgeCamera;
 	[SerializeField] RawImage viewport;
-	[SerializeField] Image frameImage;
-	[Tooltip("Assign your stylized forge frame art here. Leave empty to use the placeholder panel.")]
-	[SerializeField] Sprite frameSprite;
-	[SerializeField] TextMeshProUGUI statusText;
-	[SerializeField] TextMeshProUGUI qualityText;
-	[SerializeField] RectTransform overlayRoot;
 	[SerializeField] MetalDeformer2D deformer;
 	[SerializeField] ShapeMatchEvaluator evaluator;
 	[SerializeField] ForgeMetalView metalView;
 	[SerializeField] ForgeHammerPreview hammerPreview;
 	[SerializeField] Transform stageRoot;
-	[SerializeField] Canvas overlayCanvas;
 	[SerializeField] RenderTexture forgeTexture;
 
 	[Header("Stage")]
@@ -34,22 +27,13 @@ public class ForgeSessionController : MonoBehaviour
 	[SerializeField] Color plateColor = new Color(0.22f, 0.18f, 0.16f, 1f);
 	[SerializeField] bool autoFitCamera = true;
 
-	[Header("Quality Text Colors")]
-	[SerializeField] Color incompleteColor;
-	[SerializeField] Color flawedColor;
-	[SerializeField] Color goodColor;
-	[SerializeField] Color excellentColor;
-	[SerializeField] Color perfectColor;
-	
 	[Header("Hammer")]
 	[SerializeField] float minChargeTime = 0.08f;
 	[SerializeField] float maxChargeTime = 0.45f;
-	//[SerializeField] float minDragForAim = 12f;
 
 	[Header("Controller")]
 	[SerializeField] float cursorSpeed = 5.5f;
 	[SerializeField] float stickDeadzone = 0.25f;
-	[SerializeField] float mouseMovePixels = 1.5f;
 
 	readonly List<Vector2> vertexScratch = new List<Vector2>();
 	bool runtimeOwnedTexture;
@@ -60,11 +44,11 @@ public class ForgeSessionController : MonoBehaviour
 	Vector2 hammerPos;
 	Vector2 lastAimDir;
 	bool hasStickAim;
-	bool usingGamepad;
 	bool charging;
 	Vector2 pressScreen;
 	float pressTime;
 	float closeInputUnblockTime;
+	private UIDocument document;
 
 	public bool IsOpen { get; private set; }
 	public static bool IsBlockingPlayer => Instance != null && Instance.IsOpen;
@@ -91,9 +75,12 @@ public class ForgeSessionController : MonoBehaviour
 		}
 
 		Instance = this;
+
+
+		document = GetComponentInChildren<UIDocument>();
+		SetHidden(true);
+		
 		EnsureStage();
-		EnsureOverlay();
-		SetOverlayVisible(false);
 	}
 
 	void OnDestroy()
@@ -108,6 +95,11 @@ public class ForgeSessionController : MonoBehaviour
 			forgeTexture.Release();
 			Destroy(forgeTexture);
 		}
+	}
+
+	private void SetHidden(bool _isHidden)
+	{
+		document.rootVisualElement.EnableInClassList("is-hidden", _isHidden);
 	}
 
 	void Update()
@@ -128,7 +120,6 @@ public class ForgeSessionController : MonoBehaviour
 			return;
 
 		EnsureStage();
-		EnsureOverlay();
 
 		if (IsOpen)
 			EndSession();
@@ -159,13 +150,13 @@ public class ForgeSessionController : MonoBehaviour
 		charging = false;
 		hasStickAim = false;
 		lastAimDir = Vector2.right;
-		usingGamepad = Gamepad.current != null;
 		hammerPos = deformer != null ? deformer.GetCentroid() : forgeOrigin;
 		closeInputUnblockTime = Time.unscaledTime + 0.25f;
 		IsOpen = true;
-		SetOverlayVisible(true);
 		UpdateStatus();
 		UpdateHammerPreview();
+		
+		SetHidden(false);
 	}
 
 	public void EndSession()
@@ -182,9 +173,10 @@ public class ForgeSessionController : MonoBehaviour
 		if (hammerPreview != null)
 			hammerPreview.Hide();
 		IsOpen = false;
-		SetOverlayVisible(false);
 		if (forgeCamera != null)
 			forgeCamera.enabled = false;
+		
+		SetHidden(true);
 	}
 
 	public void NotifyAnvilEmptied(Anvil anvil)
@@ -223,7 +215,6 @@ public class ForgeSessionController : MonoBehaviour
 		if (deformer == null)
 			return;
 
-		DetectInputDevice();
 		if (HandleCloseInput())
 			return;
 
@@ -232,47 +223,13 @@ public class ForgeSessionController : MonoBehaviour
 		HandleStrikeButtons();
 	}
 
-	void DetectInputDevice()
-	{
-		Gamepad pad = Gamepad.current;
-		Mouse mouse = Mouse.current;
-		if (pad != null && (
-			pad.leftStick.ReadValue().sqrMagnitude > stickDeadzone * stickDeadzone ||
-			pad.rightStick.ReadValue().sqrMagnitude > stickDeadzone * stickDeadzone ||
-			pad.rightTrigger.isPressed ||
-			pad.buttonWest.isPressed ||
-			pad.dpad.ReadValue().sqrMagnitude > 0.25f))
-		{
-			usingGamepad = true;
-			return;
-		}
-
-		if (mouse != null && (
-			mouse.delta.ReadValue().sqrMagnitude > mouseMovePixels * mouseMovePixels ||
-			mouse.leftButton.isPressed))
-		{
-			usingGamepad = false;
-		}
-	}
-
 	bool HandleCloseInput()
 	{
 		if (Time.unscaledTime < closeInputUnblockTime)
 			return false;
 
 		Gamepad pad = Gamepad.current;
-		if (pad != null && (
-			pad.buttonEast.wasPressedThisFrame ||
-			pad.buttonNorth.wasPressedThisFrame ||
-			pad.startButton.wasPressedThisFrame ||
-			pad.selectButton.wasPressedThisFrame))
-		{
-			EndSession();
-			return true;
-		}
-
-		Keyboard keyboard = Keyboard.current;
-		if (keyboard != null && (keyboard.escapeKey.wasPressedThisFrame || keyboard.eKey.wasPressedThisFrame))
+		if (pad != null && (pad.buttonEast.wasPressedThisFrame || pad.buttonNorth.wasPressedThisFrame))
 		{
 			EndSession();
 			return true;
@@ -293,34 +250,10 @@ public class ForgeSessionController : MonoBehaviour
 			move += pad.dpad.ReadValue();
 		}
 
-		Keyboard keyboard = Keyboard.current;
-		if (keyboard != null)
-		{
-			if (keyboard.wKey.isPressed || keyboard.upArrowKey.isPressed)
-				move.y += 1f;
-			if (keyboard.sKey.isPressed || keyboard.downArrowKey.isPressed)
-				move.y -= 1f;
-			if (keyboard.aKey.isPressed || keyboard.leftArrowKey.isPressed)
-				move.x -= 1f;
-			if (keyboard.dKey.isPressed || keyboard.rightArrowKey.isPressed)
-				move.x += 1f;
-		}
-
 		if (move.sqrMagnitude > 1f)
 			move.Normalize();
 		if (move.sqrMagnitude > 0.0001f)
 			hammerPos += move * cursorSpeed * Time.unscaledDeltaTime;
-
-		Mouse mouse = Mouse.current;
-		if (!usingGamepad && mouse != null)
-		{
-			// TODO Fix mouse input
-			/*
-			Vector2 screen = mouse.position.ReadValue();
-			if (IsScreenOver(viewport != null ? viewport.rectTransform : null, screen) && TryScreenToForgePoint(screen, out Vector2 mouseForge))
-				hammerPos = mouseForge;
-			*/
-		}
 
 		hammerPos = ClampToForgeView(hammerPos);
 	}
@@ -340,9 +273,6 @@ public class ForgeSessionController : MonoBehaviour
 
 	void HandleStrikeButtons()
 	{
-		Mouse mouse = Mouse.current;
-		Vector2 mouseScreen = mouse != null ? mouse.position.ReadValue() : Vector2.zero;
-
 		bool pressed = StrikePressed();
 		bool released = StrikeReleased();
 
@@ -350,11 +280,6 @@ public class ForgeSessionController : MonoBehaviour
 		{
 			charging = true;
 			pressTime = Time.unscaledTime;
-			/*
-			 TODO fix mouse input
-			if (mouse != null)
-				pressScreen = mouseScreen;
-			*/	
 		}
 
 		if (!charging || !released)
@@ -375,16 +300,6 @@ public class ForgeSessionController : MonoBehaviour
 			return true;
 		
 		return false;
-		
-		//TODO Fix mouse input
-		/*
-		Mouse mouse = Mouse.current;
-		if (mouse != null && mouse.leftButton.wasPressedThisFrame)
-			return true;
-
-		Keyboard keyboard = Keyboard.current;
-		return keyboard != null && keyboard.enterKey.wasPressedThisFrame;
-		*/
 	}
 
 	bool StrikeReleased()
@@ -394,16 +309,6 @@ public class ForgeSessionController : MonoBehaviour
 			return true;
 		
 		return false;
-		
-		//TODO Fix mouse input	
-		/*
-		Mouse mouse = Mouse.current;
-		if (mouse != null && mouse.leftButton.wasReleasedThisFrame)
-			return true;
-
-		Keyboard keyboard = Keyboard.current;
-		return keyboard != null && keyboard.enterKey.wasReleasedThisFrame;
-		*/
 	}
 
 	void UpdateHammerPreview()
@@ -445,52 +350,13 @@ public class ForgeSessionController : MonoBehaviour
 			else if (hasStickAim)
 				requested = lastAimDir;
 		}
-
-		if (!usingGamepad && charging)
-		{
-			// TODO Fix mouse forging controls
-			/*
-			Mouse mouse = Mouse.current;
-			if (mouse != null)
-			{
-				Vector2 screen = mouse.position.ReadValue();
-				Vector2 drag = screen - pressScreen;
-				if (drag.sqrMagnitude >= minDragForAim * minDragForAim && TryScreenToForgePoint(pressScreen, out Vector2 pressForge) && TryScreenToForgePoint(screen, out Vector2 aimForge))
-				{
-					impact = pressForge;
-					requested = aimForge - pressForge;
-				}
-			}
-			*/
-		}
 		
 		direction = requested.sqrMagnitude >= 0.0001f ? requested.normalized : Vector2.zero;
 	}
 
 	void UpdateStatus()
 	{
-		if (statusText == null)
-			return;
-
-		string partName = activeMetal != null && activeMetal.PartDefinition != null ? activeMetal.PartDefinition.DisplayLabel : "Billet";
-		string metalName = deformer != null ? deformer.MetalDisplayName : "Metal";
-		float heat01 = deformer != null ? deformer.Heat : 0f;
-		bool canForge = deformer == null || deformer.CurrentFeel.canForge;
-		ShapeQuality quality = evaluator != null ? evaluator.Quality : ShapeQuality.Incomplete;
-		int match = evaluator != null ? Mathf.RoundToInt(evaluator.MatchPercent * 100f) : 0;
-		string heatLabel = canForge ? "Working" : "Too cold";
-		statusText.text = $"{partName}  ·  {metalName}\nHeat {Mathf.RoundToInt(heat01 * 100f)}%  {heatLabel}\n{quality.ToString()}  {match}%\nLS move  ·  RS aim  ·  RT / X swing  ·  B / Y finish";
-		qualityText.text = quality.ToString().ToUpper();
-		if (quality == ShapeQuality.Flawed)
-			qualityText.color = flawedColor;
-		else if (quality == ShapeQuality.Good)
-    			qualityText.color = goodColor;
-		else if (quality == ShapeQuality.Excellent)
-        			qualityText.color = excellentColor;
-		else if (quality == ShapeQuality.Perfect)
-			qualityText.color = perfectColor;
-		else
-			qualityText.color = incompleteColor;
+		
 	}
 
 	void FitCamera()
@@ -509,19 +375,10 @@ public class ForgeSessionController : MonoBehaviour
 
 		float extent = Mathf.Max(bounds.extents.x, bounds.extents.y) + 0.65f;
 		forgeCamera.orthographicSize = Mathf.Max(2.1f, extent);
-		Rect viewRect = viewport != null ? viewport.rectTransform.rect : new Rect(0f, 0f, 1f, 1f);
-		if (viewRect.height > 0.001f)
-			forgeCamera.aspect = viewRect.width / viewRect.height;
+		Rect viewRect = viewport != null ? viewport.rectTransform.rect : new Rect(0f, 0f, forgeTexture.width, forgeTexture.height);
+		forgeCamera.aspect = (float)forgeTexture.width / (float)forgeTexture.height;
 		forgeCamera.transform.position = new Vector3(bounds.center.x, bounds.center.y, (stageRoot != null ? stageRoot.position.z : stageWorldPosition.z) - cameraDistance);
 		forgeCamera.transform.rotation = Quaternion.identity;
-	}
-
-	void SetOverlayVisible(bool visible)
-	{
-		if (overlayRoot != null)
-			overlayRoot.gameObject.SetActive(visible);
-		if (overlayCanvas != null)
-			overlayCanvas.enabled = visible;
 	}
 
 	void EnsureStage()
@@ -586,7 +443,7 @@ public class ForgeSessionController : MonoBehaviour
 		plate.transform.localPosition = new Vector3(0f, 0f, 0.45f);
 		plate.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
 		plate.transform.localScale = new Vector3(8f, 8f, 1f);
-		Object.Destroy(plate.GetComponent<Collider>());
+		Destroy(plate.GetComponent<Collider>());
 		var renderer = plate.GetComponent<MeshRenderer>();
 		renderer.sharedMaterial = ForgingVisualUtility.CreateColorMaterial(plateColor);
 		renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
@@ -597,18 +454,6 @@ public class ForgeSessionController : MonoBehaviour
 
 	void EnsureForgeCamera(int forgeLayer)
 	{
-		if (forgeTexture == null)
-		{
-			forgeTexture = new RenderTexture(renderTextureSize, renderTextureSize, 16)
-			{
-				name = "ForgeView",
-				filterMode = FilterMode.Point,
-				antiAliasing = 1
-			};
-			forgeTexture.Create();
-			runtimeOwnedTexture = true;
-		}
-
 		if (forgeCamera == null)
 		{
 			var camGo = new GameObject("ForgeCamera");
@@ -633,102 +478,5 @@ public class ForgeSessionController : MonoBehaviour
 		forgeCamera.targetTexture = forgeTexture;
 		forgeCamera.transform.position = stageWorldPosition + new Vector3(0f, 0f, -cameraDistance);
 		forgeCamera.transform.rotation = Quaternion.identity;
-	}
-
-	void EnsureOverlay()
-	{
-		if (overlayRoot != null && viewport != null)
-		{
-			if (viewport.texture == null && forgeTexture != null)
-				viewport.texture = forgeTexture;
-			return;
-		}
-
-		var canvasGo = new GameObject("ForgeOverlayCanvas");
-		canvasGo.transform.SetParent(transform, false);
-		canvasGo.layer = 5;
-		overlayCanvas = canvasGo.AddComponent<Canvas>();
-		overlayCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-		overlayCanvas.sortingOrder = 80;
-		var scaler = canvasGo.AddComponent<CanvasScaler>();
-		scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-		scaler.referenceResolution = new Vector2(1280f, 720f);
-		scaler.matchWidthOrHeight = 0.5f;
-		canvasGo.AddComponent<GraphicRaycaster>();
-
-		overlayRoot = canvasGo.GetComponent<RectTransform>();
-
-		CreateFullRectImage(overlayRoot, "Dimmer", new Color(0.02f, 0.01f, 0.01f, 0.72f));
-
-		var panel = CreatePanel(overlayRoot, "ForgeFrame", new Vector2(0.07f, 0.06f), new Vector2(0.93f, 0.94f));
-		frameImage = panel.GetComponent<Image>();
-		frameImage.color = new Color(0.28f, 0.16f, 0.1f, 0.96f);
-		if (frameSprite != null)
-		{
-			frameImage.sprite = frameSprite;
-			frameImage.type = Image.Type.Sliced;
-			frameImage.color = Color.white;
-		}
-
-		var inner = CreatePanel(panel.transform, "ViewportFrame", new Vector2(0.08f, 0.16f), new Vector2(0.92f, 0.9f));
-		inner.GetComponent<Image>().color = new Color(0.08f, 0.06f, 0.05f, 1f);
-
-		var viewportGo = new GameObject("ForgeViewport", typeof(RectTransform), typeof(CanvasRenderer), typeof(RawImage));
-		viewportGo.transform.SetParent(inner.transform, false);
-		viewport = viewportGo.GetComponent<RawImage>();
-		viewport.texture = forgeTexture;
-		viewport.color = Color.white;
-		Stretch(viewport.rectTransform, new Vector2(0.03f, 0.04f), new Vector2(0.97f, 0.96f));
-		var aspect = viewportGo.AddComponent<AspectRatioFitter>();
-		aspect.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
-		aspect.aspectRatio = 1f;
-
-		statusText = CreateTmp(panel.transform, "StatusText", 22f, TextAlignmentOptions.TopLeft);
-		var statusRect = statusText.rectTransform;
-		statusRect.anchorMin = new Vector2(0.08f, 0.02f);
-		statusRect.anchorMax = new Vector2(0.7f, 0.15f);
-		statusRect.offsetMin = Vector2.zero;
-		statusRect.offsetMax = Vector2.zero;
-		statusText.color = new Color(0.95f, 0.86f, 0.7f, 1f);
-	}
-
-	static Image CreateFullRectImage(Transform parent, string name, Color color)
-	{
-		var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-		go.transform.SetParent(parent, false);
-		var image = go.GetComponent<Image>();
-		image.color = color;
-		Stretch(go.GetComponent<RectTransform>(), Vector2.zero, Vector2.one);
-		return image;
-	}
-
-	static GameObject CreatePanel(Transform parent, string name, Vector2 anchorMin, Vector2 anchorMax)
-	{
-		var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-		go.transform.SetParent(parent, false);
-		Stretch(go.GetComponent<RectTransform>(), anchorMin, anchorMax);
-		return go;
-	}
-
-	static void Stretch(RectTransform rect, Vector2 anchorMin, Vector2 anchorMax)
-	{
-		rect.anchorMin = anchorMin;
-		rect.anchorMax = anchorMax;
-		rect.offsetMin = Vector2.zero;
-		rect.offsetMax = Vector2.zero;
-	}
-
-	static TextMeshProUGUI CreateTmp(Transform parent, string name, float size, TextAlignmentOptions align)
-	{
-		var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
-		go.transform.SetParent(parent, false);
-		var tmp = go.GetComponent<TextMeshProUGUI>();
-		tmp.fontSize = size;
-		tmp.alignment = align;
-		tmp.textWrappingMode = TextWrappingModes.Normal;
-		tmp.raycastTarget = false;
-		if (TMP_Settings.defaultFontAsset != null)
-			tmp.font = TMP_Settings.defaultFontAsset;
-		return tmp;
 	}
 }

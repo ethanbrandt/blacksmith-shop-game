@@ -1,0 +1,8 @@
+<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="project://database/Assets/UI%20Toolkit/ForgeScreenStyleSheet.uss?fileID=7433441132597879392&amp;guid=e9c3e12755852f149b2f6678328b45d5&amp;type=3#ForgeScreenStyleSheet"/>
+    <ui:VisualElement style="flex-grow: 1; background-image: resource(&quot;GraphView/Nodes/BlackboardFieldPillBackground&quot;); margin-left: 32px; margin-top: 32px; margin-right: 32px; margin-bottom: 32px;">
+        <ui:Image>
+            <ui:Image source="project://database/Assets/Art/Runtime%20Forging%20Stuff/ForgeView.renderTexture?fileID=8400000&amp;guid=60c1aede1c092f349b030dbe56266039&amp;type=2#ForgeView" name="Image" style="width: 400px; height: 256px; align-self: center; align-content: center; align-items: center; justify-content: center; flex-direction: column; flex-wrap: nowrap;"/>
+        </ui:Image>
+    </ui:VisualElement>
+</ui:UXML>
