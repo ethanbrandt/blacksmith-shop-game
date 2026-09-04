@@ -1,0 +1,44 @@
+<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="project://database/Assets/UI%20Toolkit/OrderOfOperationsStyleSheet.uss?fileID=7433441132597879392&amp;guid=179ff0b7449043a469298f939309e3da&amp;type=3#OrderOfOperationsStyleSheet"/>
+    <ui:VisualElement name="OperationsRail" style="flex-grow: 1; position: absolute; flex-direction: row; align-self: center; background-color: rgb(30, 25, 34); padding-left: 8px; padding-right: 8px; padding-top: 4px; padding-bottom: 4px; -unity-background-scale-mode: stretch-to-fill; justify-content: flex-start; align-items: stretch; height: 48px; top: auto; bottom: 0; left: auto; right: auto; border-left-color: rgb(132, 97, 64); border-right-color: rgb(132, 97, 64); border-top-color: rgb(132, 97, 64); border-bottom-color: rgb(132, 97, 64); border-left-width: 2px; border-bottom-width: 2px; border-top-width: 2px; border-right-width: 2px;">
+        <ui:VisualElement name="FurnaceStep" style="flex-grow: 1; align-self: center; justify-content: space-around; align-items: center; flex-direction: row;">
+            <ui:VisualElement name="StationContainer" style="flex-grow: 1;">
+                <ui:Image source="project://database/Assets/Art/Station%20Sprites%201.png?fileID=-1083736209&amp;guid=59d27a776d9f6b64db0a45aa86a543ba&amp;type=3#Station Sprites 1_0" name="StationIcon" style="flex-direction: column; width: 24px; height: 32px;"/>
+                <ui:Image source="project://database/Assets/Art/Station%20Titles.png?fileID=534721088&amp;guid=6969605c76a20974c8f18eb74f1df469&amp;type=3#Station Titles_0" name="StationTitle" style="flex-direction: column; width: 24px; height: 8px;"/>
+                <ui:Image source="" name="StatusIcon" style="position: absolute; width: 24px; height: 32px;"/>
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement name="AnvilStep" style="flex-grow: 1; align-self: center; justify-content: space-around; align-items: center; flex-direction: row;">
+            <ui:Image source="project://database/Assets/Art/Station%20Sprites%201.png?fileID=-1316738746&amp;guid=59d27a776d9f6b64db0a45aa86a543ba&amp;type=3#Station Sprites 1_5" name="StationNextArrow" style="flex-direction: column; width: 24px; height: 32px; margin-bottom: 8px;"/>
+            <ui:VisualElement name="StationContainer" style="flex-grow: 1;">
+                <ui:Image source="project://database/Assets/Art/Station%20Sprites%201.png?fileID=-575842214&amp;guid=59d27a776d9f6b64db0a45aa86a543ba&amp;type=3#Station Sprites 1_1" name="StationIcon" style="flex-direction: column; width: 24px; height: 32px;"/>
+                <ui:Image source="project://database/Assets/Art/Station%20Titles.png?fileID=1353579051&amp;guid=6969605c76a20974c8f18eb74f1df469&amp;type=3#Station Titles_1" name="StationTitle" style="flex-direction: column; width: 24px; height: 8px;"/>
+                <ui:Image source="" name="StatusIcon" style="position: absolute; width: 24px; height: 32px;"/>
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement name="QuenchStep" style="flex-grow: 1; align-self: center; justify-content: space-around; align-items: center; flex-direction: row;">
+            <ui:Image source="project://database/Assets/Art/Station%20Sprites%201.png?fileID=-2093797223&amp;guid=59d27a776d9f6b64db0a45aa86a543ba&amp;type=3#Station Sprites 1_6" name="StationNextArrow" style="flex-direction: column; width: 24px; height: 32px; margin-bottom: 8px;"/>
+            <ui:VisualElement name="StationContainer" style="flex-grow: 1;">
+                <ui:Image source="project://database/Assets/Art/Station%20Sprites%201.png?fileID=-1537749506&amp;guid=59d27a776d9f6b64db0a45aa86a543ba&amp;type=3#Station Sprites 1_2" name="StationIcon" style="flex-direction: column; width: 24px; height: 32px;"/>
+                <ui:Image source="project://database/Assets/Art/Station%20Titles.png?fileID=1127782526&amp;guid=6969605c76a20974c8f18eb74f1df469&amp;type=3#Station Titles_2" name="StationTitle" style="flex-direction: column; width: 24px; height: 8px;"/>
+                <ui:Image source="" name="StatusIcon" style="position: absolute; width: 24px; height: 32px;"/>
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement name="GrindStep" style="flex-grow: 1; align-self: center; justify-content: space-around; align-items: center; flex-direction: row;">
+            <ui:Image source="project://database/Assets/Art/Station%20Sprites%201.png?fileID=-2093797223&amp;guid=59d27a776d9f6b64db0a45aa86a543ba&amp;type=3#Station Sprites 1_6" name="StationNextArrow" style="flex-direction: column; width: 24px; height: 32px; margin-bottom: 8px;"/>
+            <ui:VisualElement name="StationContainer" style="flex-grow: 1;">
+                <ui:Image source="project://database/Assets/Art/Station%20Sprites%201.png?fileID=1819497896&amp;guid=59d27a776d9f6b64db0a45aa86a543ba&amp;type=3#Station Sprites 1_4" name="StationIcon" style="flex-direction: column; width: 24px; height: 32px;"/>
+                <ui:Image source="project://database/Assets/Art/Station%20Titles.png?fileID=-415444742&amp;guid=6969605c76a20974c8f18eb74f1df469&amp;type=3#Station Titles_3" name="StationTitle" style="flex-direction: column; width: 24px; height: 8px;"/>
+                <ui:Image source="" name="StatusIcon" style="position: absolute; width: 24px; height: 32px;"/>
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement name="FinishStep" style="flex-grow: 1; align-self: center; justify-content: space-around; align-items: center; flex-direction: row;">
+            <ui:Image source="project://database/Assets/Art/Station%20Sprites%201.png?fileID=-2093797223&amp;guid=59d27a776d9f6b64db0a45aa86a543ba&amp;type=3#Station Sprites 1_6" name="StationNextArrow" style="flex-direction: column; width: 24px; height: 32px; margin-bottom: 8px;"/>
+            <ui:VisualElement name="StationContainer" style="flex-grow: 1;">
+                <ui:Image source="project://database/Assets/Art/Station%20Sprites%201.png?fileID=-269235065&amp;guid=59d27a776d9f6b64db0a45aa86a543ba&amp;type=3#Station Sprites 1_7" name="StationIcon" style="flex-direction: column; width: 24px; height: 32px;"/>
+                <ui:Image source="project://database/Assets/Art/Station%20Titles.png?fileID=816432196&amp;guid=6969605c76a20974c8f18eb74f1df469&amp;type=3#Station Titles_4" name="StationTitle" style="flex-direction: column; width: 24px; height: 8px;"/>
+                <ui:Image source="" name="StatusIcon" style="position: absolute; width: 24px; height: 32px;"/>
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

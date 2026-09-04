@@ -1,0 +1,11 @@
+:root {
+
+}
+
+.is-hidden {
+    display: none;
+}
+
+#PromptVisual {
+    translate: -50% -50%;
+}

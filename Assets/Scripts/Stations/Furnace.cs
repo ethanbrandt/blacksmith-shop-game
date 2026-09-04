@@ -1,10 +1,13 @@
 using UnityEngine;
+using UnityEngine.Serialization;
+using UnityEngine.UI;
 
 public class Furnace : Station
 {
 	[Header("References")]
 	[SerializeField] Transform metalSocket;
 	[SerializeField] Light fuelAreaPointLight;
+	[SerializeField] Image tempGaugeFill;
 
 	[Header("Fuel")]
 	[SerializeField] float maxFuel = 100f;
@@ -29,11 +32,14 @@ public class Furnace : Station
 	[SerializeField] float fuelLightMinIntensity;
 	[SerializeField] float fuelLightMaxIntensity;
 	[SerializeField] Gradient fuelLightColorGradient;
+	[FormerlySerializedAs("tempGuageColorGradient")]
+	[SerializeField] Gradient tempGaugeColorGradient;
 
 	HeatableMetal containedMetal;
 	Vector3 fuelGaugeFillBaseScale;
 	bool isLit;
 	Highlightable highlight;
+	Slider fuelGauge;
 
 	public float Fuel => fuel;
 	public float MaxFuel => maxFuel;
@@ -56,7 +62,6 @@ public class Furnace : Station
 	public bool HasFuel => fuel > 0f;
 
 	public override Highlightable Highlight { get { return highlight; } }
-	public override Transform InteractionPoint { get { return metalSocket; } }
 
 	public override bool CanAccept(Pickable _pickable)
 	{
@@ -75,6 +80,10 @@ public class Furnace : Station
 	{
 		highlight = GetComponent<Highlightable>();
 		
+		fuelGauge = GetComponentInChildren<Slider>();
+		fuelGauge.value = 0f;
+		fuelGauge.gameObject.SetActive(false);
+		
 		EnsureSocket();
 
 		UpdateVisuals();
@@ -90,7 +99,7 @@ public class Furnace : Station
 
 	public bool TryAcceptPickable(Pickable pickable)
 	{
-		if (pickable == null || pickable.IsInFurnace || pickable.IsOnAnvil)
+		if (pickable == null || pickable.InStation)
 			return false;
 
 		if (pickable.TryGetComponent(out FuelItem fuelItem))
@@ -102,10 +111,16 @@ public class Furnace : Station
 		return false;
 	}
 
-	public void NotifyItemRemoved(Pickable pickable)
+	public override void NotifyItemRemoved(Pickable _pickable)
 	{
-		if (containedMetal != null && containedMetal.GetComponent<Pickable>() == pickable)
+		if (containedMetal != null && containedMetal.GetComponent<Pickable>() == _pickable)
 			containedMetal = null;
+	}
+	
+	public override float DistanceFromStationSquared(Vector3 _worldPoint)
+	{
+		Vector3 socketPos = metalSocket != null ? metalSocket.position : transform.position;
+		return (_worldPoint - socketPos).sqrMagnitude;
 	}
 
 	void TickFuelAndAir(float dt)
@@ -188,7 +203,7 @@ public class Furnace : Station
 		}
 
 		EnsureSocket();
-		if (!pickable.TryPlaceInFurnace(this, metalSocket))
+		if (!pickable.TryPlaceInStation(this, metalSocket))
 			return false;
 		
 		containedMetal = metal;
@@ -211,6 +226,15 @@ public class Furnace : Station
 		fuelAreaPointLight.intensity = Mathf.Lerp(fuelLightMinIntensity, fuelLightMaxIntensity, TemperatureNormalized) + Mathf.Sin(Time.time * 0.5f) * 0.2f;
 
 		fuelAreaPointLight.color = fuelLightColorGradient.Evaluate(TemperatureNormalized);
+
+		if (fuel > 1f)
+		{
+			fuelGauge.gameObject.SetActive(true);
+			fuelGauge.value = TemperatureNormalized;
+			tempGaugeFill.color = tempGaugeColorGradient.Evaluate(TemperatureNormalized);
+		}
+		else
+			fuelGauge.gameObject.SetActive(false);
 	}
 
 	void OnTriggerEnter(Collider other) => TryAcceptFromCollider(other);

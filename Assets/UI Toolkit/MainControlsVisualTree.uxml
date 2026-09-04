@@ -1,0 +1,23 @@
+<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="project://database/Assets/UI%20Toolkit/MainControlsStyleSheet.uss?fileID=7433441132597879392&amp;guid=5ee4dffd1fa3f7c43aab3d00c4162c00&amp;type=3#MainControlsStyleSheet"/>
+    <ui:VisualElement name="PromptVisual" style="flex-grow: 0; position: absolute; align-items: center; top: auto; left: auto; bottom: auto; justify-content: center; align-self: center; filter: filter(url(&quot;project://database/Assets/OutlineFilter.asset?fileID=11400000&amp;guid=2b683050f70ce0748b09e4c6b2ea3558&amp;type=2#OutlineFilter&quot;) 12 rgb(0, 0, 0));">
+        <ui:VisualElement style="flex-grow: 0; flex-direction: row; margin-bottom: -1px; background-color: rgba(0, 0, 0, 0); padding-bottom: 0; padding-right: 0; padding-left: 0; padding-top: 0;">
+            <ui:Image name="ButtonIcon" source="project://database/Assets/Art/Button%20Icons/Y_Outlined.png?fileID=21300000&amp;guid=80045a1fa15b88740a91816f8212ce6e&amp;type=3#Y_Outlined" style="width: 20px; height: 20px;"/>
+        </ui:VisualElement>
+        <ui:Image source="project://database/Assets/UI%20Toolkit/UnityThemes/UnityDefaultRuntimeTheme.tss?fileID=-1304905567622442630&amp;guid=5a62e87f30a871e43b630fa8c42b3e67&amp;type=3#arrow-down@2x" scale-mode="ScaleToFit" name="Arrow" style="width: 10px; height: 10px; align-self: center; justify-content: flex-start; align-items: center;"/>
+    </ui:VisualElement>
+    <ui:VisualElement name="ControlsVisual" style="flex-grow: 1; bottom: auto; right: auto; top: auto; justify-content: flex-end; align-self: flex-end; flex-direction: row; align-items: auto; margin-bottom: 4px;">
+        <ui:VisualElement name="LeftStick" style="flex-grow: 0; flex-direction: row; color: rgb(255, 255, 255); font-size: 8px; margin-left: 4px; margin-right: 4px;">
+            <ui:Image source="project://database/Assets/Art/Button%20Icons/Left%20Stick%20All.png?fileID=21300000&amp;guid=dd2ce0b37f556984f814cd0ef4a0a01d&amp;type=3#Left Stick All" name="ButtonIcon" style="width: 16px; height: 16px; margin-right: 2px;"/>
+            <ui:Label text="Move" name="ActionLabel" style="margin-top: 0; margin-left: 0; margin-bottom: 0; margin-right: 0; padding-top: 0; padding-left: 0; padding-right: 0; padding-bottom: 0; -unity-text-align: middle-left;"/>
+        </ui:VisualElement>
+        <ui:VisualElement name="YButton" style="flex-grow: 0; flex-direction: row; color: rgb(255, 255, 255); font-size: 8px; margin-left: 4px; margin-right: 4px;">
+            <ui:Image source="project://database/Assets/Art/Button%20Icons/Y.png?fileID=21300000&amp;guid=95173dc58fb8a874eb01b89ace2679f9&amp;type=3#Y" name="ButtonIcon" style="width: 16px; height: 16px; margin-right: -1px;"/>
+            <ui:Label text="Drop" name="ActionLabel" style="margin-top: 0; margin-left: 0; margin-bottom: 0; margin-right: 0; padding-top: 0; padding-left: 0; padding-right: 0; padding-bottom: 0; -unity-text-align: middle-left;"/>
+        </ui:VisualElement>
+        <ui:VisualElement name="XButton" style="flex-grow: 0; flex-direction: row; color: rgb(255, 255, 255); font-size: 8px; margin-left: 4px; margin-right: 4px;">
+            <ui:Image source="project://database/Assets/Art/Button%20Icons/X.png?fileID=21300000&amp;guid=73b9d9f046b2de347af7a99670d2076f&amp;type=3#X" name="ButtonIcon" style="width: 16px; height: 16px; margin-right: -1px;"/>
+            <ui:Label text="Throw" name="ActionLabel" style="margin-top: 0; margin-left: 0; margin-bottom: 0; margin-right: 0; padding-top: 0; padding-left: 0; padding-right: 0; padding-bottom: 0; -unity-text-align: middle-left;"/>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

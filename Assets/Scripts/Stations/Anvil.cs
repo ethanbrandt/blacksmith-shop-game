@@ -10,8 +10,6 @@ public class Anvil : Station
 	[SerializeField] Vector3 metalSocketLocalOffset = new Vector3(0f, 0.78f, 0f);
 	[SerializeField] Vector3 catchTriggerSize = new Vector3(1.4f, 0.85f, 2.2f);
 	[SerializeField] Vector3 catchTriggerCenter = new Vector3(0f, 0.7f, -0.05f);
-	[SerializeField] float minVelToAccept = 0f;
-	[SerializeField] float placeRange = 2.4f;
 
 	HeatableMetal containedMetal;
 	Highlightable highlight;
@@ -19,10 +17,8 @@ public class Anvil : Station
 	public Transform MetalSocket => metalSocket;
 	public bool HasMetal => containedMetal != null;
 	public HeatableMetal ContainedMetal => containedMetal;
-	public float PlaceRange => placeRange;
 
 	public override Highlightable Highlight { get { return highlight; } }
-	public override Transform InteractionPoint { get { return metalSocket; } }
 
 	public override bool CanAccept(Pickable _pickable)
 	{
@@ -45,11 +41,10 @@ public class Anvil : Station
 	{
 		ForgeSessionController.EnsureExists();
 	}
-
-	public bool IsInPlaceRange(Vector3 worldPoint)
+	public override float DistanceFromStationSquared(Vector3 _worldPoint)
 	{
 		Vector3 socketPos = metalSocket != null ? metalSocket.position : transform.position;
-		return (worldPoint - socketPos).sqrMagnitude <= placeRange * placeRange;
+		return (_worldPoint - socketPos).sqrMagnitude;
 	}
 
 	public bool TryPlaceHeld(Pickable pickable)
@@ -61,7 +56,7 @@ public class Anvil : Station
 			return false;
 
 		EnsureSocket();
-		if (!pickable.TryPlaceOnAnvil(this, metalSocket))
+		if (!pickable.TryPlaceInStation(this, metalSocket))
 			return false;
 		
 		containedMetal = metal;
@@ -71,7 +66,7 @@ public class Anvil : Station
 
 	public bool TryAcceptPickable(Pickable pickable)
 	{
-		if (pickable == null || pickable.IsInFurnace || pickable.IsOnAnvil)
+		if (pickable == null || pickable.InStation)
 			return false;
 		
 		if (pickable.Type == Pickable.PickableType.QuenchedMetal)
@@ -87,7 +82,7 @@ public class Anvil : Station
 			return false;
 
 		EnsureSocket();
-		if (!pickable.TryPlaceOnAnvil(this, metalSocket))
+		if (!pickable.TryPlaceInStation(this, metalSocket))
 			return false;
 		
 		containedMetal = metal;
@@ -95,37 +90,14 @@ public class Anvil : Station
 		return true;
 	}
 
-	public void NotifyItemRemoved(Pickable pickable)
+	public override void NotifyItemRemoved(Pickable _pickable)
 	{
-		if (containedMetal == null || containedMetal.GetComponent<Pickable>() != pickable)
+		if (containedMetal == null || containedMetal.GetComponent<Pickable>() != _pickable)
 			return;
 
 		containedMetal = null;
 		if (ForgeSessionController.Instance != null)
 			ForgeSessionController.Instance.NotifyAnvilEmptied(this);
-	}
-
-	public static Anvil FindClosestInRange(Vector3 origin, float range)
-	{
-		Anvil closest = null;
-		float best = range * range;
-		var anvils = FindObjectsByType<Anvil>(FindObjectsSortMode.None);
-		for (int i = 0; i < anvils.Length; i++)
-		{
-			Anvil anvil = anvils[i];
-			if (anvil == null || anvil.containedMetal != null)
-				continue;
-
-			Vector3 socketPos = anvil.metalSocket != null ? anvil.metalSocket.position : anvil.transform.position;
-			float distSq = (socketPos - origin).sqrMagnitude;
-			if (distSq > best)
-				continue;
-
-			best = distSq;
-			closest = anvil;
-		}
-
-		return closest;
 	}
 
 	void OpenForge(HeatableMetal metal)
@@ -152,12 +124,6 @@ public class Anvil : Station
 			pickable = other.GetComponentInParent<Pickable>();
 
 		if (pickable == null)
-			return;
-
-		if (!other.TryGetComponent(out Rigidbody otherRb))
-			otherRb = other.GetComponentInParent<Rigidbody>();
-
-		if (otherRb != null && otherRb.linearVelocity.magnitude < minVelToAccept)
 			return;
 
 		TryAcceptPickable(pickable);

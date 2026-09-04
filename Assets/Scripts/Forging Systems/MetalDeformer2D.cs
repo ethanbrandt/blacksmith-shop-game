@@ -504,9 +504,7 @@ public class MetalDeformer2D : MonoBehaviour
         {
             float influence = i < _influenceBuffer.Count ? _influenceBuffer[i] : 0f;
             float dist = Vector2.Distance(_vertices[i], impactPoint);
-            float spatial = dist <= impactRadius * 1.15f
-                ? 1f - dist / (impactRadius * 1.15f)
-                : 0f;
+            float spatial = dist <= impactRadius * 1.15f ? 1f - dist / (impactRadius * 1.15f) : 0f;
             _tensionMask.Add(Mathf.Max(influence, spatial));
         }
 
@@ -566,9 +564,7 @@ public class MetalDeformer2D : MonoBehaviour
 
                 // Extra polish on brand-new split geometry and its neighbors.
                 if (_splitThisStrike && i < _movedThisStrike.Count && _movedThisStrike[i])
-                {
                     blend = Mathf.Max(blend, (surfaceTension + splitTensionBoost) * mask);
-                }
 
                 // Outline priority: don't smooth verts off an outline they're already near.
                 float outlineDist = DistanceToTargetOutline(curr);

@@ -11,7 +11,6 @@ public class Grindstone : Station
 	[SerializeField] Vector3 catchTriggerSize = new Vector3(1.4f, 0.85f, 2.2f);
 	[SerializeField] Vector3 catchTriggerCenter = new Vector3(0f, 0.7f, -0.05f);
 	[SerializeField] float minVelToAccept = 0f;
-	[SerializeField] float placeRange = 2.4f;
 
 	HeatableMetal containedMetal;
 	Highlightable highlight;
@@ -19,10 +18,8 @@ public class Grindstone : Station
 	public Transform MetalSocket => metalSocket;
 	public bool HasMetal => containedMetal != null;
 	public HeatableMetal ContainedMetal => containedMetal;
-	public float PlaceRange => placeRange;
 	
 	public override Highlightable Highlight { get { return highlight; } }
-    public override Transform InteractionPoint { get { return metalSocket; } }
 
     public override bool CanAccept(Pickable _pickable)
     {
@@ -47,10 +44,10 @@ public class Grindstone : Station
 		GrindSessionController.EnsureExists();
 	}
 
-	public bool IsInPlaceRange(Vector3 worldPoint)
+	public override float DistanceFromStationSquared(Vector3 _worldPoint)
 	{
 		Vector3 socketPos = metalSocket != null ? metalSocket.position : transform.position;
-		return (worldPoint - socketPos).sqrMagnitude <= placeRange * placeRange;
+		return (_worldPoint - socketPos).sqrMagnitude;
 	}
 
 	public bool TryPlaceHeld(Pickable pickable)
@@ -69,7 +66,7 @@ public class Grindstone : Station
 		}
 
 		EnsureSocket();
-		if (!pickable.TryPlaceOnGrindstone(this, metalSocket))
+		if (!pickable.TryPlaceInStation(this, metalSocket))
 			return false;
 
 		containedMetal = metal;
@@ -79,7 +76,7 @@ public class Grindstone : Station
 
 	public bool TryAcceptPickable(Pickable pickable)
 	{
-		if (pickable == null || pickable.IsInFurnace || pickable.IsOnAnvil || pickable.IsOnGrindstone)
+		if (pickable == null || pickable.InStation)
 			return false;
 
 		if (containedMetal != null)
@@ -96,7 +93,7 @@ public class Grindstone : Station
 		}
 
 		EnsureSocket();
-		if (!pickable.TryPlaceOnGrindstone(this, metalSocket))
+		if (!pickable.TryPlaceInStation(this, metalSocket))
 			return false;
 
 		containedMetal = metal;
@@ -122,37 +119,14 @@ public class Grindstone : Station
 		return true;
 	}
 
-	public void NotifyItemRemoved(Pickable pickable)
+	public override void NotifyItemRemoved(Pickable _pickable)
 	{
-		if (containedMetal == null || containedMetal.GetComponent<Pickable>() != pickable)
+		if (containedMetal == null || containedMetal.GetComponent<Pickable>() != _pickable)
 			return;
 
 		containedMetal = null;
 		if (GrindSessionController.Instance != null)
 			GrindSessionController.Instance.NotifyStationEmptied(this);
-	}
-
-	public static Grindstone FindClosestInRange(Vector3 origin, float range)
-	{
-		Grindstone closest = null;
-		float best = range * range;
-		var stones = FindObjectsByType<Grindstone>(FindObjectsSortMode.None);
-		for (int i = 0; i < stones.Length; i++)
-		{
-			Grindstone stone = stones[i];
-			if (stone == null || stone.containedMetal != null)
-				continue;
-
-			Vector3 socketPos = stone.metalSocket != null ? stone.metalSocket.position : stone.transform.position;
-			float distSq = (socketPos - origin).sqrMagnitude;
-			if (distSq > best)
-				continue;
-
-			best = distSq;
-			closest = stone;
-		}
-
-		return closest;
 	}
 
 	void OpenGrind(HeatableMetal metal)

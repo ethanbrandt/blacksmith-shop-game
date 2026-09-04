@@ -25,7 +25,7 @@ public class LogText : MonoBehaviour
     public void SetText(string _inputText)
     {
         text.text = "LOG: " + _inputText;
-        Debug.Log("LOGTEXT: " + _inputText);
+        //Debug.Log("LOGTEXT: " + _inputText);
         currentTextTime = Time.time + logTextLifetime;
     }
 

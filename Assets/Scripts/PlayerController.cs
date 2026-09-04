@@ -17,12 +17,16 @@ public class PlayerController : MonoBehaviour
     Pickable held;
     Highlightable currentHighlight;
 
+    static bool IsMinigameBlocking => ForgeSessionController.IsBlockingPlayer || GrindSessionController.IsBlockingPlayer;
+    public Pickable Held => held;
+
+    public Action<Transform> OnPickUp;
+    public Action<Transform> OnHighlight;
+
     void Start()
     {
         rb = GetComponent<Rigidbody>();
     }
-
-    static bool IsMinigameBlocking => ForgeSessionController.IsBlockingPlayer || GrindSessionController.IsBlockingPlayer;
 
     void FixedUpdate()
     {
@@ -66,8 +70,7 @@ public class PlayerController : MonoBehaviour
         if (currentHighlight != nextHighlight)
         {
             RemoveCurrentHighlight();
-            nextHighlight.SetHighlighted(true);
-            currentHighlight = nextHighlight;
+            AddHighlight(nextHighlight);
         }
     }
 
@@ -86,8 +89,7 @@ public class PlayerController : MonoBehaviour
         if (currentHighlight != nextHighlight)
         {
             RemoveCurrentHighlight();
-            nextHighlight.SetHighlighted(true);
-            currentHighlight = nextHighlight;
+            AddHighlight(nextHighlight);
         }
     }
 
@@ -98,6 +100,15 @@ public class PlayerController : MonoBehaviour
             
         currentHighlight.SetHighlighted(false);
         currentHighlight = null;
+        
+        OnHighlight?.Invoke(null);
+    }
+
+    void AddHighlight(Highlightable _highlightable)
+    {
+        _highlightable.SetHighlighted(true);
+        currentHighlight = _highlightable;
+        OnHighlight?.Invoke(_highlightable.transform);
     }
 
     void OnMove(InputValue _value)
@@ -127,6 +138,8 @@ public class PlayerController : MonoBehaviour
         {
             Station station = FindClosestStation();
             
+            OnPickUp?.Invoke(null);
+            
             if (station != null && station.TryUse(held))
             {
                 held = null;
@@ -144,14 +157,15 @@ public class PlayerController : MonoBehaviour
         if (nearest != null)
         {
             nearest.PickUp(transform, holdLocalOffset);
+
             if (nearest.IsHeld)
+            {
                 held = nearest;
-            if (nearest.TryGetComponent(out Highlightable highlightable))
-                if (highlightable == currentHighlight)
-                {
-                    highlightable.SetHighlighted(false);
-                    currentHighlight = null;
-                }
+                OnPickUp?.Invoke(nearest.transform);
+            }
+
+            if (nearest.TryGetComponent(out Highlightable highlightable) && highlightable == currentHighlight)
+                RemoveCurrentHighlight();
         }
     }
 
@@ -168,6 +182,7 @@ public class PlayerController : MonoBehaviour
         held.Throw(throwPos, rb.linearVelocity + facing * throwSpeed + Vector3.up * throwUpSpeed);
         
         held = null;
+        OnPickUp?.Invoke(null);
     }
 
     Vector3 GetFacing()
@@ -218,7 +233,7 @@ public class PlayerController : MonoBehaviour
              if (station == null)
                  continue;
  
-             float distSq = (station.InteractionPoint.position - origin).sqrMagnitude;
+             float distSq = station.DistanceFromStationSquared(origin);
              if (distSq > best)
                  continue;
  

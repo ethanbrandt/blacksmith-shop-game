@@ -8,7 +8,6 @@
     flex-shrink: 1;
     flex-direction: column;
     flex-wrap: nowrap;
-    flex-basis: 10%;
     align-content: auto;
     -unity-text-align: middle-center;
     text-overflow: clip;

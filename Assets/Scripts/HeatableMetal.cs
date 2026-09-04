@@ -44,6 +44,8 @@ public class HeatableMetal : MonoBehaviour
 	[SerializeField] Color overheatPulseColor = new Color(1f, 0.95f, 0.35f, 1f);
 	[SerializeField] float overheatPulseSpeed = 6f;
 	[SerializeField, Range(0f, 1f)] float overheatPulseStrength = 0.75f;
+	
+	MetalHeatGauge metalHeatGauge;
 
 	static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
 	static readonly int ColorId = Shader.PropertyToID("_Color");
@@ -57,9 +59,11 @@ public class HeatableMetal : MonoBehaviour
 
 	public MetalType MetalType => metalType;
 	public PartDefinition PartDefinition => partDefinition;
+	public Pickable Pickable => pickable;
 	public float Temperature => temperature;
 	public float Damage => damage;
-	public bool IsTooCold => metalType != null && metalType.IsTooCold(temperature);
+	public bool IsTooCold => metalType != null && metalType.IsTooCold(Heat01);
+	public bool IsQuenchTemp => metalType != null && metalType.IsQuenchTemp(Heat01);
 	public bool IsOverheating => metalType != null && metalType.IsOverheating(temperature);
 	public float Heat01 => metalType != null ? metalType.NormalizeHeat01(temperature) : 0f;
 	public bool HasForgeProgress => hasForgeProgress && forgedVertices != null && forgedVertices.Count >= 3;
@@ -75,22 +79,22 @@ public class HeatableMetal : MonoBehaviour
 	void Awake()
 	{
 		pickable = GetComponent<Pickable>();
-		visualRenderer = GetComponentInChildren<Renderer>();
+		visualRenderer = GetComponent<Renderer>();
+		metalHeatGauge = GetComponentInChildren<MetalHeatGauge>();
 	}
 
 	void Start()
 	{
 		ApplyQualityVisual();
 		RefreshTint();
+		metalHeatGauge.SetFollowMetal(this);
 	}
 
 	void Update()
 	{
-		if (pickable != null && pickable.IsInFurnace)
-			return;
-
 		TickOutsideFurnace(Time.deltaTime);
 		RefreshTint();
+		metalHeatGauge.SetEnable(temperature > ambientTemperature);
 	}
 
 	public void SetMetalType(MetalType type)
@@ -225,9 +229,7 @@ public class HeatableMetal : MonoBehaviour
 		if (overheatTimer < grace)
 			return;
 
-		float dps = overheatDamagePerSecondOverride >= 0f
-			? overheatDamagePerSecondOverride
-			: metalType.overheatDamagePerSecond;
+		float dps = overheatDamagePerSecondOverride >= 0f ? overheatDamagePerSecondOverride : metalType.overheatDamagePerSecond;
 		damage += dps * deltaTime;
 	}
 

@@ -4,6 +4,8 @@ using UnityEngine.UI;
 
 public class FinishPartTable : Station
 {
+	[SerializeField] Vector2 interactBoxDimensions;	
+	
 	[Header("Part Image Params")]
 	[SerializeField] Vector3 partImageRotationOffset;
 	[SerializeField] Vector2 partImageDimensions;
@@ -17,7 +19,6 @@ public class FinishPartTable : Station
 	Highlightable highlight;
 
 	public override Highlightable Highlight { get { return highlight; } }
-    public override Transform InteractionPoint { get { return transform; } }
 
     public override bool CanAccept(Pickable _pickable)
     {
@@ -42,7 +43,7 @@ public class FinishPartTable : Station
 
 	public bool TryAcceptPickable(Pickable pickable)
 	{
-		if (pickable == null || pickable.IsHeld || pickable.IsInFurnace || pickable.IsOnAnvil || pickable.IsOnGrindstone)
+		if (pickable == null || pickable.InStation)
 			return false;
 		
 		if (pickable.Type != Pickable.PickableType.QuenchedMetal)
@@ -109,6 +110,18 @@ public class FinishPartTable : Station
 			socketImg.sprite = partTableSlots[i].part.partSocketSprite;
 			socketImg.rectTransform.sizeDelta = partImageDimensions;
 		}
+	}
+	
+	
+	public override void NotifyItemRemoved(Pickable _pickable)
+	{
+		
+	}
+	
+	public override float DistanceFromStationSquared(Vector3 _worldPoint)
+	{
+		Vector2 offset = new Vector2(Mathf.Abs(_worldPoint.x - transform.position.x), Mathf.Abs(_worldPoint.z - transform.position.z)) - interactBoxDimensions * 0.5f;
+		return Vector2.Max(offset, Vector2.zero).sqrMagnitude;
 	}
 
 	void OnTriggerEnter(Collider other)

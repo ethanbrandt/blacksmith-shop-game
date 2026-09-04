@@ -33,10 +33,9 @@ public class MetalType : ScriptableObject
 	[Range(0f, 1f)] public float minHeatToForge = 0.2f;
 	[Tooltip("Below min heat, strikes still land but at this mobility floor.")]
 	[Range(0f, 1f)] public float coldStrikeScale = 0.15f;
+	[Range(0f, 1f)] public float minHeatToQuench = 0.8f;
 
 	[Header("World Temperature Bands")]
-	[Tooltip("Below this temperature the metal is too cold to work.")]
-	public float workingTempMin = 220f;
 	[Tooltip("At or above this temperature the metal begins taking overheat damage after the grace timer.")]
 	public float overheatTemp = 780f;
 	[Tooltip("Reference max used for tint / 0-1 normalization.")]
@@ -48,8 +47,9 @@ public class MetalType : ScriptableObject
 	[Tooltip("Damage added per second while overheated after the grace timer.")]
 	public float overheatDamagePerSecond = 8f;
 
-	public bool IsTooCold(float temperature) => temperature < workingTempMin;
+	public bool IsTooCold(float temperature) => temperature < minHeatToForge;
 	public bool IsOverheating(float temperature) => temperature >= overheatTemp;
+	public bool IsQuenchTemp(float temperature) => temperature >= minHeatToQuench;
 
 	public float NormalizeHeat01(float temperature)
 	{
@@ -60,7 +60,6 @@ public class MetalType : ScriptableObject
 	public MetalFeel Sample(float heat01)
 	{
 		heat01 = Mathf.Clamp01(heat01);
-		bool canForge = heat01 >= minHeatToForge;
 		// World heat is temperature / referenceMaxTemp, so "just workable" is only ~0.27.
 		// The forge curves were authored for the old 0-1 overlay slider that started at 0.55.
 		float curveHeat = RemapWorldHeatToForgeCurve(heat01);
@@ -68,6 +67,8 @@ public class MetalType : ScriptableObject
 		float magnet = Mathf.Max(0f, magnetByHeat.Evaluate(curveHeat));
 		float tension = Mathf.Max(0.05f, tensionByHeat.Evaluate(curveHeat));
 
+		bool canForge = !IsTooCold(heat01);
+		
 		if (!canForge)
 		{
 			mobility *= coldStrikeScale;
@@ -85,11 +86,10 @@ public class MetalType : ScriptableObject
 
 	float RemapWorldHeatToForgeCurve(float heat01)
 	{
-		float working01 = Mathf.Clamp01(workingTempMin / Mathf.Max(0.0001f, referenceMaxTemp));
 		const float workingCurveHeat = 0.55f;
-		if (heat01 <= working01)
-			return working01 <= 0.0001f ? 0f : workingCurveHeat * (heat01 / working01);
+		if (heat01 <= minHeatToForge)
+			return minHeatToForge <= 0.0001f ? 0f : workingCurveHeat * (heat01 / minHeatToForge);
 
-		return Mathf.Lerp(workingCurveHeat, 1f, Mathf.InverseLerp(working01, 1f, heat01));
+		return Mathf.Lerp(workingCurveHeat, 1f, Mathf.InverseLerp(minHeatToForge , 1f, heat01));
 	}
 }

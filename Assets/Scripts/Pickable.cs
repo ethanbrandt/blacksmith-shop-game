@@ -17,10 +17,7 @@ public class Pickable : MonoBehaviour
 	Rigidbody rb;
 	Renderer visualRenderer;
 	Transform defaultParent;
-	Furnace containingFurnace;
-	Anvil containingAnvil;
-	QuenchVat containingVat;
-	Grindstone containingGrindstone;
+	Station containingStation;
 	Transform followTarget;
 	Vector3 followLocalOffset;
 	Collider[] ignoredHolderColliders;
@@ -28,11 +25,9 @@ public class Pickable : MonoBehaviour
 	bool isOnFinalTable;
 	PickableType pickableType;
 
-	public bool CanBePickedUp => canBePickedUp && !isHeld && !(IsOnAnvil && ForgeSessionController.IsBlockingPlayer) && !(IsOnGrindstone && GrindSessionController.IsBlockingPlayer) && !isOnFinalTable;
+	public bool CanBePickedUp => canBePickedUp && !isHeld && !(InStation && ForgeSessionController.IsBlockingPlayer && GrindSessionController.IsBlockingPlayer) && !isOnFinalTable;
 	public bool IsHeld => isHeld;
-	public bool IsInFurnace => containingFurnace != null;
-	public bool IsOnAnvil => containingAnvil != null;
-	public bool IsOnGrindstone => containingGrindstone != null;
+	public bool InStation => containingStation != null;
 	public PickableType Type => pickableType;
 
 	void Awake()
@@ -57,9 +52,7 @@ public class Pickable : MonoBehaviour
 		if (followTarget == null)
 			return;
 
-		transform.SetPositionAndRotation(
-			followTarget.TransformPoint(followLocalOffset),
-			followTarget.rotation);
+		transform.SetPositionAndRotation(followTarget.TransformPoint(followLocalOffset), followTarget.rotation);
 	}
 
 	public void PickUp(Transform holder, Vector3 localHoldOffset)
@@ -78,81 +71,32 @@ public class Pickable : MonoBehaviour
 		followLocalOffset = localHoldOffset;
 	}
 
-	public bool TryPlaceInFurnace(Furnace furnace, Transform socket)
+	public bool TryPlaceInStation(Station _station, Transform _socket)
 	{
-		if (furnace == null || socket == null || pickableType == PickableType.QuenchedMetal)
+		if (_station == null || _socket == null)
 			return false;
 
-		containingFurnace = furnace;
-		isHeld = false;
-		followTarget = null;
-		SetPhysicsActive(false);
-
-		transform.SetParent(socket, true);
-		transform.localPosition = Vector3.zero;
-		transform.localRotation = Quaternion.identity;
-		return true;
-	}
-
-	public bool TryPlaceOnAnvil(Anvil anvil, Transform socket)
-	{
-		if (anvil == null || socket == null || pickableType != PickableType.HeatableMetal)
+		if (!_station.CanAccept(this))
 			return false;
 		
 		CancelInvoke(nameof(ClearHolderCollisionIgnore));
 		SetHolderCollisionIgnored(false);
 		ignoredHolderColliders = null;
-		containingAnvil = anvil;
+		containingStation = _station;
 		isHeld = false;
 		followTarget = null;
 		SetPhysicsActive(false);
 
-		transform.SetParent(socket, true);
+		transform.SetParent(_socket, true);
 		transform.localPosition = Vector3.zero;
-		transform.localRotation = Quaternion.identity;
-		return true;
-	}
+		transform.rotation = Quaternion.identity;
 
-	public bool TryPlaceInQuenchVat(QuenchVat vat, Transform socket)
-	{
-		if (socket == null || vat == null || pickableType != PickableType.HeatableMetal)
-			return false;
+		if (_station is QuenchVat)
+			pickableType = PickableType.QuenchedMetal;
 		
-		CancelInvoke(nameof(ClearHolderCollisionIgnore));
-		SetHolderCollisionIgnored(false);
-		ignoredHolderColliders = null;
-		containingVat = vat;
-		isHeld = false;
-		pickableType = PickableType.QuenchedMetal;
-		followTarget = null;
-		SetPhysicsActive(false);
-		
-		transform.SetParent(socket, true);
-		transform.localPosition = Vector3.zero;
-		transform.localRotation = Quaternion.identity;
 		return true;
 	}
-
-	public bool TryPlaceOnGrindstone(Grindstone grindstone, Transform socket)
-	{
-		if (grindstone == null || socket == null || pickableType != PickableType.QuenchedMetal)
-			return false;
-
-		CancelInvoke(nameof(ClearHolderCollisionIgnore));
-		SetHolderCollisionIgnored(false);
-		ignoredHolderColliders = null;
-		ClearStationContainment();
-		containingGrindstone = grindstone;
-		isHeld = false;
-		followTarget = null;
-		SetPhysicsActive(false);
-
-		transform.SetParent(socket, true);
-		transform.localPosition = Vector3.zero;
-		transform.localRotation = Quaternion.identity;
-		return true;
-	}
-
+	
 	public bool TryPlaceOnFinalTable(Transform socket)
 	{
 		if (socket == null || pickableType != PickableType.QuenchedMetal)
@@ -171,7 +115,7 @@ public class Pickable : MonoBehaviour
 		transform.localRotation = Quaternion.identity;
 		return true;
 	}
-
+	
 	public void Drop(Vector3 worldPosition, Vector3 velocity)
 	{
 		if (!isHeld)
@@ -229,46 +173,11 @@ public class Pickable : MonoBehaviour
 
 	void ClearStationContainment()
 	{
-		ClearFurnaceContainment();
-		ClearAnvilContainment();
-		ClearQuenchVatContainment();
-		ClearGrindstoneContainment();
-	}
-
-	void ClearFurnaceContainment()
-	{
-		if (containingFurnace == null)
+		if (containingStation == null)
 			return;
 
-		containingFurnace.NotifyItemRemoved(this);
-		containingFurnace = null;
-	}
-
-	void ClearAnvilContainment()
-	{
-		if (containingAnvil == null)
-			return;
-
-		containingAnvil.NotifyItemRemoved(this);
-		containingAnvil = null;
-	}
-
-	void ClearQuenchVatContainment()
-	{
-		if (containingVat == null)
-			return;
-		
-		containingVat.NotifyItemRemoved(this);
-		containingVat = null;
-	}
-
-	void ClearGrindstoneContainment()
-	{
-		if (containingGrindstone == null)
-			return;
-
-		containingGrindstone.NotifyItemRemoved(this);
-		containingGrindstone = null;
+		containingStation.NotifyItemRemoved(this);
+		containingStation = null;
 	}
 
 	void SetPhysicsActive(bool active)

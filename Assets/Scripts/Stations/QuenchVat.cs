@@ -2,11 +2,11 @@ using UnityEngine;
 
 public class QuenchVat : Station
 {
-	[Range(0, 1)]
-	[SerializeField] float heatPercentToQuench = 0.8f;
+	[SerializeField] int numberOfSteamParticles = 5;
 	
 	[Header("References")]
 	[SerializeField] Transform metalSocket;
+	[SerializeField] GameObject steamParticlePrefab;
 
 	[Header("Slot")]
 	[SerializeField] Vector3 metalSocketLocalOffset = new Vector3(0f, 0.35f, 0f);
@@ -14,15 +14,16 @@ public class QuenchVat : Station
 	HeatableMetal containedMetal;
 	Highlightable highlight;
 
+	private QuenchSteamParticle[] steamParticlePool;
+
     public override Highlightable Highlight { get { return highlight; } }
-    public override Transform InteractionPoint { get { return metalSocket; } }
 
     public override bool CanAccept(Pickable _pickable)
     {
 	    if (!_pickable.TryGetComponent(out HeatableMetal heatableMetal))
 		    return false;
 	    
-        return !containedMetal && _pickable.Type == Pickable.PickableType.HeatableMetal && heatableMetal.Heat01 >= heatPercentToQuench;
+        return !containedMetal && _pickable.Type == Pickable.PickableType.HeatableMetal && heatableMetal.IsQuenchTemp;
     }
 
     public override bool TryUse(Pickable _pickable)
@@ -34,11 +35,12 @@ public class QuenchVat : Station
 	{
 		highlight = GetComponent<Highlightable>();
 		EnsureSocket();
+		EnsureSteamParticles();
 	}
 
 	public bool TryAcceptPickable(Pickable pickable)
 	{
-		if (pickable == null || pickable.IsInFurnace || pickable.IsOnAnvil || pickable.IsOnGrindstone || pickable.Type != Pickable.PickableType.HeatableMetal)
+		if (pickable == null || pickable.InStation || pickable.Type != Pickable.PickableType.HeatableMetal)
 			return false;
 
 		if (pickable.TryGetComponent(out HeatableMetal metal))
@@ -47,10 +49,16 @@ public class QuenchVat : Station
 		return false;
 	}
 	
-	public void NotifyItemRemoved(Pickable pickable)
+	public override void NotifyItemRemoved(Pickable _pickable)
 	{
-		if (containedMetal != null && containedMetal.GetComponent<Pickable>() == pickable)
+		if (containedMetal != null && containedMetal.GetComponent<Pickable>() == _pickable)
 			containedMetal = null;
+	}
+
+	public override float DistanceFromStationSquared(Vector3 _worldPoint)
+	{
+		Vector3 socketPos = metalSocket != null ? metalSocket.position : transform.position;
+		return (_worldPoint - socketPos).sqrMagnitude;
 	}
 
 	bool TryInsertPart(Pickable pickable, HeatableMetal metal)
@@ -60,7 +68,7 @@ public class QuenchVat : Station
 
 		EnsureSocket();
 
-		bool shouldQuench = metal.Heat01 >= heatPercentToQuench;
+		bool shouldQuench = metal.IsQuenchTemp;
 		if (!shouldQuench)
 		{
 			// TODO add clear feedback that the metal is too cold to quench
@@ -68,11 +76,15 @@ public class QuenchVat : Station
 			return false;
 		}
 		
-		if (!pickable.TryPlaceInQuenchVat(this, metalSocket))
+		if (!pickable.TryPlaceInStation(this, metalSocket))
 			return false;
 		
-		metal.Quench();	
+		metal.Quench();
 		containedMetal = metal;
+		
+		EnsureSteamParticles();
+		SpawnSteamParticles();
+		
 		return true;
 	}
 
@@ -85,6 +97,29 @@ public class QuenchVat : Station
 		metalSocket = socketGo.transform;
 		metalSocket.SetParent(transform, false);
 		metalSocket.localPosition = metalSocketLocalOffset;
+	}
+
+	void EnsureSteamParticles()
+	{
+		if (steamParticlePool != null)
+			return;
+		
+		steamParticlePool = new QuenchSteamParticle[numberOfSteamParticles];
+		
+		for (int i = 0; i < steamParticlePool.Length; i++)
+		{
+			var steamParticleGO = Instantiate(steamParticlePrefab);
+			steamParticlePool[i] = steamParticleGO.GetComponent<QuenchSteamParticle>();
+		}
+	}
+
+	void SpawnSteamParticles()
+	{
+		float radiusIncrement = 0.75f / (float)steamParticlePool.Length;
+		for (int i = 0; i < steamParticlePool.Length; i++)
+		{
+			steamParticlePool[i].Spawn(transform.position + (Vector3.up * 0.5f), i * radiusIncrement);
+		}
 	}
 
 	void OnTriggerEnter(Collider other) => TryAcceptFromCollider(other);

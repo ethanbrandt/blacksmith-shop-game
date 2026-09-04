@@ -1,0 +1,26 @@
+:root {
+    flex-grow: 1;
+}
+
+.operation-entry {
+    height: 100%;
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.operation--complete {
+    opacity: 0.5;
+}
+
+.operation--current {
+    opacity: 1;
+}
+
+.operation--future {
+    opacity: 0.25;
+}
+
+.is-hidden {
+    display: none;
+}
