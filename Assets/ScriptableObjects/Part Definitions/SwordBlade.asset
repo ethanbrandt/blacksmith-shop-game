@@ -22,13 +22,21 @@ MonoBehaviour:
   - {fileID: 0}
   partSocketSprite: {fileID: 21300000, guid: 8a7e16d8df84a1a42b940b4d3a69fa1d, type: 3}
   outlineLocal:
-  - {x: -0.33269665, y: 1}
-  - {x: -0.00426136, y: 1.4957386}
-  - {x: 0.33269665, y: 1}
-  - {x: 0.5, y: -1}
-  - {x: 0.5, y: -1.2}
-  - {x: -0.5, y: -1.2}
-  - {x: -0.5, y: -1}
+  - {x: 1.71885919, y: 0.34096568}
+  - {x: 2.61982209, y: 0.00049453}
+  - {x: 1.71885919, y: -0.34881167}
+  - {x: -1.91597134, y: -0.52224603}
+  - {x: -2.27945439, y: -0.52224603}
+  - {x: -2.27945439, y: 0.51440005}
+  - {x: -1.91597134, y: 0.51440005}
   outlineCenterOffset: {x: 0, y: 0}
+  outlineEdgeNeedsSharpening:
+  - 1
+  - 1
+  - 1
+  - 0
+  - 0
+  - 0
+  - 1
   outlineEdgeNeedsSharpening: 01010100000001
   defaultMetalType: {fileID: 0}

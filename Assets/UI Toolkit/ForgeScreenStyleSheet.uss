@@ -1,7 +1,65 @@
 :root {
-
 }
 
 .is-hidden {
     display: none;
+}
+
+.heat {
+}
+
+.heat .unity-base-slider--vertical .unity-base-slider__tracker {
+    background-color: rgba(0, 0, 0, 0);
+    border-width: 0;
+}
+
+.heat .unity-base-slider--vertical .unity-base-slider__dragger {
+    width: 42px;
+    height: 4px;
+    left: 7px;
+    border-width: 0;
+    background-color: whitesmoke;
+}
+
+.quality-light-on {
+}
+
+.s-quality {
+    background-color: rgb(96, 93, 43);
+}
+
+.s-quality.quality-light-on {
+    background-color: rgb(225, 217, 61);
+}
+
+.a-quality {
+    background-color: rgb(43, 76, 96);
+}
+
+.a-quality.quality-light-on {
+    background-color: rgb(61, 151, 225);
+}
+
+.b-quality {
+    background-color: rgb(53, 96, 43);
+}
+
+.b-quality.quality-light-on {
+    background-color: rgb(91, 225, 61);
+}
+
+.c-quality {
+    background-color: rgb(75, 56, 96);
+}
+
+.c-quality.quality-light-on {
+    background-color: rgb(104, 96, 189);
+}
+
+.d-quality {
+    background-color: rgb(96, 43, 43);
+}
+
+.d-quality.quality-light-on {
+    background-color: rgb(225, 61, 61);
 }

@@ -1,8 +1,29 @@
 <ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
     <Style src="project://database/Assets/UI%20Toolkit/ForgeScreenStyleSheet.uss?fileID=7433441132597879392&amp;guid=e9c3e12755852f149b2f6678328b45d5&amp;type=3#ForgeScreenStyleSheet"/>
-    <ui:VisualElement style="flex-grow: 1; background-image: resource(&quot;GraphView/Nodes/BlackboardFieldPillBackground&quot;); margin-left: 32px; margin-top: 32px; margin-right: 32px; margin-bottom: 32px;">
-        <ui:Image>
-            <ui:Image source="project://database/Assets/Art/Runtime%20Forging%20Stuff/ForgeView.renderTexture?fileID=8400000&amp;guid=60c1aede1c092f349b030dbe56266039&amp;type=2#ForgeView" name="Image" style="width: 400px; height: 256px; align-self: center; align-content: center; align-items: center; justify-content: center; flex-direction: column; flex-wrap: nowrap;"/>
-        </ui:Image>
+    <ui:VisualElement style="flex-grow: 1; background-color: rgba(0, 0, 0, 0.353);">
+        <ui:VisualElement style="flex-grow: 1; background-image: resource(&quot;GraphView/Nodes/BlackboardFieldPillBackground&quot;); margin-left: 24px; margin-top: 24px; margin-right: 24px; margin-bottom: 24px; flex-direction: row; align-items: auto; align-self: stretch; justify-content: space-evenly; background-color: rgb(0, 0, 0); -unity-background-image-tint-color: rgb(255, 255, 255); border-left-color: rgb(0, 0, 0); border-right-color: rgb(0, 0, 0); border-top-color: rgb(0, 0, 0); border-bottom-color: rgb(0, 0, 0);">
+            <ui:VisualElement name="HeatElement" class="heat" style="flex-grow: 0; align-items: center; justify-content: center; align-self: center; height: 80%; flex-shrink: 1; width: 36px;">
+                <ui:VisualElement name="HeatGaugeOutline" style="flex-grow: 1; position: absolute; background-color: rgb(60, 54, 54); width: 36px; height: 256px; justify-content: flex-start; align-items: center; flex-direction: column; border-top-width: 0; border-right-width: 0; border-bottom-width: 0; border-left-width: 0; flex-shrink: 1;"/>
+                <ui:VisualElement name="HeatGaugeBackground" style="flex-grow: 1; position: absolute; background-color: rgb(0, 0, 0); width: 30px; height: 100%; justify-content: flex-start; align-items: center; flex-direction: column; border-top-width: 0; border-right-width: 0; border-bottom-width: 0; border-left-width: 0; flex-shrink: 1;">
+                    <ui:VisualElement name="QuenchTemp" style="flex-grow: 1; width: 100%; background-color: rgb(238, 168, 102); height: 5%;"/>
+                    <ui:VisualElement name="NormalTemp" style="flex-grow: 1; width: 100%; background-color: rgb(245, 245, 245); height: 90%;"/>
+                    <ui:VisualElement name="ColdTemp" style="flex-grow: 1; width: 100%; background-color: rgb(94, 87, 101); height: 5%;"/>
+                </ui:VisualElement>
+                <ui:Slider label="" value="0.36" high-value="1" direction="Vertical" inverted="false" enabled="true" focusable="false" name="HeatSlider" style="flex-grow: 1; width: 32px; margin-left: 0; margin-right: 0; margin-top: 0; margin-bottom: 0; border-top-width: 0; border-right-width: 0; border-bottom-width: 0; border-left-width: 0; border-left-color: rgba(0, 0, 0, 0); border-right-color: rgba(0, 0, 0, 0); border-top-color: rgba(0, 0, 0, 0); border-bottom-color: rgba(0, 0, 0, 0);"/>
+            </ui:VisualElement>
+            <ui:VisualElement style="flex-grow: 0; align-self: center; justify-content: flex-start; align-items: auto; align-content: auto;">
+                <ui:VisualElement name="QualityElement" style="flex-grow: 1; position: relative; align-self: center; align-content: flex-start; align-items: stretch; justify-content: space-between; top: 0; width: 256px; height: 48px; background-color: rgba(198, 202, 167, 0);">
+                    <ui:Label text="INCOMPLETE" name="QualityLabel" style="-unity-text-align: middle-center; margin-top: 4px; margin-bottom: 4px; margin-right: 0; margin-left: 0; padding-right: 0; padding-bottom: 0; padding-top: 0; padding-left: 0; align-self: auto; align-items: auto; justify-content: flex-start; align-content: auto; flex-grow: 1; -unity-font-definition: url(&quot;project://database/Assets/TextMesh%20Pro/Fonts/Inkbit.ttf?fileID=12800000&amp;guid=c230e0b302d4ab7438ebb477abe2877a&amp;type=3#Inkbit&quot;); color: rgb(255, 255, 255); font-size: 16px;"/>
+                    <ui:VisualElement name="QualityLights" style="flex-grow: 0; flex-direction: row; justify-content: center; flex-shrink: 0; background-color: rgba(86, 74, 94, 0.286); align-self: center;">
+                        <ui:VisualElement name="LightD" class="d-quality" style="flex-grow: 0; width: 8px; height: 8px; flex-shrink: 0; margin-right: 4px; margin-left: 4px; margin-top: 4px; margin-bottom: 4px;"/>
+                        <ui:VisualElement name="LightC" class="c-quality" style="flex-grow: 0; width: 8px; height: 8px; flex-shrink: 0; margin-right: 4px; margin-left: 4px; margin-top: 4px; margin-bottom: 4px;"/>
+                        <ui:VisualElement name="LightB" class="b-quality" style="flex-grow: 0; width: 8px; height: 8px; flex-shrink: 0; margin-right: 4px; margin-left: 4px; margin-top: 4px; margin-bottom: 4px;"/>
+                        <ui:VisualElement name="LightA" class="a-quality" style="flex-grow: 0; width: 8px; height: 8px; flex-shrink: 0; margin-right: 4px; margin-left: 4px; margin-top: 4px; margin-bottom: 4px;"/>
+                        <ui:VisualElement name="LightS" class="s-quality" style="flex-grow: 0; width: 8px; height: 8px; flex-shrink: 0; margin-right: 4px; margin-left: 4px; margin-top: 4px; margin-bottom: 4px;"/>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:Image source="project://database/Assets/Art/Runtime%20Forging%20Stuff/ForgeView.renderTexture?fileID=8400000&amp;guid=60c1aede1c092f349b030dbe56266039&amp;type=2#ForgeView" name="ForgeView" style="width: 400px; height: 256px; align-self: center; align-content: center; align-items: auto; justify-content: center; flex-direction: column; flex-wrap: nowrap; flex-grow: 0;"/>
+            </ui:VisualElement>
+        </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

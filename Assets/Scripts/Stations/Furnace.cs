@@ -27,7 +27,7 @@ public class Furnace : Station
 
 	[Header("Slot")]
 	[SerializeField] Vector3 metalSocketLocalOffset = new Vector3(0f, 0.35f, 0f);
-	
+
 	[Header("Lighting")]
 	[SerializeField] float fuelLightMinIntensity;
 	[SerializeField] float fuelLightMaxIntensity;
@@ -44,6 +44,7 @@ public class Furnace : Station
 	public float Fuel => fuel;
 	public float MaxFuel => maxFuel;
 	public float FuelNormalized => maxFuel > 0.0001f ? Mathf.Clamp01(fuel / maxFuel) : 0f;
+
 	public float TemperatureNormalized
 	{
 		get
@@ -54,20 +55,26 @@ public class Furnace : Station
 			return Mathf.Clamp01((internalTemperature - ambientTemperature) / span);
 		}
 	}
-	
+
 	public float InternalTemperature => internalTemperature;
 	public bool IsLit => isLit;
 	public bool HasMetal => containedMetal != null;
 	public HeatableMetal ContainedMetal => containedMetal;
 	public bool HasFuel => fuel > 0f;
 
-	public override Highlightable Highlight { get { return highlight; } }
+	public override Highlightable Highlight
+	{
+		get
+		{
+			return highlight;
+		}
+	}
 
 	public override bool CanAccept(Pickable _pickable)
 	{
 		if (containedMetal)
 			return _pickable.Type == Pickable.PickableType.Fuel;
-		
+
 		return _pickable.Type != Pickable.PickableType.QuenchedMetal;
 	}
 
@@ -75,15 +82,15 @@ public class Furnace : Station
 	{
 		return TryAcceptPickable(_pickable);
 	}
-	
+
 	void Awake()
 	{
 		highlight = GetComponent<Highlightable>();
-		
+
 		fuelGauge = GetComponentInChildren<Slider>();
 		fuelGauge.value = 0f;
 		fuelGauge.gameObject.SetActive(false);
-		
+
 		EnsureSocket();
 
 		UpdateVisuals();
@@ -93,7 +100,6 @@ public class Furnace : Station
 	{
 		TickFuelAndAir(Time.deltaTime);
 		TickTemperature(Time.deltaTime);
-		TickContainedMetal(Time.deltaTime);
 		UpdateVisuals();
 	}
 
@@ -116,7 +122,7 @@ public class Furnace : Station
 		if (containedMetal != null && containedMetal.GetComponent<Pickable>() == _pickable)
 			containedMetal = null;
 	}
-	
+
 	public override float DistanceFromStationSquared(Vector3 _worldPoint)
 	{
 		Vector3 socketPos = metalSocket != null ? metalSocket.position : transform.position;
@@ -164,14 +170,6 @@ public class Furnace : Station
 		internalTemperature = Mathf.MoveTowards(internalTemperature, target, rate * dt);
 	}
 
-	void TickContainedMetal(float dt)
-	{
-		if (containedMetal == null)
-			return;
-
-		containedMetal.TickTowardFurnace(internalTemperature, dt);
-	}
-
 	bool TryConsumeFuel(Pickable pickable, FuelItem fuelItem)
 	{
 		if (fuel >= maxFuel - 0.0001f)
@@ -205,7 +203,7 @@ public class Furnace : Station
 		EnsureSocket();
 		if (!pickable.TryPlaceInStation(this, metalSocket))
 			return false;
-		
+
 		containedMetal = metal;
 		return true;
 	}
@@ -255,7 +253,7 @@ public class Furnace : Station
 
 		if (otherRB.linearVelocity.magnitude < minVelToAcceptFuel)
 			return;
-		
+
 		TryAcceptPickable(pickable);
 	}
 }

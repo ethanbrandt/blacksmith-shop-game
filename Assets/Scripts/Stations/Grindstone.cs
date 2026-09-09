@@ -14,27 +14,39 @@ public class Grindstone : Station
 
 	HeatableMetal containedMetal;
 	Highlightable highlight;
-	
+
 	public Transform MetalSocket => metalSocket;
 	public bool HasMetal => containedMetal != null;
 	public HeatableMetal ContainedMetal => containedMetal;
-	
-	public override Highlightable Highlight { get { return highlight; } }
 
-    public override bool CanAccept(Pickable _pickable)
-    {
-    	return !containedMetal && _pickable.Type == Pickable.PickableType.QuenchedMetal;
-    }
+	public override Highlightable Highlight
+	{
+		get
+		{
+			return highlight;
+		}
+	}
 
-    public override bool TryUse(Pickable _pickable)
-    {
-        return TryAcceptPickable(_pickable);
-    }
-	
+	public override bool CanAccept(Pickable _pickable)
+	{
+		bool hasEmptySocket = containedMetal == null;
+		bool hasAcceptedItemType = _pickable != null && _pickable.Type == Pickable.PickableType.QuenchedMetal;
+		if (!hasEmptySocket || !hasAcceptedItemType)
+			return false;
+		var session = GrindSessionController.Instance;
+		bool isSessionReady = session != null && session.CanBegin(_pickable.GetComponent<HeatableMetal>());
+		return isSessionReady;
+	}
+
+	public override bool TryUse(Pickable _pickable)
+	{
+		return TryAcceptPickable(_pickable);
+	}
+
 	void Awake()
 	{
 		highlight = GetComponent<Highlightable>();
-		
+
 		EnsureSocket();
 		EnsureCatchTrigger();
 	}

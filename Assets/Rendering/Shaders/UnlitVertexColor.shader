@@ -2,7 +2,7 @@ Shader "ForgingPrototype/UnlitVertexColor"
 {
 	Properties
 	{
-		_BaseColor("Tint", Color) = (1,1,1,1)
+		[MainColor] _BaseColor("Tint", Color) = (1,1,1,1)
 		_MainTex("Texture", 2D) = "white" {}
 	}
 

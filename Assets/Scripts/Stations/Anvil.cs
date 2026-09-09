@@ -13,23 +13,35 @@ public class Anvil : Station
 
 	HeatableMetal containedMetal;
 	Highlightable highlight;
-	
+
 	public Transform MetalSocket => metalSocket;
 	public bool HasMetal => containedMetal != null;
 	public HeatableMetal ContainedMetal => containedMetal;
 
-	public override Highlightable Highlight { get { return highlight; } }
+	public override Highlightable Highlight
+	{
+		get
+		{
+			return highlight;
+		}
+	}
 
 	public override bool CanAccept(Pickable _pickable)
 	{
-		return !containedMetal && _pickable.Type == Pickable.PickableType.HeatableMetal;
+		bool hasEmptySocket = containedMetal == null;
+		bool hasAcceptedItemType = _pickable != null && _pickable.Type == Pickable.PickableType.HeatableMetal;
+		if (!hasEmptySocket || !hasAcceptedItemType)
+			return false;
+		var session = ForgeSessionController.Instance;
+		bool isSessionReady = session != null && session.CanBegin(_pickable.GetComponent<HeatableMetal>());
+		return isSessionReady;
 	}
 
 	public override bool TryUse(Pickable _pickable)
-    {
-    	return TryAcceptPickable(_pickable);
-    }
-		
+	{
+		return TryAcceptPickable(_pickable);
+	}
+
 	void Awake()
 	{
 		highlight = GetComponent<Highlightable>();
@@ -41,6 +53,7 @@ public class Anvil : Station
 	{
 		ForgeSessionController.EnsureExists();
 	}
+
 	public override float DistanceFromStationSquared(Vector3 _worldPoint)
 	{
 		Vector3 socketPos = metalSocket != null ? metalSocket.position : transform.position;
@@ -58,7 +71,7 @@ public class Anvil : Station
 		EnsureSocket();
 		if (!pickable.TryPlaceInStation(this, metalSocket))
 			return false;
-		
+
 		containedMetal = metal;
 		OpenForge(metal);
 		return true;
@@ -68,12 +81,12 @@ public class Anvil : Station
 	{
 		if (pickable == null || pickable.InStation)
 			return false;
-		
+
 		if (pickable.Type == Pickable.PickableType.QuenchedMetal)
-        {
-        	LogText.Instance.SetText("CANNOT PLACE QUENCHED METAL ON ANVIL");
-        	return false;
-        }
+		{
+			LogText.Instance.SetText("CANNOT PLACE QUENCHED METAL ON ANVIL");
+			return false;
+		}
 
 		if (containedMetal != null)
 			return false;
@@ -84,7 +97,7 @@ public class Anvil : Station
 		EnsureSocket();
 		if (!pickable.TryPlaceInStation(this, metalSocket))
 			return false;
-		
+
 		containedMetal = metal;
 		OpenForge(metal);
 		return true;
@@ -102,7 +115,7 @@ public class Anvil : Station
 
 	void OpenForge(HeatableMetal metal)
 	{
-		ForgeSessionController.EnsureExists().BeginSession(this, metal);
+		ForgeSessionController.EnsureExists()?.BeginSession(this, metal);
 	}
 
 	void OnTriggerEnter(Collider other) => TryAcceptFromCollider(other);

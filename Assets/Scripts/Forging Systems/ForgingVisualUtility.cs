@@ -4,16 +4,12 @@ using UnityEngine.Rendering;
 public static class ForgingVisualUtility
 {
 	public const int ForgeLayer = 6;
-
-	static Material spritesMaterial;
+	const int RoundedLineVertexCount = 4;
 	static Material vertexColorMaterial;
-	static Shader cachedUnlitShader;
-	static Shader cachedVertexColorShader;
-
 	public static int ResolveForgeLayer()
 	{
-		int named = LayerMask.NameToLayer("Forge");
-		return named >= 0 ? named : ForgeLayer;
+		int namedLayerIndex = LayerMask.NameToLayer("Forge");
+		return namedLayerIndex >= 0 ? namedLayerIndex : ForgeLayer;
 	}
 
 	public static void ExcludeForgeLayer(Camera camera)
@@ -30,76 +26,59 @@ public static class ForgingVisualUtility
 			return;
 
 		root.layer = layer;
-		Transform t = root.transform;
-		for (int i = 0; i < t.childCount; i++)
-			ApplyLayerRecursively(t.GetChild(i).gameObject, layer);
+		Transform rootTransform = root.transform;
+		for (int i = 0; i < rootTransform.childCount; i++)
+			ApplyLayerRecursively(rootTransform.GetChild(i).gameObject, layer);
 	}
 
-	/// <summary>
-	/// LineRenderer / particle friendly material. Avoids Resources.GetBuiltinResource
-	/// ("Sprites-Default.mat"), which errors on newer Unity versions.
-	/// </summary>
-	public static Material GetSpritesDefaultMaterial()
-	{
-		if (spritesMaterial != null)
-			return spritesMaterial;
-
-		Shader shader = Shader.Find("Sprites/Default");
-		if (shader == null)
-			shader = Shader.Find("Universal Render Pipeline/2D/Sprite-Unlit-Default");
-		if (shader == null)
-			return CreateColorMaterial(Color.white);
-
-		spritesMaterial = new Material(shader) { name = "ForgeSpritesDefault" };
-		EnsureMeshFillMaterial(spritesMaterial, Color.white);
-		return spritesMaterial;
-	}
-
-	/// <summary>
-	/// Mesh material that multiplies vertex colors (grind bands / highlights).
-	/// </summary>
-	public static Material CreateVertexColorMaterial(Color tint)
-	{
-		if (vertexColorMaterial != null)
-		{
-			var clone = new Material(vertexColorMaterial) { name = "ForgeVertexColor" };
-			ApplySolidColor(clone, tint);
-			return clone;
-		}
-
-		Shader shader = ResolveVertexColorShader();
-		var material = new Material(shader) { name = "ForgeVertexColor" };
-		EnsureMeshFillMaterial(material, tint);
-		material.renderQueue = (int)RenderQueue.Transparent;
-		vertexColorMaterial = material;
-		return new Material(material) { name = "ForgeVertexColor" };
-	}
+	// Shared asset is immutable. Renderers tint through property blocks; factory clones
+	// are reserved for callers (including editor rig builders) that own their lifetime.
+	public static Material GetSpritesDefaultMaterial() => GetSharedVertexColorMaterial();
 
 	public static Material GetSharedVertexColorMaterial()
 	{
-		if (vertexColorMaterial != null)
-			return vertexColorMaterial;
-
-		Shader shader = ResolveVertexColorShader();
-		vertexColorMaterial = new Material(shader) { name = "ForgeVertexColorShared" };
-		EnsureMeshFillMaterial(vertexColorMaterial, Color.white);
-		vertexColorMaterial.renderQueue = (int)RenderQueue.Transparent;
+		if (vertexColorMaterial == null)
+			vertexColorMaterial = Resources.Load<Material>("Crafting/Overlay");
+		
+		if (vertexColorMaterial == null)
+			throw new System.InvalidOperationException("Missing Resources/Crafting/Overlay material.");
+		
 		return vertexColorMaterial;
 	}
 
+	public static Material CreateVertexColorMaterial(Color tint) => CreateColorMaterial(tint);
+
 	public static Material CreateColorMaterial(Color color)
 	{
-		Shader shader = ResolveUnlitShader();
-		var material = new Material(shader) { name = "ForgeColor" };
-		ApplySolidColor(material, color);
-		material.renderQueue = (int)RenderQueue.Transparent;
+		var material = new Material(GetSharedVertexColorMaterial())
+		{
+			name = "CraftingColor"
+		};
+		EnsureMeshFillMaterial(material, color);
 		return material;
 	}
 
-	/// <summary>
-	/// Sprites/Default samples _MainTex; a null texture makes MeshRenderer fills invisible
-	/// (LineRenderers still draw because they supply UVs/geometry differently).
-	/// </summary>
+	public static void DestroyGenerated(Object resource)
+	{
+		if (resource == null)
+			return;
+		if (Application.isPlaying)
+			Object.Destroy(resource);
+		else
+			Object.DestroyImmediate(resource);
+	}
+
+	public static void SetTint(Renderer renderer, Color color)
+	{
+		if (renderer == null)
+			return;
+		var tintProperties = new MaterialPropertyBlock();
+		renderer.GetPropertyBlock(tintProperties);
+		tintProperties.SetColor("_BaseColor", color);
+		tintProperties.SetColor("_Color", color);
+		renderer.SetPropertyBlock(tintProperties);
+	}
+
 	public static void EnsureMeshFillMaterial(Material material, Color? color = null)
 	{
 		if (material == null)
@@ -129,8 +108,7 @@ public static class ForgingVisualUtility
 	{
 		if (line == null)
 			return;
-
-		line.material = GetSpritesDefaultMaterial();
+		line.sharedMaterial = GetSpritesDefaultMaterial();
 		line.textureMode = LineTextureMode.Stretch;
 		line.shadowCastingMode = ShadowCastingMode.Off;
 		line.receiveShadows = false;
@@ -139,37 +117,7 @@ public static class ForgingVisualUtility
 		line.endColor = color;
 		line.widthMultiplier = width;
 		line.sortingOrder = sortingOrder;
-		line.numCornerVertices = 4;
-		line.numCapVertices = 4;
-	}
-
-	static Shader ResolveUnlitShader()
-	{
-		if (cachedUnlitShader != null)
-			return cachedUnlitShader;
-
-		cachedUnlitShader = Shader.Find("Universal Render Pipeline/Unlit");
-		if (cachedUnlitShader == null)
-			cachedUnlitShader = Shader.Find("Unlit/Color");
-		if (cachedUnlitShader == null)
-			cachedUnlitShader = Shader.Find("Sprites/Default");
-		if (cachedUnlitShader == null)
-			cachedUnlitShader = Shader.Find("Hidden/InternalErrorShader");
-
-		return cachedUnlitShader;
-	}
-
-	static Shader ResolveVertexColorShader()
-	{
-		if (cachedVertexColorShader != null)
-			return cachedVertexColorShader;
-
-		cachedVertexColorShader = Shader.Find("ForgingPrototype/UnlitVertexColor");
-		if (cachedVertexColorShader == null)
-			cachedVertexColorShader = Shader.Find("Sprites/Default");
-		if (cachedVertexColorShader == null)
-			cachedVertexColorShader = ResolveUnlitShader();
-
-		return cachedVertexColorShader;
+		line.numCornerVertices = RoundedLineVertexCount;
+		line.numCapVertices = RoundedLineVertexCount;
 	}
 }

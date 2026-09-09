@@ -4,6 +4,9 @@ using UnityEngine.Rendering;
 [RequireComponent(typeof(MetalDeformer2D))]
 public class ForgeMetalView : MonoBehaviour
 {
+	const float MinimumFlashDuration = 0.0001f;
+	const float MetalColorBlend = 0.65f;
+	const float OutlineDarkening = 0.35f;
 	[SerializeField] MetalDeformer2D deformer;
 	[SerializeField] float fillZ;
 	[SerializeField] float outlineZ = -0.02f;
@@ -13,7 +16,8 @@ public class ForgeMetalView : MonoBehaviour
 	[SerializeField] Color coldTint = new Color(0.45f, 0.48f, 0.55f, 1f);
 	[SerializeField] Color hotTint = new Color(1f, 0.45f, 0.12f, 1f);
 	[SerializeField] Color hitFlashColor = Color.white;
-	[SerializeField, Min(0f)] float hitFlashDuration = 0.1f;
+	[Min(0f)]
+	[SerializeField] float hitFlashDuration = 0.1f;
 
 	[Header("Scene Objects")]
 	[SerializeField] MeshFilter fillFilter;
@@ -23,6 +27,14 @@ public class ForgeMetalView : MonoBehaviour
 
 	float hitFlashStartTime = float.NegativeInfinity;
 	Mesh fillMesh;
+	readonly PolygonMeshBuilder fillBuilder = new PolygonMeshBuilder();
+
+	void OnDestroy()
+	{
+		if (fillMesh != null)
+			ForgingVisualUtility.DestroyGenerated(fillMesh);
+	}
+
 	MaterialPropertyBlock tintBlock;
 
 	public MetalDeformer2D Deformer => deformer;
@@ -42,6 +54,7 @@ public class ForgeMetalView : MonoBehaviour
 			deformer.VerticesChanged += Rebuild;
 			deformer.Struck += OnStruck;
 		}
+
 		Rebuild();
 	}
 
@@ -74,7 +87,7 @@ public class ForgeMetalView : MonoBehaviour
 		{
 			deformer.VerticesChanged -= Rebuild;
 			deformer.VerticesChanged += Rebuild;
-			
+
 			deformer.Struck -= OnStruck;
 			deformer.Struck += OnStruck;
 		}
@@ -107,17 +120,15 @@ public class ForgeMetalView : MonoBehaviour
 
 		if (fillMesh == null)
 		{
-			fillMesh = fillFilter.sharedMesh != null && fillFilter.sharedMesh.name == "ForgeMetalFill"
-				? fillFilter.sharedMesh
-				: new Mesh { name = "ForgeMetalFill" };
+			fillMesh = new Mesh
+			{
+				name = "ForgeMetalFill"
+			};
 			fillMesh.MarkDynamic();
 		}
 
 		fillFilter.sharedMesh = fillMesh;
-
-		if (fillMaterial == null)
-			fillMaterial = ForgingVisualUtility.CreateColorMaterial(Color.white);
-		ForgingVisualUtility.EnsureMeshFillMaterial(fillMaterial, Color.white);
+		fillMaterial = ForgingVisualUtility.GetSharedVertexColorMaterial();
 		if (fillRenderer != null)
 		{
 			fillRenderer.sharedMaterial = fillMaterial;
@@ -141,11 +152,7 @@ public class ForgeMetalView : MonoBehaviour
 			outline = outlineGo.AddComponent<LineRenderer>();
 			outline.useWorldSpace = true;
 			outline.loop = true;
-			ForgingVisualUtility.ApplyLineRendererDefaults(
-				outline,
-				Color.white,
-				outlineWidth,
-				outlineSortingOrder);
+			ForgingVisualUtility.ApplyLineRendererDefaults(outline, Color.white, outlineWidth, outlineSortingOrder);
 		}
 
 		ForgingVisualUtility.ApplyLayerRecursively(gameObject, gameObject.layer);
@@ -170,51 +177,12 @@ public class ForgeMetalView : MonoBehaviour
 
 		var source = deformer.Vertices;
 		int count = source.Count;
-		var verts = new Vector3[count + 1];
-		var uvs = new Vector2[count + 1];
-		var colors = new Color[count + 1];
-		Vector2 centroid = Vector2.zero;
-		for (int i = 0; i < count; i++)
-			centroid += source[i];
-		centroid /= count;
-
-		// Deformer verts are world XY; MeshFilter is under ForgeStage, so convert to local.
-		Transform fillTx = fillFilter.transform;
-		float worldZ = fillTx.position.z + fillZ;
-		verts[0] = fillTx.InverseTransformPoint(new Vector3(centroid.x, centroid.y, worldZ));
-		uvs[0] = Vector2.one * 0.5f;
-		colors[0] = Color.white;
-		for (int i = 0; i < count; i++)
-		{
-			Vector2 v = source[i];
-			verts[i + 1] = fillTx.InverseTransformPoint(new Vector3(v.x, v.y, worldZ));
-			uvs[i + 1] = Vector2.one * 0.5f;
-			colors[i + 1] = Color.white;
-		}
-
-		// Winding faces the forge camera (normal -Z).
-		var tris = new int[count * 3];
-		for (int i = 0; i < count; i++)
-		{
-			int t = i * 3;
-			tris[t] = 0;
-			tris[t + 1] = i + 1;
-			tris[t + 2] = (i + 1) % count + 1;
-		}
-
-		fillMesh.Clear();
-		fillMesh.SetVertices(verts);
-		fillMesh.SetUVs(0, uvs);
-		fillMesh.SetColors(colors);
-		fillMesh.SetTriangles(tris, 0);
-		fillMesh.RecalculateBounds();
-		fillMesh.RecalculateNormals();
-
+		fillBuilder.Build(fillMesh, source, fillFilter.transform.position.z + fillZ, Color.white, fillFilter.transform);
 		outline.positionCount = count;
 		for (int i = 0; i < count; i++)
 		{
-			Vector2 v = source[i];
-			outline.SetPosition(i, new Vector3(v.x, v.y, outlineZ));
+			Vector2 vertex = source[i];
+			outline.SetPosition(i, new Vector3(vertex.x, vertex.y, outlineZ));
 		}
 
 		RefreshTint();
@@ -227,18 +195,16 @@ public class ForgeMetalView : MonoBehaviour
 
 		Color baseColor = deformer.MetalType != null ? deformer.MetalType.metalColor : Color.white;
 		float heat01 = deformer.Heat;
-		Color heated = Color.Lerp(Color.Lerp(coldTint, baseColor, 0.65f), hotTint, heat01);
-
-		float flash01 = 1f - Mathf.Clamp01((Time.unscaledTime - hitFlashStartTime) / hitFlashDuration);
+		Color heatedColor = Color.Lerp(Color.Lerp(coldTint, baseColor, MetalColorBlend), hotTint, heat01);
+		float flash01 = 1f - Mathf.Clamp01((Time.unscaledTime - hitFlashStartTime) / Mathf.Max(MinimumFlashDuration, hitFlashDuration));
 		flash01 *= flash01;
-		heated = (heated * 0.5f) + (0.5f * Color.Lerp(heated, hitFlashColor, flash01));
-		
+		heatedColor = (heatedColor * 0.5f) + (0.5f * Color.Lerp(heatedColor, hitFlashColor, flash01));
 		if (fillRenderer != null)
 		{
 			tintBlock ??= new MaterialPropertyBlock();
 			fillRenderer.GetPropertyBlock(tintBlock);
-			tintBlock.SetColor("_Color", heated);
-			tintBlock.SetColor("_BaseColor", heated);
+			tintBlock.SetColor("_Color", heatedColor);
+			tintBlock.SetColor("_BaseColor", heatedColor);
 			tintBlock.SetColor("_RendererColor", Color.white);
 			if (fillMaterial != null && fillMaterial.HasProperty("_MainTex"))
 				tintBlock.SetTexture("_MainTex", Texture2D.whiteTexture);
@@ -247,7 +213,7 @@ public class ForgeMetalView : MonoBehaviour
 
 		if (outline != null)
 		{
-			Color edge = Color.Lerp(heated, Color.black, 0.35f);
+			Color edge = Color.Lerp(heatedColor, Color.black, OutlineDarkening);
 			outline.startColor = edge;
 			outline.endColor = edge;
 		}

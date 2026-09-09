@@ -10,6 +10,13 @@ using UnityEngine.Rendering;
 [RequireComponent(typeof(GrindBladeBody))]
 public class GrindMetalView : MonoBehaviour
 {
+	const float MinimumBevelDepth = 0.0001f;
+	const float MinimumSquaredDirectionLength = 0.0001f;
+	const float GeometrySquaredTolerance = 0.000001f;
+	const float MinimumMiterProjection = 0.01f;
+	const float MaximumOuterBandFraction = 0.85f;
+	const float OutlineDarkening = 0.25f;
+	const float MinimumGrindWidthRange = 0.05f;
 	[SerializeField] GrindBladeBody blade;
 	[SerializeField] float fillZ = -0.01f;
 	[SerializeField] float bevelZ = -0.015f;
@@ -42,15 +49,20 @@ public class GrindMetalView : MonoBehaviour
 	[Tooltip("Grind amount needed before the outer (light) tip band appears.")]
 	[SerializeField] float outerBandGrind = 0.55f;
 	[Tooltip("Fraction of bevel width occupied by the outer light band when fully keen.")]
-	[SerializeField, Range(0.05f, 0.5f)] float outerBandFraction = 0.28f;
+	[Range(0.05f, 0.5f)]
+	[SerializeField] float outerBandFraction = 0.28f;
 	[Tooltip("Fraction of bevel width occupied by mid+outer bands together when fully ground.")]
-	[SerializeField, Range(0.2f, 0.95f)] float midBandFraction = 0.7f;
+	[Range(0.2f, 0.95f)]
+	[SerializeField] float midBandFraction = 0.7f;
 	[Tooltip("Caps how far a miter join extends at sharp corners (× bevel offset).")]
-	[SerializeField, Min(1f)] float bevelMiterLimit = 4f;
+	[Min(1f)]
+	[SerializeField] float bevelMiterLimit = 4f;
 	[Tooltip("Vertices within this distance of an outward tip share one inner ring point.")]
-	[SerializeField, Min(0.001f)] float tipCollapseDistance = 0.22f;
+	[Min(0.001f)]
+	[SerializeField] float tipCollapseDistance = 0.22f;
 	[Tooltip("Inward normals must diverge below this dot product to treat a vertex as an outward tip.")]
-	[SerializeField, Range(-1f, 1f)] float outwardTipNormalDot = 0.65f;
+	[Range(-1f, 1f)]
+	[SerializeField] float outwardTipNormalDot = 0.65f;
 
 	[Header("Scene Objects")]
 	[SerializeField] MeshFilter fillFilter;
@@ -61,25 +73,51 @@ public class GrindMetalView : MonoBehaviour
 	[SerializeField] Transform sharpenOutlineRoot;
 	[SerializeField] Material fillMaterial;
 	[SerializeField] Material bevelMaterial;
-
-	readonly List<Vector2> worldVerts = new List<Vector2>();
+	readonly List<Vector2> localVertices = new List<Vector2>();
 	readonly List<Vector2> inwardNormals = new List<Vector2>();
-	readonly List<Vector3> bevelVertBuffer = new List<Vector3>();
+	readonly List<Vector3> bevelVertexBuffer = new List<Vector3>();
 	readonly List<Color> bevelColorBuffer = new List<Color>();
 	readonly List<Vector2> bevelUvBuffer = new List<Vector2>();
-	readonly List<int> bevelTriBuffer = new List<int>();
+	readonly List<int> bevelTriangleBuffer = new List<int>();
 	readonly List<Vector2> ringOuterScratch = new List<Vector2>();
 	readonly List<Vector2> ringInnerScratch = new List<Vector2>();
-	readonly List<int> ringOuterIdxScratch = new List<int>();
-	readonly List<int> ringInnerIdxScratch = new List<int>();
+	readonly List<int> outerRingIndices = new List<int>();
+	readonly List<int> innerRingIndices = new List<int>();
 	readonly List<bool> ringLockedScratch = new List<bool>();
 	readonly Dictionary<long, int> weldedVertexLookup = new Dictionary<long, int>();
 	readonly List<LineRenderer> sharpenOutlineSegments = new List<LineRenderer>();
 
 	Mesh fillMesh;
+	readonly PolygonMeshBuilder fillBuilder = new PolygonMeshBuilder();
+	Transform poseRoot;
+	bool geometryDirty;
+
+	void MarkDirty() => geometryDirty = true;
+
+	void LateUpdate()
+	{
+		if (geometryDirty)
+			Rebuild();
+	}
+
+	void OnDestroy()
+	{
+		if (fillMesh != null)
+			ForgingVisualUtility.DestroyGenerated(fillMesh);
+		if (bevelMesh != null)
+			ForgingVisualUtility.DestroyGenerated(bevelMesh);
+	}
+
+	void UpdatePose()
+	{
+		if (poseRoot == null || blade == null)
+			return;
+		poseRoot.SetPositionAndRotation(new Vector3(blade.Position.x, blade.Position.y, transform.position.z), Quaternion.Euler(0f, 0f, blade.RotationDegrees));
+	}
+
 	Mesh bevelMesh;
 	MaterialPropertyBlock tintBlock;
-	bool worldVertsCcw;
+	bool isCounterClockwise;
 
 	void Awake()
 	{
@@ -91,20 +129,30 @@ public class GrindMetalView : MonoBehaviour
 	void OnEnable()
 	{
 		if (blade != null)
-			blade.VerticesChanged += Rebuild;
+		{
+			blade.VerticesChanged += MarkDirty;
+			blade.PoseChanged += UpdatePose;
+		}
+
 		Rebuild();
 	}
 
 	void OnDisable()
 	{
 		if (blade != null)
-			blade.VerticesChanged -= Rebuild;
+		{
+			blade.VerticesChanged -= MarkDirty;
+			blade.PoseChanged -= UpdatePose;
+		}
 	}
 
 	public void Configure(GrindBladeBody source, EdgeGrindEvaluator evaluator = null)
 	{
 		if (blade != null)
-			blade.VerticesChanged -= Rebuild;
+		{
+			blade.VerticesChanged -= MarkDirty;
+			blade.PoseChanged -= UpdatePose;
+		}
 
 		blade = source;
 		if (evaluator != null)
@@ -116,8 +164,10 @@ public class GrindMetalView : MonoBehaviour
 
 		if (blade != null)
 		{
-			blade.VerticesChanged -= Rebuild;
-			blade.VerticesChanged += Rebuild;
+			blade.VerticesChanged -= MarkDirty;
+			blade.VerticesChanged += MarkDirty;
+			blade.PoseChanged -= UpdatePose;
+			blade.PoseChanged += UpdatePose;
 		}
 
 		Rebuild();
@@ -127,21 +177,7 @@ public class GrindMetalView : MonoBehaviour
 	{
 		EnsureMeshObject(ref fillFilter, ref fillRenderer, "GrindMetalFill", fillSortingOrder, ref fillMesh, "GrindMetalFill");
 		EnsureMeshObject(ref bevelFilter, ref bevelRenderer, "GrindEdgeBevel", bevelSortingOrder, ref bevelMesh, "GrindEdgeBevel");
-
-		// Same double-sided vertex-color shader as bevel — URP Unlit culls the
-		// silhouette when outline winding faces away from the grind camera.
-		if (fillMaterial == null
-			|| fillMaterial.shader == null
-			|| fillMaterial.shader.name != "ForgingPrototype/UnlitVertexColor")
-			fillMaterial = ForgingVisualUtility.GetSharedVertexColorMaterial();
-		if (bevelMaterial == null
-			|| bevelMaterial.shader == null
-			|| bevelMaterial.shader.name != "ForgingPrototype/UnlitVertexColor")
-			bevelMaterial = ForgingVisualUtility.GetSharedVertexColorMaterial();
-
-		ForgingVisualUtility.EnsureMeshFillMaterial(fillMaterial, Color.white);
-		ForgingVisualUtility.EnsureMeshFillMaterial(bevelMaterial, Color.white);
-
+		fillMaterial = bevelMaterial = ForgingVisualUtility.GetSharedVertexColorMaterial();
 		ApplyRenderer(fillRenderer, fillMaterial, fillSortingOrder);
 		ApplyRenderer(bevelRenderer, bevelMaterial, bevelSortingOrder);
 
@@ -157,17 +193,35 @@ public class GrindMetalView : MonoBehaviour
 			var outlineGo = new GameObject("GrindMetalOutline");
 			outlineGo.transform.SetParent(transform, false);
 			outline = outlineGo.AddComponent<LineRenderer>();
-			outline.useWorldSpace = true;
+			outline.useWorldSpace = false;
 			outline.loop = true;
-			ForgingVisualUtility.ApplyLineRendererDefaults(
-				outline,
-				Color.white,
-				outlineWidth,
-				outlineSortingOrder);
+			ForgingVisualUtility.ApplyLineRendererDefaults(outline, Color.white, outlineWidth, outlineSortingOrder);
 		}
 
 		EnsureSharpenOutlineRoot();
+		if (poseRoot == null)
+		{
+			poseRoot = new GameObject("BladePose").transform;
+			poseRoot.SetParent(transform, false);
+			foreach (var child in new[]
+			{
+				fillFilter.transform,
+				bevelFilter.transform,
+				outline.transform,
+				sharpenOutlineRoot
+			}
 
+			)
+			{
+				child.SetParent(poseRoot, false);
+				child.localPosition = Vector3.zero;
+				child.localRotation = Quaternion.identity;
+				child.localScale = Vector3.one;
+			}
+		}
+
+		outline.useWorldSpace = false;
+		UpdatePose();
 		ForgingVisualUtility.ApplyLayerRecursively(gameObject, gameObject.layer);
 	}
 
@@ -196,13 +250,9 @@ public class GrindMetalView : MonoBehaviour
 			var go = new GameObject($"Seg{sharpenOutlineSegments.Count}");
 			go.transform.SetParent(sharpenOutlineRoot, false);
 			var line = go.AddComponent<LineRenderer>();
-			line.useWorldSpace = true;
+			line.useWorldSpace = false;
 			line.loop = false;
-			ForgingVisualUtility.ApplyLineRendererDefaults(
-				line,
-				sharpenOutlineColor,
-				outlineWidth,
-				outlineSortingOrder + 1);
+			ForgingVisualUtility.ApplyLineRendererDefaults(line, sharpenOutlineColor, outlineWidth, outlineSortingOrder + 1);
 			sharpenOutlineSegments.Add(line);
 		}
 
@@ -215,13 +265,7 @@ public class GrindMetalView : MonoBehaviour
 			sharpenOutlineSegments[i].positionCount = 0;
 	}
 
-	void EnsureMeshObject(
-		ref MeshFilter filter,
-		ref MeshRenderer renderer,
-		string childName,
-		int sortingOrder,
-		ref Mesh mesh,
-		string meshName)
+	void EnsureMeshObject(ref MeshFilter filter, ref MeshRenderer renderer, string childName, int sortingOrder, ref Mesh mesh, string meshName)
 	{
 		if (filter == null)
 		{
@@ -246,9 +290,10 @@ public class GrindMetalView : MonoBehaviour
 
 		if (mesh == null)
 		{
-			mesh = filter.sharedMesh != null && filter.sharedMesh.name == meshName
-				? filter.sharedMesh
-				: new Mesh { name = meshName };
+			mesh = new Mesh
+			{
+				name = meshName
+			};
 			mesh.MarkDynamic();
 		}
 
@@ -269,6 +314,7 @@ public class GrindMetalView : MonoBehaviour
 
 	void Rebuild()
 	{
+		geometryDirty = false;
 		EnsureVisuals();
 		if (blade == null || blade.VertexCount < 3)
 		{
@@ -282,8 +328,8 @@ public class GrindMetalView : MonoBehaviour
 			return;
 		}
 
-		blade.GetWorldVertices(worldVerts);
-		worldVertsCcw = SignedArea(worldVerts) > 0f;
+		blade.CopyLocalVerticesTo(localVertices);
+		isCounterClockwise = SignedArea(localVertices) > 0f;
 		RebuildFill();
 		RebuildBevel();
 		RebuildOutline();
@@ -291,139 +337,79 @@ public class GrindMetalView : MonoBehaviour
 		ApplyWhiteTint(bevelRenderer, bevelMaterial);
 	}
 
-	void RebuildFill()
-	{
-		int count = worldVerts.Count;
-		var verts = new Vector3[count + 1];
-		var uvs = new Vector2[count + 1];
-		var colors = new Color[count + 1];
-
-		Vector2 centroid = Centroid(worldVerts);
-		Transform fillTx = fillFilter.transform;
-		float worldZ = fillTx.position.z + fillZ;
-
-		verts[0] = fillTx.InverseTransformPoint(new Vector3(centroid.x, centroid.y, worldZ));
-		uvs[0] = Vector2.one * 0.5f;
-		colors[0] = flatColor;
-
-		for (int i = 0; i < count; i++)
-		{
-			Vector2 v = worldVerts[i];
-			verts[i + 1] = fillTx.InverseTransformPoint(new Vector3(v.x, v.y, worldZ));
-			uvs[i + 1] = Vector2.one * 0.5f;
-			colors[i + 1] = flatColor;
-		}
-
-		// Grind camera looks +Z, so it needs -Z-facing triangles.
-		// CCW in XY produces +Z normals — flip those.
-		bool ccw = SignedArea(worldVerts) > 0f;
-		var tris = new int[count * 3];
-		for (int i = 0; i < count; i++)
-		{
-			int t = i * 3;
-			int a = i + 1;
-			int b = (i + 1) % count + 1;
-			tris[t] = 0;
-			if (ccw)
-			{
-				tris[t + 1] = b;
-				tris[t + 2] = a;
-			}
-			else
-			{
-				tris[t + 1] = a;
-				tris[t + 2] = b;
-			}
-		}
-
-		fillMesh.Clear();
-		fillMesh.SetVertices(verts);
-		fillMesh.SetUVs(0, uvs);
-		fillMesh.SetColors(colors);
-		fillMesh.SetTriangles(tris, 0);
-		fillMesh.RecalculateBounds();
-		fillMesh.RecalculateNormals();
-	}
+	void RebuildFill() => fillBuilder.Build(fillMesh, localVertices, fillZ, flatColor);
 
 	void RebuildBevel()
 	{
-		bevelVertBuffer.Clear();
+		bevelVertexBuffer.Clear();
 		bevelColorBuffer.Clear();
 		bevelUvBuffer.Clear();
-		bevelTriBuffer.Clear();
-		BuildInwardNormals(worldVerts, inwardNormals);
-
-		int n = worldVerts.Count;
-		Transform bevelTx = bevelFilter.transform;
-		float worldZ = bevelTx.position.z + bevelZ;
-
-		EnsureRingScratchSize(n);
-
-		BuildOuterBandStrip(bevelTx, worldZ, n);
-		BuildMidBandStrip(bevelTx, worldZ, n);
-
+		bevelTriangleBuffer.Clear();
+		BuildInwardNormals(localVertices, inwardNormals);
+		int vertexCount = localVertices.Count;
+		float localDepth = bevelZ;
+		EnsureRingScratchSize(vertexCount);
+		BuildOuterBandStrip(localDepth, vertexCount);
+		BuildMidBandStrip(localDepth, vertexCount);
 		bevelMesh.Clear();
-		if (bevelTriBuffer.Count == 0)
+		if (bevelTriangleBuffer.Count == 0)
 			return;
-
-		bevelMesh.SetVertices(bevelVertBuffer);
+		bevelMesh.SetVertices(bevelVertexBuffer);
 		bevelMesh.SetUVs(0, bevelUvBuffer);
 		bevelMesh.SetColors(bevelColorBuffer);
-		bevelMesh.SetTriangles(bevelTriBuffer, 0);
+		bevelMesh.SetTriangles(bevelTriangleBuffer, 0);
 		bevelMesh.RecalculateBounds();
 		bevelMesh.RecalculateNormals();
 	}
 
 	void EnsureRingScratchSize(int count)
 	{
-		while (ringOuterScratch.Count < count) ringOuterScratch.Add(default);
-		while (ringInnerScratch.Count < count) ringInnerScratch.Add(default);
-		while (ringOuterIdxScratch.Count < count) ringOuterIdxScratch.Add(-1);
-		while (ringInnerIdxScratch.Count < count) ringInnerIdxScratch.Add(-1);
-		while (ringLockedScratch.Count < count) ringLockedScratch.Add(false);
+		while (ringOuterScratch.Count < count)
+			ringOuterScratch.Add(default);
+		while (ringInnerScratch.Count < count)
+			ringInnerScratch.Add(default);
+		while (outerRingIndices.Count < count)
+			outerRingIndices.Add(-1);
+		while (innerRingIndices.Count < count)
+			innerRingIndices.Add(-1);
+		while (ringLockedScratch.Count < count)
+			ringLockedScratch.Add(false);
 	}
 
-	void BuildOuterBandStrip(Transform bevelTx, float worldZ, int n)
+	void BuildOuterBandStrip(float localDepth, int vertexCount)
 	{
-		for (int i = 0; i < n; i++)
+		for (int i = 0; i < vertexCount; i++)
 		{
-			float g = blade.GrindAmounts[i];
-			GetBandDepths(g, out float outerD, out _);
-			ringOuterScratch[i] = worldVerts[i];
-			ringInnerScratch[i] = g >= outerBandGrind
-				? RingPointAt(i, outerD)
-				: worldVerts[i];
+			float grindAmount = blade.GrindAmounts[i];
+			GetBandDepths(grindAmount, out float outerDepth, out _);
+			ringOuterScratch[i] = localVertices[i];
+			ringInnerScratch[i] = grindAmount >= outerBandGrind ? RingPointAt(i, outerDepth) : localVertices[i];
 		}
 
-		CollapseInnerRingTowardTips(n, collapseOuter: false);
-		BuildWeldedRingStrip(bevelTx, worldZ, n, outerBandColor, g => g >= outerBandGrind);
+		CollapseInnerRingTowardTips(vertexCount, collapseOuter: false);
+		BuildWeldedRingStrip(localDepth, vertexCount, outerBandColor, grindAmount => grindAmount >= outerBandGrind);
 	}
 
-	void BuildMidBandStrip(Transform bevelTx, float worldZ, int n)
+	void BuildMidBandStrip(float localDepth, int vertexCount)
 	{
-		for (int i = 0; i < n; i++)
+		for (int i = 0; i < vertexCount; i++)
 		{
-			float g = blade.GrindAmounts[i];
-			GetBandDepths(g, out float outerD, out float midD);
-			float midStart = g >= outerBandGrind ? outerD : 0f;
-			ringOuterScratch[i] = g >= midBandGrind
-				? RingPointAt(i, midStart)
-				: worldVerts[i];
-			ringInnerScratch[i] = g >= midBandGrind
-				? RingPointAt(i, midD)
-				: worldVerts[i];
+			float grindAmount = blade.GrindAmounts[i];
+			GetBandDepths(grindAmount, out float outerDepth, out float midDepth);
+			float midStart = grindAmount >= outerBandGrind ? outerDepth : 0f;
+			ringOuterScratch[i] = grindAmount >= midBandGrind ? RingPointAt(i, midStart) : localVertices[i];
+			ringInnerScratch[i] = grindAmount >= midBandGrind ? RingPointAt(i, midDepth) : localVertices[i];
 		}
 
-		CollapseInnerRingTowardTips(n, collapseOuter: true);
-		BuildWeldedRingStrip(bevelTx, worldZ, n, midBandColor, g => g >= midBandGrind);
+		CollapseInnerRingTowardTips(vertexCount, collapseOuter: true);
+		BuildWeldedRingStrip(localDepth, vertexCount, midBandColor, grindAmount => grindAmount >= midBandGrind);
 	}
 
-	void CollapseInnerRingTowardTips(int n, bool collapseOuter)
+	void CollapseInnerRingTowardTips(int vertexCount, bool collapseOuter)
 	{
-		for (int i = 0; i < n; i++)
+		for (int i = 0; i < vertexCount; i++)
 			ringLockedScratch[i] = false;
-
-		for (int tip = 0; tip < n; tip++)
+		for (int tip = 0; tip < vertexCount; tip++)
 		{
 			if (!IsOutwardMiterTip(tip))
 				continue;
@@ -431,113 +417,94 @@ public class GrindMetalView : MonoBehaviour
 			Vector2 mergedInner = ringInnerScratch[tip];
 			Vector2 mergedOuter = ringOuterScratch[tip];
 			ringLockedScratch[tip] = true;
-			CollapseInnerChain(tip, forward: false, n, mergedInner, mergedOuter, collapseOuter);
-			CollapseInnerChain(tip, forward: true, n, mergedInner, mergedOuter, collapseOuter);
+			CollapseInnerChain(tip, forward: false, vertexCount, mergedInner, mergedOuter, collapseOuter);
+			CollapseInnerChain(tip, forward: true, vertexCount, mergedInner, mergedOuter, collapseOuter);
 		}
 	}
 
-	void CollapseInnerChain(
-		int tip,
-		bool forward,
-		int n,
-		Vector2 mergedInner,
-		Vector2 mergedOuter,
-		bool collapseOuter)
+	void CollapseInnerChain(int tip, bool forward, int vertexCount, Vector2 mergedInner, Vector2 mergedOuter, bool collapseOuter)
 	{
-		float walked = 0f;
-		int cur = forward ? (tip + 1) % n : (tip - 1 + n) % n;
-		for (int safety = 0; safety < n && walked < tipCollapseDistance; safety++)
+		float distanceAlongPerimeter = 0f;
+		int currentIndex = forward ? (tip + 1) % vertexCount : (tip - 1 + vertexCount) % vertexCount;
+		for (int visitedVertexCount = 0; visitedVertexCount < vertexCount && distanceAlongPerimeter < tipCollapseDistance; visitedVertexCount++)
 		{
-			if (!ringLockedScratch[cur])
+			if (!ringLockedScratch[currentIndex])
 			{
-				ringInnerScratch[cur] = mergedInner;
+				ringInnerScratch[currentIndex] = mergedInner;
 				if (collapseOuter)
-					ringOuterScratch[cur] = mergedOuter;
-				ringLockedScratch[cur] = true;
+					ringOuterScratch[currentIndex] = mergedOuter;
+				ringLockedScratch[currentIndex] = true;
 			}
 
-			int next = forward ? (cur + 1) % n : (cur - 1 + n) % n;
-			if (next == tip)
+			int nextIndex = forward ? (currentIndex + 1) % vertexCount : (currentIndex - 1 + vertexCount) % vertexCount;
+			if (nextIndex == tip)
 				break;
-
-			walked += Vector2.Distance(worldVerts[cur], worldVerts[next]);
-			cur = next;
+			distanceAlongPerimeter += Vector2.Distance(localVertices[currentIndex], localVertices[nextIndex]);
+			currentIndex = nextIndex;
 		}
 	}
 
-	void BuildWeldedRingStrip(
-		Transform bevelTx,
-		float worldZ,
-		int n,
-		Color color,
-		System.Func<float, bool> includeEdgeByGrind)
+	void BuildWeldedRingStrip(float localDepth, int vertexCount, Color color, System.Func<float, bool> includeEdgeByGrind)
 	{
 		weldedVertexLookup.Clear();
-
-		for (int i = 0; i < n; i++)
+		for (int i = 0; i < vertexCount; i++)
 		{
-			ringOuterIdxScratch[i] = AddWeldedVertex(bevelTx, worldZ, ringOuterScratch[i], color);
-			ringInnerIdxScratch[i] = AddWeldedVertex(bevelTx, worldZ, ringInnerScratch[i], color);
+			outerRingIndices[i] = AddWeldedVertex(localDepth, ringOuterScratch[i], color);
+			innerRingIndices[i] = AddWeldedVertex(localDepth, ringInnerScratch[i], color);
 		}
 
-		for (int i = 0; i < n; i++)
+		for (int i = 0; i < vertexCount; i++)
 		{
-			int j = (i + 1) % n;
-			float g0 = blade.GrindAmounts[i];
-			float g1 = blade.GrindAmounts[j];
-			if (!includeEdgeByGrind(g0) && !includeEdgeByGrind(g1))
+			int j = (i + 1) % vertexCount;
+			float startGrindAmount = blade.GrindAmounts[i];
+			float endGrindAmount = blade.GrindAmounts[j];
+			if (!includeEdgeByGrind(startGrindAmount) && !includeEdgeByGrind(endGrindAmount))
 				continue;
-
-			int o0 = ringOuterIdxScratch[i];
-			int o1 = ringOuterIdxScratch[j];
-			int in0 = ringInnerIdxScratch[i];
-			int in1 = ringInnerIdxScratch[j];
-
-			if (o0 == o1 && in0 == in1)
+			int outerStartIndex = outerRingIndices[i];
+			int outerEndIndex = outerRingIndices[j];
+			int innerStartIndex = innerRingIndices[i];
+			int innerEndIndex = innerRingIndices[j];
+			if (outerStartIndex == outerEndIndex && innerStartIndex == innerEndIndex)
 				continue;
-
-			if (in0 == in1)
+			if (innerStartIndex == innerEndIndex)
 			{
-				if (o0 != o1)
-					AddIndexedTriangle(o0, o1, in0);
+				if (outerStartIndex != outerEndIndex)
+					AddIndexedTriangle(outerStartIndex, outerEndIndex, innerStartIndex);
 				continue;
 			}
 
-			if (o0 == o1)
+			if (outerStartIndex == outerEndIndex)
 			{
-				if (in0 != in1)
-					AddIndexedTriangle(o0, in1, in0);
+				if (innerStartIndex != innerEndIndex)
+					AddIndexedTriangle(outerStartIndex, innerEndIndex, innerStartIndex);
 				continue;
 			}
 
-			AddIndexedQuad(o0, o1, in1, in0);
+			AddIndexedQuad(outerStartIndex, outerEndIndex, innerEndIndex, innerStartIndex);
 		}
 	}
 
 	Vector2 RingPointAt(int vertexIndex, float depth01)
 	{
-		if (depth01 <= 0.0001f)
-			return worldVerts[vertexIndex];
-
+		if (depth01 <= MinimumBevelDepth)
+			return localVertices[vertexIndex];
 		float grind = blade.GrindAmounts[vertexIndex];
 		float width = BevelWidth(grind);
 		if (width <= 0f)
-			return worldVerts[vertexIndex];
-
+			return localVertices[vertexIndex];
 		if (ShouldMiterJoin(vertexIndex))
 			return ComputeMiterBevelPoint(vertexIndex, depth01, width);
 
 		return FallbackBevelPoint(vertexIndex, depth01, width);
 	}
 
-	int AddWeldedVertex(Transform space, float worldZ, Vector2 point, Color color)
+	int AddWeldedVertex(float localDepth, Vector2 point, Color color)
 	{
 		long key = QuantizePointKey(point);
 		if (weldedVertexLookup.TryGetValue(key, out int existing))
 			return existing;
-
-		int index = bevelVertBuffer.Count;
-		bevelVertBuffer.Add(space.InverseTransformPoint(new Vector3(point.x, point.y, worldZ)));
+		int index = bevelVertexBuffer.Count;
+		bevelVertexBuffer.Add(new Vector3(point.x, point.y, localDepth));
 		bevelColorBuffer.Add(color);
 		bevelUvBuffer.Add(Vector2.one * 0.5f);
 		weldedVertexLookup[key] = index;
@@ -546,17 +513,18 @@ public class GrindMetalView : MonoBehaviour
 
 	static long QuantizePointKey(Vector2 point)
 	{
-		const float scale = 10000f;
-		int x = Mathf.RoundToInt(point.x * scale);
-		int y = Mathf.RoundToInt(point.y * scale);
-		return ((long)x << 32) ^ (uint)y;
+		const float weldQuantizationScale = 10000f;
+		const int coordinateBitCount = sizeof(int) * 8;
+		int x = Mathf.RoundToInt(point.x * weldQuantizationScale);
+		int y = Mathf.RoundToInt(point.y * weldQuantizationScale);
+		return ((long)x << coordinateBitCount) ^ (uint)y;
 	}
 
 	void AddIndexedTriangle(int a, int b, int c)
 	{
-		bevelTriBuffer.Add(a);
-		bevelTriBuffer.Add(b);
-		bevelTriBuffer.Add(c);
+		bevelTriangleBuffer.Add(a);
+		bevelTriangleBuffer.Add(b);
+		bevelTriangleBuffer.Add(c);
 	}
 
 	void AddIndexedQuad(int a, int b, int c, int d)
@@ -582,7 +550,7 @@ public class GrindMetalView : MonoBehaviour
 		{
 			float outerProgress = Mathf.InverseLerp(outerBandGrind, grindForFullWidth, grind);
 			outerDepth = outerBandFraction * Mathf.Clamp01(outerProgress);
-			outerDepth = Mathf.Min(outerDepth, midDepth * 0.85f);
+			outerDepth = Mathf.Min(outerDepth, midDepth * MaximumOuterBandFraction);
 		}
 	}
 
@@ -594,95 +562,85 @@ public class GrindMetalView : MonoBehaviour
 	Vector2 FallbackBevelPoint(int vertexIndex, float depth01, float width)
 	{
 		Vector2 inward = inwardNormals[vertexIndex];
-		if (inward.sqrMagnitude < 0.0001f)
+		if (inward.sqrMagnitude < MinimumSquaredDirectionLength)
 		{
-			Vector2 centroid = Centroid(worldVerts);
-			inward = (centroid - worldVerts[vertexIndex]).normalized;
+			Vector2 centroid = Centroid(localVertices);
+			inward = (centroid - localVertices[vertexIndex]).normalized;
 		}
 
-		return PointOnBevel(worldVerts[vertexIndex], inward, width, depth01);
+		return PointOnBevel(localVertices[vertexIndex], inward, width, depth01);
 	}
 
 	bool ShouldMiterJoin(int vertexIndex)
 	{
-		int n = worldVerts.Count;
-		if (n < 3)
+		int vertexCount = localVertices.Count;
+		if (vertexCount < 3)
 			return false;
-
-		int prevEdge = (vertexIndex - 1 + n) % n;
-		return EdgeHasVisibleBevel(prevEdge) && EdgeHasVisibleBevel(vertexIndex);
+		int previousEdgeIndex = (vertexIndex - 1 + vertexCount) % vertexCount;
+		return EdgeHasVisibleBevel(previousEdgeIndex) && EdgeHasVisibleBevel(vertexIndex);
 	}
 
 	bool IsOutwardMiterTip(int vertexIndex)
 	{
 		if (!ShouldMiterJoin(vertexIndex))
 			return false;
-
-		int n = worldVerts.Count;
-		int prev = (vertexIndex - 1 + n) % n;
-		int next = (vertexIndex + 1) % n;
-		Vector2 v = worldVerts[vertexIndex];
-		Vector2 e0 = v - worldVerts[prev];
-		Vector2 e1 = worldVerts[next] - v;
-		if (e0.sqrMagnitude < 0.000001f || e1.sqrMagnitude < 0.000001f)
+		int vertexCount = localVertices.Count;
+		int previousIndex = (vertexIndex - 1 + vertexCount) % vertexCount;
+		int nextIndex = (vertexIndex + 1) % vertexCount;
+		Vector2 v = localVertices[vertexIndex];
+		Vector2 previousEdge = v - localVertices[previousIndex];
+		Vector2 nextEdge = localVertices[nextIndex] - v;
+		if (previousEdge.sqrMagnitude < GeometrySquaredTolerance || nextEdge.sqrMagnitude < GeometrySquaredTolerance)
 			return false;
-
-		Vector2 n0 = PerpInward(e0, worldVertsCcw);
-		Vector2 n1 = PerpInward(e1, worldVertsCcw);
-		if (n0.sqrMagnitude < 0.000001f || n1.sqrMagnitude < 0.000001f)
+		Vector2 previousNormal = PerpInward(previousEdge, isCounterClockwise);
+		Vector2 nextNormal = PerpInward(nextEdge, isCounterClockwise);
+		if (previousNormal.sqrMagnitude < GeometrySquaredTolerance || nextNormal.sqrMagnitude < GeometrySquaredTolerance)
 			return false;
-
-		n0.Normalize();
-		n1.Normalize();
-		return Vector2.Dot(n0, n1) < outwardTipNormalDot;
+		previousNormal.Normalize();
+		nextNormal.Normalize();
+		return Vector2.Dot(previousNormal, nextNormal) < outwardTipNormalDot;
 	}
 
 	bool EdgeHasVisibleBevel(int edgeIndex)
 	{
-		int j = (edgeIndex + 1) % worldVerts.Count;
-		float g0 = blade.GrindAmounts[edgeIndex];
-		float g1 = blade.GrindAmounts[j];
-		return g0 >= visibleGrindThreshold || g1 >= visibleGrindThreshold;
+		int j = (edgeIndex + 1) % localVertices.Count;
+		float startGrindAmount = blade.GrindAmounts[edgeIndex];
+		float endGrindAmount = blade.GrindAmounts[j];
+		return startGrindAmount >= visibleGrindThreshold || endGrindAmount >= visibleGrindThreshold;
 	}
 
 	Vector2 ComputeMiterBevelPoint(int vertexIndex, float depth01, float width)
 	{
-		int n = worldVerts.Count;
-		int prev = (vertexIndex - 1 + n) % n;
-		int next = (vertexIndex + 1) % n;
-
-		Vector2 v = worldVerts[vertexIndex];
-		Vector2 e0 = v - worldVerts[prev];
-		Vector2 e1 = worldVerts[next] - v;
-		if (e0.sqrMagnitude < 0.000001f || e1.sqrMagnitude < 0.000001f)
+		int vertexCount = localVertices.Count;
+		int previousIndex = (vertexIndex - 1 + vertexCount) % vertexCount;
+		int nextIndex = (vertexIndex + 1) % vertexCount;
+		Vector2 v = localVertices[vertexIndex];
+		Vector2 previousEdge = v - localVertices[previousIndex];
+		Vector2 nextEdge = localVertices[nextIndex] - v;
+		if (previousEdge.sqrMagnitude < GeometrySquaredTolerance || nextEdge.sqrMagnitude < GeometrySquaredTolerance)
 			return FallbackBevelPoint(vertexIndex, depth01, width);
-
-		Vector2 n0 = PerpInward(e0, worldVertsCcw);
-		Vector2 n1 = PerpInward(e1, worldVertsCcw);
+		Vector2 previousNormal = PerpInward(previousEdge, isCounterClockwise);
+		Vector2 nextNormal = PerpInward(nextEdge, isCounterClockwise);
 		float offset = width * Mathf.Clamp01(depth01);
 		if (offset <= 0f)
 			return v;
-
-		Vector2 miterDir = n0 + n1;
-		if (miterDir.sqrMagnitude < 0.000001f)
+		Vector2 miterDirection = previousNormal + nextNormal;
+		if (miterDirection.sqrMagnitude < GeometrySquaredTolerance)
 			return FallbackBevelPoint(vertexIndex, depth01, width);
-
-		miterDir.Normalize();
-		Vector2 toCentroid = Centroid(worldVerts) - v;
-		if (toCentroid.sqrMagnitude > 0.000001f && Vector2.Dot(miterDir, toCentroid) <= 0f)
+		miterDirection.Normalize();
+		Vector2 toCentroid = Centroid(localVertices) - v;
+		if (toCentroid.sqrMagnitude > GeometrySquaredTolerance && Vector2.Dot(miterDirection, toCentroid) <= 0f)
 			return FallbackBevelPoint(vertexIndex, depth01, width);
-
-		float denom = Vector2.Dot(miterDir, n0.normalized);
-		if (Mathf.Abs(denom) < 0.01f)
+		float normalProjection = Vector2.Dot(miterDirection, previousNormal.normalized);
+		if (Mathf.Abs(normalProjection) < MinimumMiterProjection)
 			return FallbackBevelPoint(vertexIndex, depth01, width);
-
-		float miterLen = Mathf.Min(offset / denom, offset * bevelMiterLimit);
-		return v + miterDir * miterLen;
+		float miterLength = Mathf.Min(offset / normalProjection, offset * bevelMiterLimit);
+		return v + miterDirection * miterLength;
 	}
 
 	void RebuildOutline()
 	{
-		int count = worldVerts.Count;
+		int count = localVertices.Count;
 		if (outline == null || count < 2)
 		{
 			if (outline != null)
@@ -691,11 +649,11 @@ public class GrindMetalView : MonoBehaviour
 			return;
 		}
 
-		Color defaultEdge = Color.Lerp(flatColor, Color.black, 0.25f);
+		Color defaultEdge = Color.Lerp(flatColor, Color.black, OutlineDarkening);
 		outline.positionCount = count;
 		for (int i = 0; i < count; i++)
 		{
-			Vector2 v = worldVerts[i];
+			Vector2 v = localVertices[i];
 			outline.SetPosition(i, new Vector3(v.x, v.y, outlineZ));
 		}
 
@@ -707,10 +665,7 @@ public class GrindMetalView : MonoBehaviour
 
 	void RebuildSharpenOutlineSegments(int count)
 	{
-		IReadOnlyList<bool> edgeFlags = edgeEvaluator != null
-			? edgeEvaluator.SilhouetteEdgeNeedsSharpening
-			: null;
-
+		IReadOnlyList<bool> edgeFlags = edgeEvaluator != null ? edgeEvaluator.SilhouetteEdgeNeedsSharpening : null;
 		int segmentIndex = 0;
 		if (edgeFlags != null && edgeFlags.Count == count)
 		{
@@ -720,9 +675,9 @@ public class GrindMetalView : MonoBehaviour
 					continue;
 
 				int j = (i + 1) % count;
-				Vector2 a = worldVerts[i];
-				Vector2 b = worldVerts[j];
-				if ((b - a).sqrMagnitude < 0.000001f)
+				Vector2 a = localVertices[i];
+				Vector2 b = localVertices[j];
+				if ((b - a).sqrMagnitude < GeometrySquaredTolerance)
 					continue;
 
 				LineRenderer segment = GetOrCreateSharpenSegment(segmentIndex++);
@@ -743,8 +698,7 @@ public class GrindMetalView : MonoBehaviour
 	{
 		if (grind < visibleGrindThreshold)
 			return 0f;
-
-		float t = Mathf.Clamp01(grind / Mathf.Max(0.05f, grindForFullWidth));
+		float t = Mathf.Clamp01(grind / Mathf.Max(MinimumGrindWidthRange, grindForFullWidth));
 		t = Mathf.SmoothStep(0f, 1f, t);
 		return Mathf.Lerp(minBevelWidth, maxBevelWidth, t);
 	}
@@ -778,33 +732,33 @@ public class GrindMetalView : MonoBehaviour
 		return c / Mathf.Max(1, verts.Count);
 	}
 
-	static void BuildInwardNormals(List<Vector2> verts, List<Vector2> dst)
+	static void BuildInwardNormals(List<Vector2> verts, List<Vector2> destination)
 	{
-		dst.Clear();
-		int n = verts.Count;
-		bool ccw = SignedArea(verts) > 0f;
-		for (int i = 0; i < n; i++)
+		destination.Clear();
+		int vertexCount = verts.Count;
+		bool isCounterClockwise = SignedArea(verts) > 0f;
+		for (int i = 0; i < vertexCount; i++)
 		{
-			Vector2 prev = verts[(i - 1 + n) % n];
-			Vector2 cur = verts[i];
-			Vector2 next = verts[(i + 1) % n];
-			Vector2 e0 = cur - prev;
-			Vector2 e1 = next - cur;
-			Vector2 n0 = PerpInward(e0, ccw);
-			Vector2 n1 = PerpInward(e1, ccw);
-			Vector2 combined = n0 + n1;
-			dst.Add(combined.sqrMagnitude > 0.0001f ? combined.normalized : Vector2.zero);
+			Vector2 previousIndex = verts[(i - 1 + vertexCount) % vertexCount];
+			Vector2 currentIndex = verts[i];
+			Vector2 nextIndex = verts[(i + 1) % vertexCount];
+			Vector2 previousEdge = currentIndex - previousIndex;
+			Vector2 nextEdge = nextIndex - currentIndex;
+			Vector2 previousNormal = PerpInward(previousEdge, isCounterClockwise);
+			Vector2 nextNormal = PerpInward(nextEdge, isCounterClockwise);
+			Vector2 combined = previousNormal + nextNormal;
+			destination.Add(combined.sqrMagnitude > MinimumSquaredDirectionLength ? combined.normalized : Vector2.zero);
 		}
 	}
 
-	static Vector2 PerpInward(Vector2 edge, bool ccw)
+	static Vector2 PerpInward(Vector2 edge, bool isCounterClockwise)
 	{
-		if (edge.sqrMagnitude < 0.000001f)
+		if (edge.sqrMagnitude < GeometrySquaredTolerance)
 			return Vector2.zero;
 
 		// CCW polygon: inward is rotate edge 90° CCW (-y, x). CW: opposite.
-		Vector2 n = ccw ? new Vector2(-edge.y, edge.x) : new Vector2(edge.y, -edge.x);
-		return n.normalized;
+		Vector2 vertexCount = isCounterClockwise ? new Vector2(-edge.y, edge.x) : new Vector2(edge.y, -edge.x);
+		return vertexCount.normalized;
 	}
 
 	static float SignedArea(List<Vector2> verts)

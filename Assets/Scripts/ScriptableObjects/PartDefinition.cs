@@ -1,10 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>
-/// Authorable part: world quality sprites + forging target outline.
-/// Create via Assets → Create → Forging Prototype → Part Definition.
-/// </summary>
 [CreateAssetMenu(fileName = "PartDefinition", menuName = "Forging Prototype/Part Definition", order = 2)]
 public class PartDefinition : ScriptableObject
 {
@@ -32,8 +28,7 @@ public class PartDefinition : ScriptableObject
 	public MetalType defaultMetalType;
 
 	public string DisplayLabel => string.IsNullOrWhiteSpace(displayName) ? name : displayName;
-
-	public bool HasValidOutline => outlineLocal != null && outlineLocal.Length >= 3;
+	public bool HasValidOutline => PolygonGeometry.IsSimple(outlineLocal);
 	public int OutlineEdgeCount => HasValidOutline ? outlineLocal.Length : 0;
 
 	public bool HasSharpeningTargets
@@ -150,7 +145,13 @@ public class PartDefinition : ScriptableObject
 			return false;
 		}
 
-		string[] labels = { "Flawed", "Good", "Excellent", "Perfect" };
+		string[] labels =
+		{
+			"Flawed",
+			"Good",
+			"Excellent",
+			"Perfect"
+		};
 		for (int i = 0; i < 4; i++)
 		{
 			if (qualitySprites[i] == null)
@@ -162,7 +163,7 @@ public class PartDefinition : ScriptableObject
 
 		if (!HasValidOutline)
 		{
-			message = "Forge outline needs at least 3 vertices.";
+			message = "Forge outline must be a non-degenerate simple polygon with at least 3 vertices.";
 			return false;
 		}
 

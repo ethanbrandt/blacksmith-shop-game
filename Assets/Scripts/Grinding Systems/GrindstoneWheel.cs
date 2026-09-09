@@ -25,7 +25,9 @@ public class GrindstoneWheel : MonoBehaviour
 		SetVisible(true);
 	}
 
-	public void SetSpinning(bool _) { }
+	public void SetSpinning(bool _)
+	{
+	}
 
 	public void SetVisible(bool visible)
 	{
@@ -61,7 +63,8 @@ public class GrindstoneWheel : MonoBehaviour
 
 		if (wheelRenderer != null)
 		{
-			wheelRenderer.sharedMaterial = ForgingVisualUtility.CreateColorMaterial(stoneColor);
+			wheelRenderer.sharedMaterial = ForgingVisualUtility.GetSharedVertexColorMaterial();
+			ForgingVisualUtility.SetTint(wheelRenderer, stoneColor);
 			wheelRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
 			wheelRenderer.receiveShadows = false;
 			wheelRenderer.sortingOrder = 1;

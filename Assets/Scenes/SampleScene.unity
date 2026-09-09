@@ -1087,7 +1087,7 @@ Camera:
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 4294967231
   m_RenderingPath: -1
   m_TargetTexture: {fileID: 0}
   m_TargetDisplay: 0
@@ -1837,14 +1837,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShapeMatchEvaluator
   targetVertices: []
-  targetOutlineColor: {r: 0.75, g: 0.9, b: 1, a: 0.55}
-  targetGhostOutlineColor: {r: 0.7, g: 0.9, b: 1, a: 0.7}
-  targetGhostFillColor: {r: 0.55, g: 0.8, b: 1, a: 0.5176471}
+  targetOutlineColor: {r: 0.75, g: 0.9, b: 1, a: 0.39607844}
+  targetGhostOutlineColor: {r: 0.7, g: 0.9, b: 1, a: 0.49019608}
+  targetGhostFillColor: {r: 0.55, g: 0.8, b: 1, a: 0.13333334}
   targetLineWidth: 0.05
   ghostLineWidth: 0.04
   outlineSortingOrder: 2
   ghostOutlineSortingOrder: 12
-  ghostFillSortingOrder: 3
+  ghostFillSortingOrder: 10
   showGhostOverMetal: 1
   showGhostFill: 1
   sampleResolution: 28
@@ -1881,21 +1881,22 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MetalDeformer2D
   startingShape: 0
-  vertexCount: 24
-  ovalRadii: {x: 1.4, y: 0.7}
+  vertexCount: 32
+  ovalRadii: {x: 1, y: 0.8}
   rectangleSize: {x: 2.4, y: 1.1}
   shapeCenter: {x: 0, y: 0}
-  impactRadius: 0.5
   falloffExponent: 1.8
+  minImpactRadius: 0.35
+  maxImpactRadius: 0.5
   minStrikeStrength: 0.05
   maxStrikeStrength: 0.6
   minInfluence: 0.13
   inflateMix: 0.12
   splitEdgeUnderHammer: 1
   splitIfFartherThan: 0.18
-  maxVertices: 48
-  surfaceTension: 0.55
-  tensionIterations: 4
+  maxVertices: 96
+  surfaceTension: 0.668
+  tensionIterations: 3
   tensionIncludesAdjacency: 1
   sharpAngleDegrees: 55
   sharpCornerExtraSmooth: 1
@@ -1905,12 +1906,12 @@ MonoBehaviour:
   magnetFalloff: 1.4
   magnetHitFalloffMultiplier: 2
   outlineProtectDistance: 0.28
-  splitTensionBoost: 0.35
-  splitExtraTensionIterations: 3
+  splitTensionBoost: 0.029
+  splitExtraTensionIterations: 4
   inwardDotThreshold: 0.2
   creaseRadiusMultiplier: 0.7
   creaseStrengthScale: 0.5
-  creaseTensionBoost: 0.607
+  creaseTensionBoost: 0.506
   creaseExtraTensionIterations: 3
   disableSplitOnInward: 0
   disableMagnetOnInward: 0
@@ -2345,7 +2346,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &666108261
 Transform:
   m_ObjectHideFlags: 0
@@ -8187,13 +8188,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ForgeSessionController
   forgeCamera: {fileID: 1533785833}
-  viewport: {fileID: 0}
   deformer: {fileID: 448335671}
   evaluator: {fileID: 448335670}
   metalView: {fileID: 448335669}
   hammerPreview: {fileID: 448335668}
   stageRoot: {fileID: 448335667}
   forgeTexture: {fileID: 8400000, guid: 60c1aede1c092f349b030dbe56266039, type: 2}
+  document: {fileID: 666108262}
   stageWorldPosition: {x: 0, y: 180, z: 0}
   cameraDistance: 8
   renderTextureSize: 256

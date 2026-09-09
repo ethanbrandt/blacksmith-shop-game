@@ -7,6 +7,29 @@ using UnityEngine.UI;
 
 public class GrindSessionController : MonoBehaviour
 {
+	const float CloseInputDelay = 0.25f;
+	const float ViewClampFraction = 0.9f;
+	const float MinimumCameraAspect = 0.1f;
+	const float CameraBoundsPadding = 0.9f;
+	const float MinimumCameraHalfHeight = 2.4f;
+	const int RenderTextureDepthBits = 16;
+	const float CameraNearClip = 0.1f;
+	const float CameraFarClip = 40f;
+	const int CameraRenderDepth = -11;
+	const float BackgroundPlateDepth = 0.45f;
+	const float BackgroundPlateFacingAngle = 180f;
+	const float BackgroundPlateSize = 8f;
+	const float GrindSubdivisionLength = 0.18f;
+	const int MaximumGrindVertices = 72;
+	const float BladeSpawnOffsetY = -1.35f;
+	const float BladeSpawnRotation = -20f;
+	const float MinimumPressureDepth = 0.05f;
+	const float FullPressureRadiusFraction = 0.45f;
+	const float PercentageScale = 100f;
+	const int OverlaySortingOrder = 85;
+	const int UiLayer = 5;
+	const float StatusFontSize = 22f;
+	const float QualityFontSize = 52f;
 	public static GrindSessionController Instance { get; private set; }
 
 	[Header("Scene Refs")]
@@ -61,6 +84,20 @@ public class GrindSessionController : MonoBehaviour
 	float closeInputUnblockTime;
 
 	public bool IsOpen { get; private set; }
+
+	public bool CanBegin(HeatableMetal metal)
+	{
+		bool canOwnSession = !IsOpen && StationSessionCoordinator.CanAcquire(this);
+		if (!isActiveAndEnabled || !canOwnSession)
+			return false;
+		bool hasPart = metal != null && metal.PartDefinition != null;
+		if (!hasPart)
+			return false;
+		PartDefinition part = metal.PartDefinition;
+		bool hasGrindableOutline = part.HasValidOutline && part.HasSharpeningTargets;
+		return part.isBladed && hasGrindableOutline;
+	}
+
 	public static bool IsBlockingPlayer => Instance != null && Instance.IsOpen;
 
 	public static GrindSessionController EnsureExists()
@@ -92,6 +129,7 @@ public class GrindSessionController : MonoBehaviour
 
 	void OnDestroy()
 	{
+		StationSessionCoordinator.Release(this);
 		if (Instance == this)
 			Instance = null;
 
@@ -106,45 +144,46 @@ public class GrindSessionController : MonoBehaviour
 
 	void Update()
 	{
+		TickSession(Time.unscaledDeltaTime, IsCloseRequested());
+	}
+
+	// Finish is resolved before simulation, and delta time is explicit for regression tests.
+	void TickSession(float deltaTime, bool finishRequested)
+	{
 		if (!IsOpen)
 			return;
+		bool hasActiveWorkpiece = activeMetal != null && activeStation != null;
+		if (finishRequested || !hasActiveWorkpiece)
+		{
+			EndSession();
+			return;
+		}
 
-		HandleGrindInput();
-		TickContact();
+		HandleGrindInput(deltaTime);
+		TickContact(deltaTime);
+		evaluator.Evaluate();
 		UpdateStatus();
 	}
 
+	void OnDisable() => EndSession();
+
 	public void BeginSession(Grindstone station, HeatableMetal metal)
 	{
-		if (station == null || metal == null)
+		if (station == null || !CanBegin(metal))
 			return;
 
 		EnsureStage();
 		EnsureOverlay();
-
-		if (IsOpen)
-			EndSession();
-
+		if (!StationSessionCoordinator.TryAcquire(this))
+			return;
 		activeStation = station;
 		activeMetal = metal;
-		stageOrigin = stageRoot != null
-			? new Vector2(stageRoot.position.x, stageRoot.position.y)
-			: new Vector2(stageWorldPosition.x, stageWorldPosition.y);
-
+		stageOrigin = stageRoot != null ? new Vector2(stageRoot.position.x, stageRoot.position.y) : new Vector2(stageWorldPosition.x, stageWorldPosition.y);
 		wheel.Configure(stageOrigin, ForgingVisualUtility.ResolveForgeLayer());
 		LoadBlade(metal);
 
 		PartDefinition part = metal.PartDefinition;
-		if (part != null)
-			part.EnsureSharpeningFlagsMatchOutline();
-/*
-		if (part != null && part.HasValidOutline)
-		{
-			Debug.LogError("[GRIND SESSION] Invalid part or outline");
-			return;
-		}
-*/		
-		Vector2[] outline = part.outlineLocal;
+		Vector2[] outline = part.BuildWorldOutline(Vector2.zero);
 		bool[] edgeSharpenFlags = part != null && part.outlineEdgeNeedsSharpening != null ? part.outlineEdgeNeedsSharpening : System.Array.Empty<bool>();
 
 		evaluator.Configure(blade, outline, edgeSharpenFlags);
@@ -158,8 +197,7 @@ public class GrindSessionController : MonoBehaviour
 			FitCamera();
 		if (grindCamera != null)
 			grindCamera.enabled = true;
-
-		closeInputUnblockTime = Time.unscaledTime + 0.25f;
+		closeInputUnblockTime = Time.unscaledTime + CloseInputDelay;
 		IsOpen = true;
 		SetOverlayVisible(true);
 		UpdateStatus();
@@ -179,6 +217,7 @@ public class GrindSessionController : MonoBehaviour
 		activeStation = null;
 		activeMetal = null;
 		IsOpen = false;
+		StationSessionCoordinator.Release(this);
 		SetOverlayVisible(false);
 		if (grindCamera != null)
 			grindCamera.enabled = false;
@@ -205,15 +244,16 @@ public class GrindSessionController : MonoBehaviour
 			for (int i = 0; i < metal.GrindAmounts.Count; i++)
 				grindScratch.Add(metal.GrindAmounts[i]);
 		}
+
 		else if (metal.HasForgeProgress)
 		{
 			for (int i = 0; i < metal.ForgedVertices.Count; i++)
 				vertexScratch.Add(metal.ForgedVertices[i]);
 		}
+
 		else if (metal.PartDefinition != null && metal.PartDefinition.HasValidOutline)
 		{
-			for (int i = 0; i < metal.PartDefinition.outlineLocal.Length; i++)
-				vertexScratch.Add(metal.PartDefinition.outlineLocal[i]);
+			vertexScratch.AddRange(metal.PartDefinition.BuildWorldOutline(Vector2.zero));
 		}
 		else
 		{
@@ -224,10 +264,9 @@ public class GrindSessionController : MonoBehaviour
 			grindScratch.Add(0f);
 
 		if (!metal.HasGrindProgress)
-			GrindBladeBody.DensifyShape(vertexScratch, grindScratch, 0.18f, 72);
-
-		Vector2 spawn = stageOrigin + new Vector2(0f, -1.35f);
-		blade.LoadShape(vertexScratch, grindScratch, spawn, -20f);
+			GrindBladeBody.DensifyShape(vertexScratch, grindScratch, GrindSubdivisionLength, MaximumGrindVertices);
+		Vector2 spawn = stageOrigin + new Vector2(0f, BladeSpawnOffsetY);
+		blade.LoadShape(vertexScratch, grindScratch, spawn, BladeSpawnRotation);
 		EnsureBladeSpawnedBelowStone();
 	}
 
@@ -249,21 +288,24 @@ public class GrindSessionController : MonoBehaviour
 
 	void SaveActiveMetal()
 	{
-		if (activeMetal == null || blade == null || blade.VertexCount < 3)
+		bool hasSaveTarget = activeMetal != null && blade != null;
+		if (!hasSaveTarget)
+			return;
+		bool hasValidShape = blade.VertexCount >= PolygonGeometry.MinimumVertexCount;
+		if (!hasValidShape)
 			return;
 
 		blade.CopyInitialLocalVerticesTo(vertexScratch);
 		blade.CopyGrindAmountsTo(grindScratch);
+		if (evaluator != null)
+			evaluator.Evaluate();
 		SharpnessQuality quality = evaluator != null ? evaluator.Quality : SharpnessQuality.Blunt;
-		activeMetal.SaveGrindProgress(vertexScratch, grindScratch, quality, evaluator.MatchPercent);
+		activeMetal.SaveGrindProgress(vertexScratch, grindScratch, quality, evaluator != null ? evaluator.MatchPercent : 0f);
 	}
 
-	void HandleGrindInput()
+	void HandleGrindInput(float deltaTime)
 	{
 		if (blade == null)
-			return;
-
-		if (HandleCloseInput())
 			return;
 
 		Gamepad pad = Gamepad.current;
@@ -275,83 +317,74 @@ public class GrindSessionController : MonoBehaviour
 		{
 			if (move.sqrMagnitude > 1f)
 				move.Normalize();
-			blade.Position += move * moveSpeed * Time.unscaledDeltaTime;
+			blade.Position += move * moveSpeed * deltaTime;
 		}
 
-		Vector2 rotStick = pad.rightStick.ReadValue();
-		if (Mathf.Abs(rotStick.x) > stickDeadzone)
-			blade.RotationDegrees += rotStick.x * rotateSpeed * Time.unscaledDeltaTime;
-
+		Vector2 rotationInput = pad.rightStick.ReadValue();
+		if (Mathf.Abs(rotationInput.x) > stickDeadzone)
+			blade.RotationDegrees += rotationInput.x * rotateSpeed * deltaTime;
 		blade.Position = ClampToView(blade.Position);
 	}
 
-	bool HandleCloseInput()
+	bool IsCloseRequested()
 	{
 		if (Time.unscaledTime < closeInputUnblockTime)
 			return false;
 
 		Gamepad pad = Gamepad.current;
-		if (pad != null && (
-			pad.buttonEast.wasPressedThisFrame ||
-			pad.buttonNorth.wasPressedThisFrame ||
-			pad.startButton.wasPressedThisFrame ||
-			pad.selectButton.wasPressedThisFrame))
+		bool faceButtonPressed = pad != null && (pad.buttonEast.wasPressedThisFrame || pad.buttonNorth.wasPressedThisFrame);
+		bool menuButtonPressed = pad != null && (pad.startButton.wasPressedThisFrame || pad.selectButton.wasPressedThisFrame);
+		if (faceButtonPressed || menuButtonPressed)
 		{
-			EndSession();
 			return true;
 		}
 
 		Keyboard keyboard = Keyboard.current;
-		if (keyboard != null && (keyboard.escapeKey.wasPressedThisFrame || keyboard.eKey.wasPressedThisFrame))
+		bool escapePressed = keyboard != null && keyboard.escapeKey.wasPressedThisFrame;
+		bool interactPressed = keyboard != null && keyboard.eKey.wasPressedThisFrame;
+		if (escapePressed || interactPressed)
 		{
-			EndSession();
 			return true;
 		}
 
 		return false;
 	}
 
-	void TickContact()
+	void TickContact(float deltaTime)
 	{
 		if (blade == null || wheel == null)
 			return;
-
-		bool contacting = blade.TryGetStoneContact(wheel.Center, wheel.Radius, out Vector2 contact, out _, out float penetration);
-		wheel.SetSpinning(contacting);
-
-		if (!contacting)
+		bool isContacting = blade.TryGetStoneContact(wheel.Center, wheel.Radius, out Vector2 contactPoint, out Vector2 pushNormal, out float penetration);
+		wheel.SetSpinning(isContacting);
+		if (!isContacting)
 		{
 			if (sparks != null)
 				sparks.Stop();
 			return;
 		}
 
-		blade.Position += Vector2.down * (penetration * kickbackStrength * Time.unscaledDeltaTime);
-		blade.Position = ClampToView(blade.Position);
-
-		float pressure = Mathf.Clamp01(penetration / Mathf.Max(0.05f, wheel.Radius * 0.45f));
-		float applied = blade.ApplyGrind(contact, wheel.Center, grindRadius, grindRate * pressure * Time.unscaledDeltaTime);
-
+		float pressure = Mathf.Clamp01(penetration / Mathf.Max(MinimumPressureDepth, wheel.Radius * FullPressureRadiusFraction));
+		float appliedGrindAmount = blade.ApplyGrind(contactPoint, wheel.Center, grindRadius, grindRate * pressure * deltaTime);
+		blade.Position = ClampToView(blade.Position + pushNormal * (penetration * kickbackStrength * deltaTime));
 		if (sparks != null)
 		{
-			if (applied > 0f && pressure >= sparkPressureThreshold)
-				sparks.EmitAt(contact, Vector2.down, pressure);
+			if (appliedGrindAmount > 0f && pressure >= sparkPressureThreshold)
+				sparks.EmitAt(contactPoint, pushNormal, pressure);
 			else
 				sparks.Stop();
 		}
 	}
 
-	Vector2 ClampToView(Vector2 pos)
+	Vector2 ClampToView(Vector2 position)
 	{
 		if (grindCamera == null)
-			return pos;
-
-		Vector3 camPos = grindCamera.transform.position;
-		float halfH = grindCamera.orthographicSize * 0.9f;
-		float halfW = halfH * Mathf.Max(0.1f, grindCamera.aspect);
-		pos.x = Mathf.Clamp(pos.x, camPos.x - halfW, camPos.x + halfW);
-		pos.y = Mathf.Clamp(pos.y, camPos.y - halfH, camPos.y + halfH);
-		return pos;
+			return position;
+		Vector3 cameraPosition = grindCamera.transform.position;
+		float halfHeight = grindCamera.orthographicSize * ViewClampFraction;
+		float halfWidth = halfHeight * Mathf.Max(MinimumCameraAspect, grindCamera.aspect);
+		position.x = Mathf.Clamp(position.x, cameraPosition.x - halfWidth, cameraPosition.x + halfWidth);
+		position.y = Mathf.Clamp(position.y, cameraPosition.y - halfHeight, cameraPosition.y + halfHeight);
+		return position;
 	}
 
 	void UpdateStatus()
@@ -361,11 +394,9 @@ public class GrindSessionController : MonoBehaviour
 
 		string partName = activeMetal != null && activeMetal.PartDefinition != null ? activeMetal.PartDefinition.DisplayLabel : "Blade";
 		SharpnessQuality quality = evaluator != null ? evaluator.Quality : SharpnessQuality.Blunt;
-		int match = evaluator != null ? Mathf.RoundToInt(evaluator.MatchPercent * 100f) : 0;
-		int waste = evaluator != null ? Mathf.RoundToInt(evaluator.WastePercent * 100f) : 0;
-		statusText.text =
-			$"{partName}\n{quality}  {match}%\nWaste {waste}%\nLS move  ·  RS rotate  ·  B / Y finish";
-
+		int match = evaluator != null ? Mathf.RoundToInt(evaluator.MatchPercent * PercentageScale) : 0;
+		int waste = evaluator != null ? Mathf.RoundToInt(evaluator.WastePercent * PercentageScale) : 0;
+		statusText.text = $"{partName}\n{quality}  {match}%\nWaste {waste}%\nLS move  ·  RS rotate  ·  B / Y finish";
 		if (qualityText != null)
 		{
 			qualityText.text = quality.ToString().ToUpperInvariant();
@@ -386,12 +417,11 @@ public class GrindSessionController : MonoBehaviour
 			return;
 
 		Bounds bounds = blade.GetWorldBounds();
-		bounds.Encapsulate(wheel != null ? (Vector3)wheel.Center : stageOrigin);
-		float extent = Mathf.Max(bounds.extents.x, bounds.extents.y) + 0.9f;
-		grindCamera.orthographicSize = Mathf.Max(2.4f, extent);
-		Rect viewRect = viewport != null ? viewport.rectTransform.rect : new Rect(0f, 0f, 1f, 1f);
-		if (viewRect.height > 0.001f)
-			grindCamera.aspect = viewRect.width / viewRect.height;
+		if (wheel != null)
+			bounds.Encapsulate(new Bounds(wheel.Center, Vector3.one * wheel.Radius * 2f));
+		grindCamera.aspect = (float)grindTexture.width / grindTexture.height;
+		float extent = Mathf.Max(bounds.extents.x / grindCamera.aspect, bounds.extents.y) + CameraBoundsPadding;
+		grindCamera.orthographicSize = Mathf.Max(MinimumCameraHalfHeight, extent);
 		grindCamera.transform.position = new Vector3(bounds.center.x, bounds.center.y, (stageRoot != null ? stageRoot.position.z : stageWorldPosition.z) - cameraDistance);
 		grindCamera.transform.rotation = Quaternion.identity;
 	}
@@ -407,14 +437,12 @@ public class GrindSessionController : MonoBehaviour
 	void EnsureStage()
 	{
 		int grindLayer = ForgingVisualUtility.ResolveForgeLayer();
-		ExcludeFromShopCameras();
-
 		if (stageRoot == null)
 		{
-			var stageGo = new GameObject("GrindStage");
-			stageGo.transform.SetParent(transform, false);
-			stageGo.transform.position = stageWorldPosition;
-			stageRoot = stageGo.transform;
+			var stageObject = new GameObject("GrindStage");
+			stageObject.transform.SetParent(transform, false);
+			stageObject.transform.position = stageWorldPosition;
+			stageRoot = stageObject.transform;
 		}
 
 		if (blade == null)
@@ -465,44 +493,32 @@ public class GrindSessionController : MonoBehaviour
 		ForgingVisualUtility.ApplyLayerRecursively(stageRoot.gameObject, grindLayer);
 	}
 
-	void ExcludeFromShopCameras()
-	{
-		var cameras = FindObjectsByType<Camera>(FindObjectsSortMode.None);
-		for (int i = 0; i < cameras.Length; i++)
-		{
-			Camera cam = cameras[i];
-			if (cam == null || cam == grindCamera)
-				continue;
-			ForgingVisualUtility.ExcludeForgeLayer(cam);
-		}
-	}
-
 	void EnsureBackgroundPlate(int grindLayer)
 	{
 		Transform existing = stageRoot.Find("GrindPlate");
 		if (existing != null)
 			return;
-
-		var plate = GameObject.CreatePrimitive(PrimitiveType.Quad);
-		plate.name = "GrindPlate";
-		plate.transform.SetParent(stageRoot, false);
-		plate.transform.localPosition = new Vector3(0f, 0f, 0.45f);
-		plate.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
-		plate.transform.localScale = new Vector3(8f, 8f, 1f);
-		Destroy(plate.GetComponent<Collider>());
-		var renderer = plate.GetComponent<MeshRenderer>();
-		renderer.sharedMaterial = ForgingVisualUtility.CreateColorMaterial(plateColor);
+		var backgroundPlate = GameObject.CreatePrimitive(PrimitiveType.Quad);
+		backgroundPlate.name = "GrindPlate";
+		backgroundPlate.transform.SetParent(stageRoot, false);
+		backgroundPlate.transform.localPosition = new Vector3(0f, 0f, BackgroundPlateDepth);
+		backgroundPlate.transform.localRotation = Quaternion.Euler(0f, BackgroundPlateFacingAngle, 0f);
+		backgroundPlate.transform.localScale = new Vector3(BackgroundPlateSize, BackgroundPlateSize, 1f);
+		Destroy(backgroundPlate.GetComponent<Collider>());
+		var renderer = backgroundPlate.GetComponent<MeshRenderer>();
+		renderer.sharedMaterial = ForgingVisualUtility.GetSharedVertexColorMaterial();
+		ForgingVisualUtility.SetTint(renderer, plateColor);
 		renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
 		renderer.receiveShadows = false;
 		renderer.sortingOrder = 0;
-		plate.layer = grindLayer;
+		backgroundPlate.layer = grindLayer;
 	}
 
 	void EnsureGrindCamera(int grindLayer)
 	{
 		if (grindTexture == null)
 		{
-			grindTexture = new RenderTexture(renderTextureSize, renderTextureSize, 16)
+			grindTexture = new RenderTexture(renderTextureSize, renderTextureSize, RenderTextureDepthBits)
 			{
 				name = "GrindView",
 				filterMode = FilterMode.Point,
@@ -514,25 +530,26 @@ public class GrindSessionController : MonoBehaviour
 
 		if (grindCamera == null)
 		{
-			var camGo = new GameObject("GrindCamera");
-			camGo.transform.SetParent(transform, false);
-			grindCamera = camGo.AddComponent<Camera>();
-			var extra = camGo.GetComponent<UniversalAdditionalCameraData>();
-			if (extra == null)
-				extra = camGo.AddComponent<UniversalAdditionalCameraData>();
-			extra.renderType = CameraRenderType.Base;
-			extra.renderPostProcessing = false;
-			extra.renderShadows = false;
+			var cameraObject = new GameObject("GrindCamera");
+			cameraObject.transform.SetParent(transform, false);
+			grindCamera = cameraObject.AddComponent<Camera>();
+			var cameraData = cameraObject.GetComponent<UniversalAdditionalCameraData>();
+			if (cameraData == null)
+				cameraData = cameraObject.AddComponent<UniversalAdditionalCameraData>();
+			cameraData.renderType = CameraRenderType.Base;
+			cameraData.renderPostProcessing = false;
+			cameraData.renderShadows = false;
 			grindCamera.orthographic = true;
 			grindCamera.clearFlags = CameraClearFlags.SolidColor;
 			grindCamera.backgroundColor = stageBackground;
-			grindCamera.nearClipPlane = 0.1f;
-			grindCamera.farClipPlane = 40f;
-			grindCamera.depth = -11;
+			grindCamera.nearClipPlane = CameraNearClip;
+			grindCamera.farClipPlane = CameraFarClip;
+			grindCamera.depth = CameraRenderDepth;
 			grindCamera.enabled = false;
 		}
 
 		grindCamera.cullingMask = 1 << grindLayer;
+		grindCamera.enabled = IsOpen;
 		grindCamera.targetTexture = grindTexture;
 		grindCamera.transform.position = stageWorldPosition + new Vector3(0f, 0f, -cameraDistance);
 		grindCamera.transform.rotation = Quaternion.identity;
@@ -542,7 +559,7 @@ public class GrindSessionController : MonoBehaviour
 	{
 		if (overlayRoot != null && viewport != null)
 		{
-			if (viewport.texture == null && grindTexture != null)
+			if (grindTexture != null)
 				viewport.texture = grindTexture;
 			if (qualityText == null)
 				CreateQualityText(overlayRoot.Find("GrindFrame") ?? overlayRoot);
@@ -551,10 +568,10 @@ public class GrindSessionController : MonoBehaviour
 
 		var canvasGo = new GameObject("GrindOverlayCanvas");
 		canvasGo.transform.SetParent(transform, false);
-		canvasGo.layer = 5;
+		canvasGo.layer = UiLayer;
 		overlayCanvas = canvasGo.AddComponent<Canvas>();
 		overlayCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-		overlayCanvas.sortingOrder = 85;
+		overlayCanvas.sortingOrder = OverlaySortingOrder;
 		var scaler = canvasGo.AddComponent<CanvasScaler>();
 		scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
 		scaler.referenceResolution = new Vector2(1280f, 720f);
@@ -586,8 +603,7 @@ public class GrindSessionController : MonoBehaviour
 		var aspect = viewportGo.AddComponent<AspectRatioFitter>();
 		aspect.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
 		aspect.aspectRatio = 1f;
-
-		statusText = CreateTmp(panel.transform, "StatusText", 22f, TextAlignmentOptions.TopLeft);
+		statusText = CreateTmp(panel.transform, "StatusText", StatusFontSize, TextAlignmentOptions.TopLeft);
 		var statusRect = statusText.rectTransform;
 		statusRect.anchorMin = new Vector2(0.08f, 0.02f);
 		statusRect.anchorMax = new Vector2(0.55f, 0.16f);
@@ -602,8 +618,7 @@ public class GrindSessionController : MonoBehaviour
 	{
 		if (qualityText != null || parent == null)
 			return;
-
-		qualityText = CreateTmp(parent, "QualityText", 52f, TextAlignmentOptions.Center);
+		qualityText = CreateTmp(parent, "QualityText", QualityFontSize, TextAlignmentOptions.Center);
 		var rect = qualityText.rectTransform;
 		rect.anchorMin = new Vector2(0.55f, 0.02f);
 		rect.anchorMax = new Vector2(0.92f, 0.16f);

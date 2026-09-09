@@ -4,6 +4,11 @@ using UnityEngine;
 [RequireComponent(typeof(Pickable))]
 public class HeatableMetal : MonoBehaviour
 {
+	const int LegacyProgressVersion = 0;
+	const float MinimumReferenceTemperature = 0.0001f;
+	const float MetalColorBlend = 0.65f;
+	const float DamageForMaximumDarkening = 100f;
+
 	[Header("Metal")]
 	[SerializeField] MetalType metalType;
 	[SerializeField] PartDefinition partDefinition;
@@ -43,8 +48,8 @@ public class HeatableMetal : MonoBehaviour
 	[SerializeField] bool showOverheatIndicator = true;
 	[SerializeField] Color overheatPulseColor = new Color(1f, 0.95f, 0.35f, 1f);
 	[SerializeField] float overheatPulseSpeed = 6f;
-	[SerializeField, Range(0f, 1f)] float overheatPulseStrength = 0.75f;
-	
+	[Range(0f, 1f)]
+	[SerializeField] float overheatPulseStrength = 0.75f;
 	MetalHeatGauge metalHeatGauge;
 
 	static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
@@ -56,7 +61,7 @@ public class HeatableMetal : MonoBehaviour
 	float overheatTimer;
 	float forgeMatchPercent;
 	float grindMatchPercent;
-
+	int progressVersion = WorkpieceProgress.CurrentVersion;
 	public MetalType MetalType => metalType;
 	public PartDefinition PartDefinition => partDefinition;
 	public Pickable Pickable => pickable;
@@ -66,11 +71,11 @@ public class HeatableMetal : MonoBehaviour
 	public bool IsQuenchTemp => metalType != null && metalType.IsQuenchTemp(Heat01);
 	public bool IsOverheating => metalType != null && metalType.IsOverheating(temperature);
 	public float Heat01 => metalType != null ? metalType.NormalizeHeat01(temperature) : 0f;
-	public bool HasForgeProgress => hasForgeProgress && forgedVertices != null && forgedVertices.Count >= 3;
+	public bool HasForgeProgress => hasForgeProgress && forgedVertices != null && forgedVertices.Count >= PolygonGeometry.MinimumVertexCount;
 	public IReadOnlyList<Vector2> ForgedVertices => forgedVertices;
 	public ShapeQuality ForgeQuality => forgeQuality;
 	public float ForgeMatchPercent => forgeMatchPercent;
-	public bool HasGrindProgress => hasGrindProgress && groundVertices != null && groundVertices.Count >= 3;
+	public bool HasGrindProgress => hasGrindProgress && groundVertices != null && groundVertices.Count >= PolygonGeometry.MinimumVertexCount;
 	public IReadOnlyList<Vector2> GroundVertices => groundVertices;
 	public IReadOnlyList<float> GrindAmounts => grindAmounts;
 	public SharpnessQuality SharpnessQuality => sharpnessQuality;
@@ -78,6 +83,16 @@ public class HeatableMetal : MonoBehaviour
 
 	void Awake()
 	{
+		if (progressVersion != LegacyProgressVersion && progressVersion != WorkpieceProgress.CurrentVersion)
+			ClearProgress();
+		progressVersion = WorkpieceProgress.CurrentVersion;
+		if (hasForgeProgress && !PolygonGeometry.IsSimple(forgedVertices))
+			ClearProgress();
+		bool hasInvalidGroundShape = hasGrindProgress && !PolygonGeometry.IsSimple(groundVertices);
+		bool shouldValidateGrindAmounts = hasGrindProgress && !hasInvalidGroundShape;
+		bool hasInvalidGrindAmounts = shouldValidateGrindAmounts && !ValidAmounts(grindAmounts, groundVertices.Count);
+		if (hasInvalidGroundShape || hasInvalidGrindAmounts)
+			ClearGrindProgress();
 		pickable = GetComponent<Pickable>();
 		visualRenderer = GetComponent<Renderer>();
 		metalHeatGauge = GetComponentInChildren<MetalHeatGauge>();
@@ -87,14 +102,18 @@ public class HeatableMetal : MonoBehaviour
 	{
 		ApplyQualityVisual();
 		RefreshTint();
-		metalHeatGauge.SetFollowMetal(this);
+		if (metalHeatGauge != null)
+			metalHeatGauge.SetFollowMetal(this);
 	}
 
 	void Update()
 	{
-		TickOutsideFurnace(Time.deltaTime);
-		RefreshTint();
-		metalHeatGauge.SetEnable(temperature > ambientTemperature);
+		var furnace = pickable != null ? pickable.ContainingStation as Furnace : null;
+		bool isInActiveFurnace = furnace != null && furnace.isActiveAndEnabled;
+		float? furnaceTemperature = isInActiveFurnace ? furnace.InternalTemperature : (float? )null;
+		TickTemperature(Time.deltaTime, furnaceTemperature);
+		if (metalHeatGauge != null)
+			metalHeatGauge.SetEnable(temperature > ambientTemperature);
 	}
 
 	public void SetMetalType(MetalType type)
@@ -105,13 +124,19 @@ public class HeatableMetal : MonoBehaviour
 
 	public void SetPartDefinition(PartDefinition part)
 	{
+		if (partDefinition != part)
+			ClearProgress();
 		partDefinition = part;
 		ApplyQualityVisual();
 	}
 
 	public void SetTemperature(float value)
 	{
+		if (float.IsNaN(value) || float.IsInfinity(value))
+			return;
 		temperature = value;
+		if (!IsOverheating)
+			overheatTimer = 0f;
 		RefreshTint();
 	}
 
@@ -119,7 +144,7 @@ public class HeatableMetal : MonoBehaviour
 	{
 		heat01 = Mathf.Clamp01(heat01);
 		if (metalType != null)
-			temperature = heat01 * Mathf.Max(0.0001f, metalType.referenceMaxTemp);
+			temperature = heat01 * Mathf.Max(MinimumReferenceTemperature, metalType.referenceMaxTemp);
 		else
 			temperature = heat01;
 		RefreshTint();
@@ -128,8 +153,10 @@ public class HeatableMetal : MonoBehaviour
 	public void Quench()
 	{
 		temperature = ambientTemperature;
-
-		var quenchColor = Color.Lerp(quenchedTint, metalType.metalColor, 0.65f);
+		overheatTimer = 0f;
+		if (visualRenderer == null)
+			return;
+		var quenchColor = Color.Lerp(quenchedTint, metalType != null ? metalType.metalColor : Color.white, MetalColorBlend);
 		tintBlock ??= new MaterialPropertyBlock();
 		visualRenderer.GetPropertyBlock(tintBlock);
 		tintBlock.SetColor(BaseColorId, quenchColor);
@@ -139,28 +166,41 @@ public class HeatableMetal : MonoBehaviour
 
 	public void SaveForgeProgress(IReadOnlyList<Vector2> vertices, float heat01, ShapeQuality quality, float matchPercent, PartDefinition forgedPart)
 	{
-		if (vertices == null || vertices.Count < 3)
+		if (!PolygonGeometry.IsSimple(vertices) || !IsFinite(matchPercent))
 			return;
-
+		// Public callers may pass this workpiece's own read-only view.
+		if (ReferenceEquals(vertices, forgedVertices))
+			vertices = new List<Vector2>(vertices);
+		if (forgedPart != null && forgedPart != partDefinition)
+			SetPartDefinition(forgedPart);
+		bool hasShapeChanged = forgedVertices.Count != vertices.Count;
+		for (int i = 0; !hasShapeChanged && i < vertices.Count; i++)
+			hasShapeChanged = forgedVertices[i] != vertices[i];
+		if (hasShapeChanged)
+			ClearGrindProgress();
 		forgedVertices.Clear();
 		for (int i = 0; i < vertices.Count; i++)
 			forgedVertices.Add(vertices[i]);
 
 		hasForgeProgress = true;
 		forgeQuality = quality;
-		forgeMatchPercent = matchPercent;
+		forgeMatchPercent = Mathf.Clamp01(matchPercent);
 		if (forgedPart != null)
 			partDefinition = forgedPart;
-
-		SetHeat01(heat01);
 		ApplyQualityVisual();
 	}
 
 	public void SaveGrindProgress(IReadOnlyList<Vector2> baselineVertices, IReadOnlyList<float> amounts, SharpnessQuality sharpness, float matchPercent)
 	{
-		if (baselineVertices == null || baselineVertices.Count < 3)
+		bool hasValidShape = PolygonGeometry.IsSimple(baselineVertices);
+		bool hasValidAmounts = hasValidShape && ValidAmounts(amounts, baselineVertices.Count);
+		bool hasValidProgress = hasValidAmounts && IsFinite(matchPercent);
+		if (!hasValidProgress)
 			return;
-
+		if (ReferenceEquals(baselineVertices, groundVertices))
+			baselineVertices = new List<Vector2>(baselineVertices);
+		if (ReferenceEquals(amounts, grindAmounts))
+			amounts = new List<float>(amounts);
 		groundVertices.Clear();
 		grindAmounts.Clear();
 		for (int i = 0; i < baselineVertices.Count; i++)
@@ -174,35 +214,32 @@ public class HeatableMetal : MonoBehaviour
 
 		hasGrindProgress = true;
 		sharpnessQuality = sharpness;
-		grindMatchPercent = matchPercent;
+		grindMatchPercent = Mathf.Clamp01(matchPercent);
 	}
 
-	public void TickTowardFurnace(float furnaceTemperature, float deltaTime)
+	/// <summary>Called once per frame by this workpiece; stations only supply the environment temperature.</summary>
+	public void TickTemperature(float deltaTime, float? furnaceTemperature = null)
 	{
 		if (metalType == null || deltaTime <= 0f)
 			return;
-
-		if (temperature <= furnaceTemperature)
-			temperature = Mathf.MoveTowards(temperature, furnaceTemperature, metalType.furnaceHeatTransferRate * deltaTime);
+		if (furnaceTemperature > temperature)
+			temperature = Mathf.MoveTowards(temperature, furnaceTemperature.Value, metalType.furnaceHeatTransferRate * deltaTime);
 		else
 			TickOutsideFurnace(deltaTime);
-		
+
 		TickOverheatDamage(deltaTime);
 		RefreshTint();
 	}
 
 	void ApplyQualityVisual()
 	{
-		// TODO Add quality visuals
+	// TODO Add quality visuals
 	}
 
 	void TickOutsideFurnace(float deltaTime)
 	{
 		if (metalType == null || deltaTime <= 0f)
 			return;
-
-		overheatTimer = 0f;
-
 		if (temperature > metalType.overheatTemp)
 		{
 			float coolRate = coolToMeltRateOverride >= 0f ? coolToMeltRateOverride : metalType.worldAmbientCoolRate;
@@ -224,45 +261,121 @@ public class HeatableMetal : MonoBehaviour
 			return;
 		}
 
+		float previousTimer = overheatTimer;
 		overheatTimer += deltaTime;
-		float grace = overheatGraceOverride >= 0f ? overheatGraceOverride : metalType.overheatGraceDuration;
-		if (overheatTimer < grace)
+		float graceDuration = overheatGraceOverride >= 0f ? overheatGraceOverride : metalType.overheatGraceDuration;
+		if (overheatTimer < graceDuration)
 			return;
-
-		float dps = overheatDamagePerSecondOverride >= 0f ? overheatDamagePerSecondOverride : metalType.overheatDamagePerSecond;
-		damage += dps * deltaTime;
+		float damagePerSecond = overheatDamagePerSecondOverride >= 0f ? overheatDamagePerSecondOverride : metalType.overheatDamagePerSecond;
+		float previousDamageDuration = Mathf.Max(0f, previousTimer - graceDuration);
+		float currentDamageDuration = Mathf.Max(0f, overheatTimer - graceDuration);
+		float damageDuration = currentDamageDuration - previousDamageDuration;
+		damage += damagePerSecond * damageDuration;
 	}
 
 	void RefreshTint()
 	{
-		if (!applyHeatTint || pickable.Type == Pickable.PickableType.QuenchedMetal)
+		bool hasTintTarget = visualRenderer != null && pickable != null;
+		if (!applyHeatTint || !hasTintTarget)
+			return;
+		bool isQuenched = pickable.Type == Pickable.PickableType.QuenchedMetal;
+		if (isQuenched)
 			return;
 
 		Color baseColor = metalType != null ? metalType.metalColor : Color.white;
 		float heat01 = Heat01;
-		Color heated = Color.Lerp(Color.Lerp(coldTint, baseColor, 0.65f), hotTint, heat01);
+		Color heatedColor = Color.Lerp(Color.Lerp(coldTint, baseColor, MetalColorBlend), hotTint, heat01);
 		if (damage > 0f)
 		{
-			float dark = Mathf.Clamp01(damage / 100f) * damageDarken;
-			heated = Color.Lerp(heated, Color.black, dark);
+			float damageDarkening = Mathf.Clamp01(damage / DamageForMaximumDarkening) * damageDarken;
+			heatedColor = Color.Lerp(heatedColor, Color.black, damageDarkening);
 		}
 
 		if (showOverheatIndicator && IsOverheating)
 		{
 			float pulse = (Mathf.Sin(Time.time * overheatPulseSpeed) + 1f) * 0.5f;
-			heated = Color.Lerp(heated, overheatPulseColor, pulse * overheatPulseStrength);
+			heatedColor = Color.Lerp(heatedColor, overheatPulseColor, pulse * overheatPulseStrength);
 		}
 
 		if (visualRenderer is SpriteRenderer spriteRenderer)
 		{
-			spriteRenderer.color = heated;
+			spriteRenderer.color = heatedColor;
 			return;
 		}
 
 		tintBlock ??= new MaterialPropertyBlock();
 		visualRenderer.GetPropertyBlock(tintBlock);
-		tintBlock.SetColor(BaseColorId, heated);
-		tintBlock.SetColor(ColorId, heated);
+		tintBlock.SetColor(BaseColorId, heatedColor);
+		tintBlock.SetColor(ColorId, heatedColor);
 		visualRenderer.SetPropertyBlock(tintBlock);
+	}
+
+	void ClearGrindProgress()
+	{
+		groundVertices.Clear();
+		grindAmounts.Clear();
+		hasGrindProgress = false;
+		sharpnessQuality = SharpnessQuality.Blunt;
+		grindMatchPercent = 0f;
+	}
+
+	void ClearProgress()
+	{
+		forgedVertices.Clear();
+		hasForgeProgress = false;
+		forgeQuality = ShapeQuality.Incomplete;
+		forgeMatchPercent = 0f;
+		ClearGrindProgress();
+	}
+
+	static bool IsFinite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);
+	static bool ValidAmounts(IReadOnlyList<float> amounts, int count)
+	{
+		if (amounts == null || amounts.Count != count)
+			return false;
+		for (int i = 0; i < count; i++)
+			if (!IsFinite(amounts[i]) || amounts[i] < 0f)
+				return false;
+		return true;
+	}
+
+	public WorkpieceProgress CaptureProgress() => new WorkpieceProgress
+	{
+		part = partDefinition,
+		forgedVertices = new List<Vector2>(forgedVertices),
+		forgeQuality = forgeQuality,
+		forgeMatch = forgeMatchPercent,
+		groundVertices = new List<Vector2>(groundVertices),
+		grindAmounts = new List<float>(grindAmounts),
+		sharpness = sharpnessQuality,
+		grindMatch = grindMatchPercent
+	};
+	public bool RestoreProgress(WorkpieceProgress saved)
+	{
+		if (saved == null)
+			return false;
+		bool matchesVersion = saved.version == WorkpieceProgress.CurrentVersion;
+		bool matchesPart = saved.part == partDefinition;
+		if (!matchesVersion || !matchesPart)
+			return false;
+		bool hasVertexLists = saved.forgedVertices != null && saved.groundVertices != null;
+		bool hasProgressLists = hasVertexLists && saved.grindAmounts != null;
+		if (!hasProgressLists)
+			return false;
+		bool hasValidForgeShape = saved.forgedVertices.Count == 0 || PolygonGeometry.IsSimple(saved.forgedVertices);
+		bool hasValidGrindShape = saved.groundVertices.Count == 0 || PolygonGeometry.IsSimple(saved.groundVertices);
+		if (!hasValidForgeShape || !hasValidGrindShape)
+			return false;
+		bool hasValidAmounts = ValidAmounts(saved.grindAmounts, saved.groundVertices.Count);
+		bool hasFiniteScores = IsFinite(saved.forgeMatch) && IsFinite(saved.grindMatch);
+		if (!hasValidAmounts || !hasFiniteScores)
+			return false;
+		ClearProgress();
+		if (saved.forgedVertices.Count > 0)
+			SaveForgeProgress(saved.forgedVertices, Heat01, saved.forgeQuality, saved.forgeMatch, partDefinition);
+		if (saved.groundVertices.Count > 0)
+			SaveGrindProgress(saved.groundVertices, saved.grindAmounts, saved.sharpness, saved.grindMatch);
+		progressVersion = saved.version;
+		return true;
 	}
 }

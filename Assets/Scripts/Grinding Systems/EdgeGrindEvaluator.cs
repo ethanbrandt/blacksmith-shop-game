@@ -7,29 +7,44 @@ using UnityEngine;
 /// </summary>
 public class EdgeGrindEvaluator : MonoBehaviour
 {
+	const float MinimumGrindRange = 0.05f;
+	const float DefaultOvergrindRange = 0.75f;
+	const float NearlyEqualGrindTolerance = 0.000001f;
+	const float MinimumSquaredSegmentLength = 0.000001f;
+	const float SoftPenaltyMultiplier = 0.75f;
+
 	[Header("Score Weights")]
-	[SerializeField, Range(0f, 1f)] float wastePenaltyWeight = 0.4f;
-	[SerializeField, Range(0f, 1f)] float overgrindPenaltyWeight = 0.45f;
+	[Range(0f, 1f)]
+	[SerializeField] float wastePenaltyWeight = 0.4f;
+	[Range(0f, 1f)]
+	[SerializeField] float overgrindPenaltyWeight = 0.45f;
 
 	[Header("Overgrind Scoring")]
 	[Tooltip("Grind amount that counts as fully sharp. Past this is overgrind for scoring.")]
 	[SerializeField] float idealGrindAmount = 1f;
 	[Tooltip("Average overgrind at which quality collapses to Blunt.")]
-	[SerializeField, Range(0f, 1f)] float overgrindBluntThreshold = 0.55f;
+	[Range(0f, 1f)]
+	[SerializeField] float overgrindBluntThreshold = 0.55f;
 	[Tooltip("Average overgrind that starts softening the match score.")]
-	[SerializeField, Range(0f, 1f)] float overgrindSoftPenaltyThreshold = 0.35f;
+	[Range(0f, 1f)]
+	[SerializeField] float overgrindSoftPenaltyThreshold = 0.35f;
 
 	[Header("Thresholds")]
-	[SerializeField, Range(0f, 1f)] float keenThreshold = 0.88f;
-	[SerializeField, Range(0f, 1f)] float honedThreshold = 0.74f;
-	[SerializeField, Range(0f, 1f)] float fineThreshold = 0.55f;
-	[SerializeField, Range(0f, 1f)] float dullThreshold = 0.28f;
-
+	[Range(0f, 1f)]
+	[SerializeField] float keenThreshold = 0.88f;
+	[Range(0f, 1f)]
+	[SerializeField] float honedThreshold = 0.74f;
+	[Range(0f, 1f)]
+	[SerializeField] float fineThreshold = 0.55f;
+	[Range(0f, 1f)]
+	[SerializeField] float dullThreshold = 0.28f;
+	
 	GrindBladeBody blade;
 	Vector2[] outlineLocal = System.Array.Empty<Vector2>();
 	bool[] outlineEdgeNeedsSharpening = System.Array.Empty<bool>();
 	readonly List<bool> silhouetteEdgeNeedsSharpening = new List<bool>();
-
+	
+	int mappedTopologyVersion = -1;
 	public float MatchPercent { get; private set; }
 	public float EdgeCoverage { get; private set; }
 	public float EdgeAccuracy { get; private set; }
@@ -41,8 +56,8 @@ public class EdgeGrindEvaluator : MonoBehaviour
 	public void Configure(GrindBladeBody source, Vector2[] outline, bool[] edgeSharpenFlags)
 	{
 		blade = source;
-		outlineLocal = outline != null ? outline : System.Array.Empty<Vector2>();
-		outlineEdgeNeedsSharpening = edgeSharpenFlags != null ? edgeSharpenFlags : System.Array.Empty<bool>();
+		outlineLocal = outline != null ? (Vector2[])outline.Clone() : System.Array.Empty<Vector2>();
+		outlineEdgeNeedsSharpening = edgeSharpenFlags != null ? (bool[])edgeSharpenFlags.Clone() : System.Array.Empty<bool>();
 		RemapSilhouette();
 		Evaluate();
 	}
@@ -52,58 +67,56 @@ public class EdgeGrindEvaluator : MonoBehaviour
 		return silhouetteEdgeIndex >= 0 && silhouetteEdgeIndex < silhouetteEdgeNeedsSharpening.Count && silhouetteEdgeNeedsSharpening[silhouetteEdgeIndex];
 	}
 
-	void LateUpdate()
-	{
-		if (blade == null)
-			return;
-
-		RemapSilhouette();
-		Evaluate();
-	}
-
 	void RemapSilhouette()
 	{
+		mappedTopologyVersion = blade != null ? blade.TopologyVersion : -1;
 		silhouetteEdgeNeedsSharpening.Clear();
-		if (blade == null || blade.VertexCount < 3 || outlineLocal == null || outlineLocal.Length < 3)
+		
+		bool hasBladeOutline = blade != null && blade.VertexCount >= PolygonGeometry.MinimumVertexCount;
+		bool hasTargetOutline = outlineLocal != null && outlineLocal.Length >= PolygonGeometry.MinimumVertexCount;
+		
+		if (!hasBladeOutline || !hasTargetOutline)
 			return;
-
-		var local = blade.LocalVertices;
-		int n = local.Count;
-		for (int i = 0; i < n; i++)
+		var silhouetteVertices = blade.LocalVertices;
+		int vertexCount = silhouetteVertices.Count;
+		
+		for (int i = 0; i < vertexCount; i++)
 		{
-			int j = (i + 1) % n;
-			int nearestEdge = FindNearestOutlineEdge(local[i], local[j]);
-			bool needs = nearestEdge >= 0
-				&& nearestEdge < outlineEdgeNeedsSharpening.Length
-				&& outlineEdgeNeedsSharpening[nearestEdge];
-			silhouetteEdgeNeedsSharpening.Add(needs);
+			int nextVertexIndex = (i + 1) % vertexCount;
+			int nearestEdge = FindNearestOutlineEdge(silhouetteVertices[i], silhouetteVertices[nextVertexIndex]);
+			bool needsSharpening = nearestEdge >= 0 && nearestEdge < outlineEdgeNeedsSharpening.Length && outlineEdgeNeedsSharpening[nearestEdge];
+			silhouetteEdgeNeedsSharpening.Add(needsSharpening);
 		}
 	}
 
 	int FindNearestOutlineEdge(Vector2 edgeStart, Vector2 edgeEnd)
 	{
-		Vector2 mid = (edgeStart + edgeEnd) * 0.5f;
-		int best = 0;
-		float bestDist = float.MaxValue;
+		Vector2 midpoint = (edgeStart + edgeEnd) * 0.5f;
+		int nearestEdgeIndex = 0;
+		float nearestDistance = float.MaxValue;
 		for (int i = 0; i < outlineLocal.Length; i++)
 		{
 			int next = (i + 1) % outlineLocal.Length;
-			Vector2 a = outlineLocal[i];
-			Vector2 b = outlineLocal[next];
-			float d = DistancePointToSegment(mid, a, b);
-			if (d < bestDist)
+			Vector2 targetEdgeStart = outlineLocal[i];
+			Vector2 targetEdgeEnd = outlineLocal[next];
+			float distance = DistancePointToSegment(midpoint, targetEdgeStart, targetEdgeEnd);
+			if (distance < nearestDistance)
 			{
-				bestDist = d;
-				best = i;
+				nearestDistance = distance;
+				nearestEdgeIndex = i;
 			}
 		}
 
-		return best;
+		return nearestEdgeIndex;
 	}
 
 	public void Evaluate()
 	{
-		if (blade == null || blade.VertexCount < 3 || silhouetteEdgeNeedsSharpening.Count != blade.VertexCount)
+		if (blade != null && mappedTopologyVersion != blade.TopologyVersion)
+			RemapSilhouette();
+		bool hasBladeOutline = blade != null && blade.VertexCount >= PolygonGeometry.MinimumVertexCount;
+		bool hasMatchingEdgeMap = hasBladeOutline && silhouetteEdgeNeedsSharpening.Count == blade.VertexCount;
+		if (!hasMatchingEdgeMap)
 		{
 			MatchPercent = 0f;
 			EdgeCoverage = 0f;
@@ -114,39 +127,35 @@ public class EdgeGrindEvaluator : MonoBehaviour
 			return;
 		}
 
-		float coverageSum = 0f;
-		float overSum = 0f;
-		int sharpenCount = 0;
-		float wasteSum = 0f;
-		int wasteCount = 0;
-
-		float ideal = Mathf.Max(0.05f, blade != null ? blade.IdealGrindAmount : idealGrindAmount);
-		float overRange = Mathf.Max(0.05f, (blade != null ? blade.MaxGrindAmount : ideal + 0.75f) - ideal);
-		int n = blade.VertexCount;
-
-		for (int i = 0; i < n; i++)
+		float weightedCoverage = 0f;
+		float weightedOvergrind = 0f;
+		float sharpeningEdgeLength = 0f;
+		float weightedWaste = 0f;
+		float nonSharpeningEdgeLength = 0f;
+		float idealAmount = Mathf.Max(MinimumGrindRange, blade != null ? blade.IdealGrindAmount : idealGrindAmount);
+		float overgrindRange = Mathf.Max(MinimumGrindRange, (blade != null ? blade.MaxGrindAmount : idealAmount + DefaultOvergrindRange) - idealAmount);
+		int vertexCount = blade.VertexCount;
+		for (int i = 0; i < vertexCount; i++)
 		{
-			int j = (i + 1) % n;
-			float grind = (blade.GrindAmounts[i] + blade.GrindAmounts[j]) * 0.5f;
-
+			int nextVertexIndex = (i + 1) % vertexCount;
+			float edgeLength = Vector2.Distance(blade.LocalVertices[i], blade.LocalVertices[nextVertexIndex]);
+			float startGrind = blade.GrindAmounts[i], endGrind = blade.GrindAmounts[nextVertexIndex];
 			if (silhouetteEdgeNeedsSharpening[i])
 			{
-				sharpenCount++;
-				coverageSum += Mathf.Clamp01(grind / ideal);
-				if (grind > ideal)
-					overSum += Mathf.Clamp01((grind - ideal) / overRange);
+				sharpeningEdgeLength += edgeLength;
+				weightedCoverage += edgeLength * ClampedLinearAverage(startGrind / idealAmount, endGrind / idealAmount);
+				weightedOvergrind += edgeLength * ClampedLinearAverage((startGrind - idealAmount) / overgrindRange, (endGrind - idealAmount) / overgrindRange);
 			}
-			else if (!IsSharpenTransitionEdge(i, n) && TryGetWasteGrind(i, n, out float wasteGrind) && wasteGrind > 0.001f)
+			else
 			{
-				wasteCount++;
-				wasteSum += Mathf.Clamp01(wasteGrind / ideal);
+				nonSharpeningEdgeLength += edgeLength;
+				weightedWaste += edgeLength * ClampedLinearAverage(startGrind / idealAmount, endGrind / idealAmount);
 			}
 		}
 
-		float edgeCoverage = sharpenCount > 0 ? coverageSum / sharpenCount : 0f;
-		float overgrind = sharpenCount > 0 ? overSum / sharpenCount : 0f;
-		float wastePercent = wasteCount > 0 ? wasteSum / wasteCount : 0f;
-
+		float edgeCoverage = sharpeningEdgeLength > 0f ? weightedCoverage / sharpeningEdgeLength : 0f;
+		float overgrind = sharpeningEdgeLength > 0f ? weightedOvergrind / sharpeningEdgeLength : 0f;
+		float wastePercent = nonSharpeningEdgeLength > 0f ? weightedWaste / nonSharpeningEdgeLength : 0f;
 		EdgeCoverage = edgeCoverage;
 		EdgeAccuracy = edgeCoverage;
 		WastePercent = Mathf.Clamp01(wastePercent);
@@ -159,29 +168,22 @@ public class EdgeGrindEvaluator : MonoBehaviour
 		Quality = ResolveQuality(MatchPercent, overgrind);
 	}
 
-	bool VertexTouchesSharpenEdge(int vertexIndex, int vertexCount)
+	public static float ClampedLinearAverage(float startAmount, float endAmount)
 	{
-		int prevEdge = (vertexIndex - 1 + vertexCount) % vertexCount;
-		return silhouetteEdgeNeedsSharpening[prevEdge] || silhouetteEdgeNeedsSharpening[vertexIndex];
+		float amountDifference = endAmount - startAmount;
+		bool hasNearlyConstantAmount = Mathf.Abs(amountDifference) < NearlyEqualGrindTolerance;
+		if (hasNearlyConstantAmount)
+			return Mathf.Clamp01(startAmount);
+		return (ClampIntegral(endAmount) - ClampIntegral(startAmount)) / amountDifference;
 	}
 
-	bool IsSharpenTransitionEdge(int edgeIndex, int edgeCount)
+	static float ClampIntegral(float amount)
 	{
-		if (silhouetteEdgeNeedsSharpening[edgeIndex])
-			return false;
-
-		int nextVertex = (edgeIndex + 1) % edgeCount;
-		return VertexTouchesSharpenEdge(edgeIndex, edgeCount)
-			|| VertexTouchesSharpenEdge(nextVertex, edgeCount);
-	}
-
-	bool TryGetWasteGrind(int edgeIndex, int edgeCount, out float wasteGrind)
-	{
-		int nextVertex = (edgeIndex + 1) % edgeCount;
-		float start = VertexTouchesSharpenEdge(edgeIndex, edgeCount) ? 0f : blade.GrindAmounts[edgeIndex];
-		float end = VertexTouchesSharpenEdge(nextVertex, edgeCount) ? 0f : blade.GrindAmounts[nextVertex];
-		wasteGrind = (start + end) * 0.5f;
-		return true;
+		if (amount <= 0f)
+			return 0f;
+		if (amount < 1f)
+			return amount * amount * 0.5f;
+		return amount - 0.5f;
 	}
 
 	SharpnessQuality ResolveQuality(float match, float overgrind)
@@ -189,8 +191,7 @@ public class EdgeGrindEvaluator : MonoBehaviour
 		if (overgrind > overgrindBluntThreshold)
 			return SharpnessQuality.Blunt;
 		if (overgrind > overgrindSoftPenaltyThreshold && match < keenThreshold)
-			match *= 0.75f;
-
+			match *= SoftPenaltyMultiplier;
 		if (match >= keenThreshold)
 			return SharpnessQuality.Keen;
 		if (match >= honedThreshold)
@@ -202,14 +203,13 @@ public class EdgeGrindEvaluator : MonoBehaviour
 		return SharpnessQuality.Blunt;
 	}
 
-	static float DistancePointToSegment(Vector2 p, Vector2 a, Vector2 b)
+	static float DistancePointToSegment(Vector2 point, Vector2 segmentStart, Vector2 segmentEnd)
 	{
-		Vector2 ab = b - a;
-		float denom = Vector2.Dot(ab, ab);
-		if (denom < 0.000001f)
-			return Vector2.Distance(p, a);
-
-		float t = Mathf.Clamp01(Vector2.Dot(p - a, ab) / denom);
-		return Vector2.Distance(p, a + ab * t);
+		Vector2 segment = segmentEnd - segmentStart;
+		float squaredSegmentLength = Vector2.Dot(segment, segment);
+		if (squaredSegmentLength < MinimumSquaredSegmentLength)
+			return Vector2.Distance(point, segmentStart);
+		float projectionFraction = Mathf.Clamp01(Vector2.Dot(point - segmentStart, segment) / squaredSegmentLength);
+		return Vector2.Distance(point, segmentStart + segment * projectionFraction);
 	}
 }

@@ -3,6 +3,23 @@ using UnityEngine.Rendering;
 
 public class ForgeHammerPreview : MonoBehaviour
 {
+	const float StrikeFlashDuration = 0.16f;
+	const float FlashDiscOpacity = 0.22f;
+	const float AimDiscOpacity = 0.2f;
+	const float DiscDepthOffset = 0.02f;
+	const int DiscSortingOrder = 18;
+	const int RingSortingOrder = 20;
+	const int ArrowSortingOrder = 21;
+	const int MinimumRingSegments = 12;
+	const int TriangleIndexCount = 3;
+	const float MinimumSquaredAimMagnitude = 0.0001f;
+	const float MinimumArrowLengthScale = 0.7f;
+	const float MaximumArrowLengthScale = 1.15f;
+	const float MinimumArrowHeadLength = 0.12f;
+	const float ArrowHeadRadiusFraction = 0.28f;
+	const float ArrowHeadWidthFraction = 0.55f;
+	const float MinimumArrowWidthScale = 0.85f;
+	const float MaximumArrowWidthScale = 1.25f;
 	[SerializeField] int ringSegments = 48;
 	[SerializeField] float previewZ = -0.92f;
 	[SerializeField] float ringWidth = 0.035f;
@@ -18,9 +35,17 @@ public class ForgeHammerPreview : MonoBehaviour
 	[SerializeField] MeshRenderer discRenderer;
 	[SerializeField] Material discMaterial;
 	Mesh discMesh;
+	Color[] discColors;
+
+	void OnDestroy()
+	{
+		if (discMesh != null)
+			ForgingVisualUtility.DestroyGenerated(discMesh);
+	}
+
 	Vector3[] ringPoints;
-	Vector3[] discVerts;
-	int[] discTris;
+	Vector3[] discVertices;
+	int[] discTriangles;
 	float flashUntil;
 	Color flashTint;
 
@@ -37,10 +62,7 @@ public class ForgeHammerPreview : MonoBehaviour
 		SetVisible(true);
 
 		bool flashing = Time.unscaledTime < flashUntil;
-		Color color = flashing
-			? flashTint
-			: Color.Lerp(idleColor, chargeColor, Mathf.Clamp01(charge01));
-
+		Color color = flashing ? flashTint : Color.Lerp(idleColor, chargeColor, Mathf.Clamp01(charge01));
 		DrawRing(impact, radius, color);
 		DrawDisc(impact, radius, color);
 		DrawArrow(impact, direction, radius, Mathf.Clamp01(charge01), color);
@@ -49,7 +71,7 @@ public class ForgeHammerPreview : MonoBehaviour
 
 	public void PlayStrikeFlash(Vector2 impact, Vector2 direction, float radius)
 	{
-		flashUntil = Time.unscaledTime + 0.16f;
+		flashUntil = Time.unscaledTime + StrikeFlashDuration;
 		flashTint = strikeColor;
 		ShowAim(impact, direction, radius, 1f);
 	}
@@ -60,14 +82,13 @@ public class ForgeHammerPreview : MonoBehaviour
 			return;
 		if (ring == null || !ring.enabled)
 			return;
-
-		float t = 1f - Mathf.InverseLerp(flashUntil - 0.16f, flashUntil, Time.unscaledTime);
-		Color color = Color.Lerp(idleColor, flashTint, t);
+		float flashProgress = 1f - Mathf.InverseLerp(flashUntil - StrikeFlashDuration, flashUntil, Time.unscaledTime);
+		Color color = Color.Lerp(idleColor, flashTint, flashProgress);
 		ring.startColor = color;
 		ring.endColor = color;
 		arrow.startColor = color;
 		arrow.endColor = color;
-		SetDiscColor(new Color(color.r, color.g, color.b, color.a * 0.22f));
+		SetDiscColor(new Color(color.r, color.g, color.b, color.a * FlashDiscOpacity));
 	}
 
 	void EnsureVisuals()
@@ -84,27 +105,28 @@ public class ForgeHammerPreview : MonoBehaviour
 
 		if (discFilter == null)
 		{
-			var discGo = new GameObject("HammerRadiusFill");
-			discGo.transform.SetParent(transform, false);
-			discFilter = discGo.AddComponent<MeshFilter>();
-			discRenderer = discGo.AddComponent<MeshRenderer>();
+			var discObject = new GameObject("HammerRadiusFill");
+			discObject.transform.SetParent(transform, false);
+			discFilter = discObject.AddComponent<MeshFilter>();
+			discRenderer = discObject.AddComponent<MeshRenderer>();
 			discRenderer.shadowCastingMode = ShadowCastingMode.Off;
 			discRenderer.receiveShadows = false;
-			discRenderer.sortingOrder = 18;
+			discRenderer.sortingOrder = DiscSortingOrder;
 		}
 
 		if (discMesh == null)
 		{
-			discMesh = new Mesh { name = "HammerRadiusDisc" };
+			discMesh = new Mesh
+			{
+				name = "HammerRadiusDisc"
+			};
 			discMesh.MarkDynamic();
 			discFilter.sharedMesh = discMesh;
 		}
 
-		if (discMaterial == null)
-			discMaterial = ForgingVisualUtility.CreateColorMaterial(idleColor);
-		if (discRenderer != null && discRenderer.sharedMaterial == null)
-			discRenderer.sharedMaterial = discMaterial;
-
+		discMaterial = ForgingVisualUtility.GetSharedVertexColorMaterial();
+		discRenderer.sharedMaterial = discMaterial;
+		discRenderer.sortingOrder = DiscSortingOrder;
 		if (ring == null)
 		{
 			Transform existing = transform.Find("HammerRadiusRing");
@@ -114,7 +136,7 @@ public class ForgeHammerPreview : MonoBehaviour
 
 		if (ring == null)
 		{
-			ring = CreateLine("HammerRadiusRing", ringWidth, 20);
+			ring = CreateLine("HammerRadiusRing", ringWidth, RingSortingOrder);
 			ring.loop = true;
 		}
 
@@ -127,16 +149,21 @@ public class ForgeHammerPreview : MonoBehaviour
 
 		if (arrow == null)
 		{
-			arrow = CreateLine("HammerAimArrow", arrowWidth, 21);
+			arrow = CreateLine("HammerAimArrow", arrowWidth, ArrowSortingOrder);
 			arrow.loop = false;
 		}
 
-		int segs = Mathf.Max(12, ringSegments);
-		if (ringPoints == null || ringPoints.Length != segs)
+		ring.sharedMaterial = ForgingVisualUtility.GetSpritesDefaultMaterial();
+		arrow.sharedMaterial = ForgingVisualUtility.GetSpritesDefaultMaterial();
+		int segmentCount = Mathf.Max(MinimumRingSegments, ringSegments);
+		if (ringPoints == null || ringPoints.Length != segmentCount)
 		{
-			ringPoints = new Vector3[segs];
-			discVerts = new Vector3[segs + 1];
-			discTris = new int[segs * 3];
+			ringPoints = new Vector3[segmentCount];
+			discVertices = new Vector3[segmentCount + 1];
+			discColors = new Color[segmentCount + 1];
+			for (int i = 0; i < discColors.Length; i++)
+				discColors[i] = Color.white;
+			discTriangles = new int[segmentCount * TriangleIndexCount];
 		}
 
 		ApplyLayer();
@@ -144,9 +171,9 @@ public class ForgeHammerPreview : MonoBehaviour
 
 	LineRenderer CreateLine(string name, float width, int sortingOrder)
 	{
-		var go = new GameObject(name);
-		go.transform.SetParent(transform, false);
-		var line = go.AddComponent<LineRenderer>();
+		var lineObject = new GameObject(name);
+		lineObject.transform.SetParent(transform, false);
+		var line = lineObject.AddComponent<LineRenderer>();
 		line.useWorldSpace = true;
 		ForgingVisualUtility.ApplyLineRendererDefaults(line, idleColor, width, sortingOrder);
 		return line;
@@ -154,17 +181,14 @@ public class ForgeHammerPreview : MonoBehaviour
 
 	void DrawRing(Vector2 center, float radius, Color color)
 	{
-		int segs = ringPoints.Length;
-		for (int i = 0; i < segs; i++)
+		int segmentCount = ringPoints.Length;
+		for (int i = 0; i < segmentCount; i++)
 		{
-			float ang = (i / (float)segs) * Mathf.PI * 2f;
-			ringPoints[i] = new Vector3(
-				center.x + Mathf.Cos(ang) * radius,
-				center.y + Mathf.Sin(ang) * radius,
-				previewZ);
+			float angleRadians = (i / (float)segmentCount) * Mathf.PI * 2f;
+			ringPoints[i] = new Vector3(center.x + Mathf.Cos(angleRadians) * radius, center.y + Mathf.Sin(angleRadians) * radius, previewZ);
 		}
 
-		ring.positionCount = segs;
+		ring.positionCount = segmentCount;
 		ring.SetPositions(ringPoints);
 		ring.startColor = color;
 		ring.endColor = color;
@@ -173,45 +197,43 @@ public class ForgeHammerPreview : MonoBehaviour
 
 	void DrawDisc(Vector2 center, float radius, Color color)
 	{
-		int segs = ringPoints.Length;
-		discVerts[0] = new Vector3(center.x, center.y, previewZ + 0.02f);
-		for (int i = 0; i < segs; i++)
+		int segmentCount = ringPoints.Length;
+		discVertices[0] = new Vector3(center.x, center.y, previewZ + DiscDepthOffset);
+		for (int i = 0; i < segmentCount; i++)
 		{
-			float ang = (i / (float)segs) * Mathf.PI * 2f;
-			discVerts[i + 1] = new Vector3(
-				center.x + Mathf.Cos(ang) * radius,
-				center.y + Mathf.Sin(ang) * radius,
-				previewZ + 0.02f);
-
-			int t = i * 3;
-			discTris[t] = 0;
-			discTris[t + 1] = (i + 1) % segs + 1;
-			discTris[t + 2] = i + 1;
+			float angleRadians = (i / (float)segmentCount) * Mathf.PI * 2f;
+			discVertices[i + 1] = new Vector3(center.x + Mathf.Cos(angleRadians) * radius, center.y + Mathf.Sin(angleRadians) * radius, previewZ + DiscDepthOffset);
+			int triangleIndex = i * TriangleIndexCount;
+			discTriangles[triangleIndex] = 0;
+			discTriangles[triangleIndex + 1] = (i + 1) % segmentCount + 1;
+			discTriangles[triangleIndex + 2] = i + 1;
 		}
 
+		for (int i = 0; i < discVertices.Length; i++)
+			discVertices[i] = discFilter.transform.InverseTransformPoint(discVertices[i]);
 		discMesh.Clear();
-		discMesh.SetVertices(discVerts);
-		discMesh.SetTriangles(discTris, 0);
+		discMesh.SetVertices(discVertices);
+		discMesh.SetColors(discColors);
+		discMesh.SetTriangles(discTriangles, 0);
 		discMesh.RecalculateBounds();
-		SetDiscColor(new Color(color.r, color.g, color.b, color.a * 0.2f));
+		SetDiscColor(new Color(color.r, color.g, color.b, color.a * AimDiscOpacity));
 	}
 
 	void DrawArrow(Vector2 origin, Vector2 direction, float radius, float charge01, Color color)
 	{
-		if (direction.sqrMagnitude < 0.0001f)
+		if (direction.sqrMagnitude < MinimumSquaredAimMagnitude)
 		{
 			arrow.positionCount = 0;
 			return;
 		}
 
-		Vector2 dir = direction.normalized;
-		float length = radius * Mathf.Lerp(0.7f, 1.15f, charge01);
-		Vector2 tip = origin + dir * length;
-		Vector2 side = new Vector2(-dir.y, dir.x);
-		float head = Mathf.Max(0.12f, radius * 0.28f);
-		Vector2 left = tip - dir * head + side * head * 0.55f;
-		Vector2 right = tip - dir * head - side * head * 0.55f;
-
+		Vector2 aimDirection = direction.normalized;
+		float length = radius * Mathf.Lerp(MinimumArrowLengthScale, MaximumArrowLengthScale, charge01);
+		Vector2 tip = origin + aimDirection * length;
+		Vector2 side = new Vector2(-aimDirection.y, aimDirection.x);
+		float arrowHeadLength = Mathf.Max(MinimumArrowHeadLength, radius * ArrowHeadRadiusFraction);
+		Vector2 left = tip - aimDirection * arrowHeadLength + side * arrowHeadLength * ArrowHeadWidthFraction;
+		Vector2 right = tip - aimDirection * arrowHeadLength - side * arrowHeadLength * ArrowHeadWidthFraction;
 		arrow.positionCount = 5;
 		arrow.SetPosition(0, new Vector3(origin.x, origin.y, previewZ));
 		arrow.SetPosition(1, new Vector3(tip.x, tip.y, previewZ));
@@ -220,20 +242,10 @@ public class ForgeHammerPreview : MonoBehaviour
 		arrow.SetPosition(4, new Vector3(right.x, right.y, previewZ));
 		arrow.startColor = color;
 		arrow.endColor = color;
-		arrow.widthMultiplier = Mathf.Lerp(arrowWidth * 0.85f, arrowWidth * 1.25f, charge01);
+		arrow.widthMultiplier = Mathf.Lerp(arrowWidth * MinimumArrowWidthScale, arrowWidth * MaximumArrowWidthScale, charge01);
 	}
 
-	void SetDiscColor(Color color)
-	{
-		if (discMaterial == null)
-			return;
-
-		discMaterial.color = color;
-		if (discMaterial.HasProperty("_BaseColor"))
-			discMaterial.SetColor("_BaseColor", color);
-		if (discMaterial.HasProperty("_Color"))
-			discMaterial.SetColor("_Color", color);
-	}
+	void SetDiscColor(Color color) => ForgingVisualUtility.SetTint(discRenderer, color);
 
 	void SetVisible(bool visible)
 	{

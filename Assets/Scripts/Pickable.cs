@@ -10,7 +10,7 @@ public class Pickable : MonoBehaviour
 		QuenchedMetal,
 		Fuel
 	}
-	
+
 	[SerializeField] bool canBePickedUp = true;
 	[SerializeField] Collider itemCollider;
 
@@ -24,8 +24,18 @@ public class Pickable : MonoBehaviour
 	bool isHeld;
 	bool isOnFinalTable;
 	PickableType pickableType;
+	public bool CanBePickedUp
+	{
+		get
+		{
+			bool isLockedInStation = InStation && StationSessionCoordinator.IsActive;
+			bool isUnavailable = isHeld || isOnFinalTable;
+			bool isPickupBlocked = isLockedInStation || isUnavailable;
+			return canBePickedUp && !isPickupBlocked;
+		}
+	}
 
-	public bool CanBePickedUp => canBePickedUp && !isHeld && !(InStation && ForgeSessionController.IsBlockingPlayer && GrindSessionController.IsBlockingPlayer) && !isOnFinalTable;
+	public Station ContainingStation => containingStation;
 	public bool IsHeld => isHeld;
 	public bool InStation => containingStation != null;
 	public PickableType Type => pickableType;
@@ -36,7 +46,7 @@ public class Pickable : MonoBehaviour
 			pickableType = PickableType.HeatableMetal;
 		else if (TryGetComponent(out FuelItem fuelItem))
 			pickableType = PickableType.Fuel;
-		
+
 		rb = GetComponent<Rigidbody>();
 		if (itemCollider == null)
 			itemCollider = GetComponent<Collider>();
@@ -78,7 +88,7 @@ public class Pickable : MonoBehaviour
 
 		if (!_station.CanAccept(this))
 			return false;
-		
+
 		CancelInvoke(nameof(ClearHolderCollisionIgnore));
 		SetHolderCollisionIgnored(false);
 		ignoredHolderColliders = null;
@@ -93,10 +103,10 @@ public class Pickable : MonoBehaviour
 
 		if (_station is QuenchVat)
 			pickableType = PickableType.QuenchedMetal;
-		
+
 		return true;
 	}
-	
+
 	public bool TryPlaceOnFinalTable(Transform socket)
 	{
 		if (socket == null || pickableType != PickableType.QuenchedMetal)
@@ -115,7 +125,7 @@ public class Pickable : MonoBehaviour
 		transform.localRotation = Quaternion.identity;
 		return true;
 	}
-	
+
 	public void Drop(Vector3 worldPosition, Vector3 velocity)
 	{
 		if (!isHeld)
