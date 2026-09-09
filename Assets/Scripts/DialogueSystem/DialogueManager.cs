@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -7,28 +8,51 @@ namespace DialogueSystem
 {
 	public class DialogueManager : MonoBehaviour
 	{
-		[Header("Text Scroll")]
-		[SerializeField] float scrollWaitTime;
+		[SerializeField] DialogueScene testScene;
 		
-		[TextArea(10, 12)]
-		[SerializeField] string testText;
+		[Header("Text Scroll")]
+		[SerializeField] float slowScrollWaitTime;
+		[SerializeField] float normalScrollWaitTime;
+		[SerializeField] float fastScrollWaitTime;
+		[SerializeField] float superFastScrollWaitTime;
 		
 		private UIDocument document;
-		
 		private Label dialogueBoxLabel;
+		private VisualElement choicesElement;
+		private List<Button> choiceButtons;
+		
 		private DialogueParser dialogueParser;
-		private ParsedLine currentLine;
+		
+		private DialogueScene currentScene;
+		private ParsedLine currentParsedLine;
+		private DialogueLine currentDialogueLine;
+		private DialogueState state;
 
+		private readonly List<Action> choiceCallbacks = new List<Action>();
+		private int lineIndex;
+		
 		private int totalGlyphCount;
 		private int visibleGlyphCount;
 
+		private float currentScrollWaitTime;
+
 		private float nextScrollTimer = 0f;
-		private float pauseTimer = 0f;
+
+		private enum DialogueState
+		{
+			STARTING,
+			SCROLLING,
+			PICKING_CHOICE,
+			STARTING_RESPONSE,
+			RESPONSE_SCROLLING,
+			FINISHED
+		}
 
 		void Awake()
 		{
 			document = GetComponentInChildren<UIDocument>();
 			dialogueParser = new DialogueParser();
+			state = DialogueState.STARTING;
 		}
 
 		private void OnEnable()
@@ -38,63 +62,216 @@ namespace DialogueSystem
 			
 			dialogueBoxLabel = document.rootVisualElement.Q<Label>("DialogueBoxLabel");
 			dialogueBoxLabel.PostProcessTextVertices += ApplyTextEffects;
+
+			choicesElement = document.rootVisualElement.Q<VisualElement>("ChoicesElement");
+			choiceButtons = choicesElement.Query<Button>().ToList();
+			
+			for (int i = 0; i < choiceButtons.Count; i++)
+			{
+				int index = i;
+				Action callback = () => OnChoiceSelected(index);
+				choiceCallbacks.Add(callback);
+				choiceButtons[i].clicked += callback;
+			}
 		}
 
 		void OnDisable()
 		{
-			if (dialogueBoxLabel == null)
-				return;
+			if (dialogueBoxLabel != null)
+			{
+				dialogueBoxLabel.PostProcessTextVertices -= ApplyTextEffects;
+				dialogueBoxLabel.MarkDirtyRepaint();
+				dialogueBoxLabel = null;
+			}
 
-			dialogueBoxLabel.PostProcessTextVertices -= ApplyTextEffects;
-			dialogueBoxLabel.MarkDirtyRepaint();
-			dialogueBoxLabel = null;
+			if (choiceButtons != null)
+				for (int i = 0; i < choiceCallbacks.Count; i++)
+					choiceButtons[i].clicked -= choiceCallbacks[i];
+			
+			choiceCallbacks.Clear();
+			choiceButtons = null;
 		}
 
 		void Start()
 		{
-			SetNewLine(testText);
+			choicesElement.EnableInClassList("is-hidden", true);
+			SetDialogueScene(testScene);
 		}
 
 		void Update()
 		{
 			dialogueBoxLabel?.MarkDirtyRepaint();
 
-			if (visibleGlyphCount >= totalGlyphCount)
-				return;
-
-			pauseTimer -= Time.unscaledDeltaTime;
-			if (pauseTimer > 0f)
+			if (totalGlyphCount < 0)
 				return;
 
 			nextScrollTimer -= Time.unscaledDeltaTime;
-			if (nextScrollTimer <= 0f)
+			if (nextScrollTimer > 0f)
+				return;
+			
+			if (visibleGlyphCount >= totalGlyphCount)
+			{
+				if (state == DialogueState.SCROLLING)
+				{
+					if (currentDialogueLine.choices.Count > 0)
+					{
+						state = DialogueState.PICKING_CHOICE;
+						
+						choicesElement.EnableInClassList("is-hidden", false);
+						choiceButtons[0].EnableInClassList("is-hidden", false);
+						choiceButtons[0].schedule.Execute(() => choiceButtons[0].Focus());
+						
+						for (int i = 0; i < choiceButtons.Count; i++)
+						{
+							Button button = choiceButtons[i];
+							if (i >= currentDialogueLine.choices.Count)
+							{
+								button.EnableInClassList("is-hidden", true);
+							}
+							else
+							{
+								button.EnableInClassList("is-hidden", false);
+								button.text = currentDialogueLine.choices[i].optionText;
+							}
+							
+						}
+					}
+					else
+						state = DialogueState.FINISHED;
+				}
+				else if (state == DialogueState.RESPONSE_SCROLLING)
+					state = DialogueState.FINISHED;
+				
+				return;
+			}
+
+			while (nextScrollTimer <= 0f && visibleGlyphCount < totalGlyphCount)
 			{
 				visibleGlyphCount++;
-				nextScrollTimer = scrollWaitTime;
-				
-				foreach (var pause in currentLine.pauses)
-					if (visibleGlyphCount == pause.pauseIndex)
-						pauseTimer = pause.duration;
+
+				if (visibleGlyphCount < totalGlyphCount)
+					nextScrollTimer += currentScrollWaitTime;
+
+				foreach (var pause in currentParsedLine.pauses)
+					if (pause.pauseIndex == visibleGlyphCount)
+						nextScrollTimer += pause.duration;
 			}
 		}
 
-		public void SetNewLine(string _line)
+		private void OnSubmit()
 		{
-			currentLine = dialogueParser.ParseDialogueLine(_line);
-			dialogueBoxLabel.text = currentLine.displayText;
+			if (totalGlyphCount < 0)
+				return;
 
+			switch (state)
+			{
+				case DialogueState.SCROLLING:
+				case DialogueState.RESPONSE_SCROLLING:
+					visibleGlyphCount = totalGlyphCount;
+					nextScrollTimer = 0f;
+					break;
+				case DialogueState.FINISHED:
+					StartNextLine();
+					break;
+			}
+		}
+
+		private void OnChoiceSelected(int _choiceIndex)
+		{
+			if (state != DialogueState.PICKING_CHOICE || _choiceIndex < 0 || _choiceIndex >= currentDialogueLine.choices.Count)
+				return;
+
+			Choice choice = currentDialogueLine.choices[_choiceIndex];
+			state = DialogueState.STARTING_RESPONSE;
+			
+			SetRawLine(choice.responseLine);
+		}
+
+		public void StartNextLine()
+		{
+			if (lineIndex == currentScene.lines.Count - 1)
+			{
+				EndDialogue();
+				return;
+			}
+			
+			lineIndex++;
+			SetLine(currentScene.lines[lineIndex]);
+		}
+
+		private void EndDialogue()
+		{
+			print("END OF DIALOGUE");
+		}
+
+		public void SetDialogueScene(DialogueScene _dialogueScene)
+		{
+			if (_dialogueScene.lines.Count == 0)
+				return;
+
+			lineIndex = 0;
+			currentScene = _dialogueScene;
+			SetLine(currentScene.lines[lineIndex]);
+		}
+
+		private void SetLine(DialogueLine _line)
+		{
+			currentDialogueLine = _line;
+			SetRawLine(_line.rawLine);
+		}
+
+		private void SetRawLine(RawLine _line)
+		{
+			currentParsedLine = dialogueParser.ParseDialogueLine(_line.text);
+			
+			if (string.IsNullOrEmpty(currentParsedLine.displayText))
+				StartNextLine();
+			
+			dialogueBoxLabel.text = currentParsedLine.displayText;
+
+			currentScrollWaitTime = ScrollSpeedToWaitTime(_line.scrollSpeed);
+			
+			choicesElement.EnableInClassList("is-hidden", true);
+			document.rootVisualElement.schedule.Execute(() => dialogueBoxLabel.Focus());
+			
 			totalGlyphCount = -1;
 			visibleGlyphCount = 0;
 			nextScrollTimer = 0f;
+
+			if (currentParsedLine.pauses != null)
+				foreach (var pause in currentParsedLine.pauses)
+					if (pause.pauseIndex == 0)
+						nextScrollTimer += pause.duration;
+		}
+
+		private float ScrollSpeedToWaitTime(ScrollSpeed _scrollSpeed)
+		{
+			switch (_scrollSpeed)
+			{
+				case ScrollSpeed.SLOW:
+					return slowScrollWaitTime;
+				case ScrollSpeed.FAST:
+					return fastScrollWaitTime;
+				case ScrollSpeed.SUPER_FAST:
+					return superFastScrollWaitTime;
+				default:
+					return normalScrollWaitTime;
+			}
 		}
 
 		private void ApplyTextEffects(TextElement.GlyphsEnumerable _glyps)
 		{
-			if (string.IsNullOrEmpty(currentLine.displayText))
+			if (string.IsNullOrEmpty(currentParsedLine.displayText))
+			{
+				StartNextLine();
 				return;
+			}
 
 			if (totalGlyphCount < 0)
+			{
 				totalGlyphCount = _glyps.Count;
+				state = (state == DialogueState.STARTING_RESPONSE) ? DialogueState.RESPONSE_SCROLLING : DialogueState.SCROLLING;
+			}
 			
 			int glyphIndex = 0;
 			foreach (var glyph in _glyps)
@@ -117,7 +294,7 @@ namespace DialogueSystem
 					continue;
 				}
 				
-				foreach (var effect in currentLine.effects)
+				foreach (var effect in currentParsedLine.effects)
 				{
 					if (i < effect.startIndex || i >= effect.endIndex)
 						continue;
