@@ -59,12 +59,15 @@ namespace DialogueSystem
 				if (name == "pause")
 				{
 					if (isClosing || !args.StartsWith('='))
+					{
 						Debug.LogError($"Tag starting at {tagStart} is an improperly formatted pause ( use <pause=seconds> )");
+						continue;
+					}
 
 					float duration = ReadNumber(args.Substring(1).Trim(), tagStart);
 					
 					if (duration > 0f)
-						pauses.Add(new PauseCue { pauseIndex = text.Length, duration = duration });
+						pauses.Add(new PauseCue { pauseIndex = glyphIndex, duration = duration });
 					
 					continue;
 				}
@@ -108,8 +111,11 @@ namespace DialogueSystem
 					foreach (var entry in entries)
 					{
 						int equalsIndex = entry.IndexOf('=');
-						if (equalsIndex <= 0 || equalsIndex == entries.Length - 1)
+						if (equalsIndex <= 0 || equalsIndex == entry.Length - 1)
+						{
 							Debug.LogError($"Invalid parameter at {tagStart} ( use parameter=value )");
+							continue;
+						}
 
 						string label = entry.Substring(0, equalsIndex);
 						string value = entry.Substring(equalsIndex + 1);

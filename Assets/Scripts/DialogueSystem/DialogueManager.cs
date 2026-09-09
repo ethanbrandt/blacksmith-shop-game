@@ -22,17 +22,36 @@ namespace DialogueSystem
 		private int totalGlyphCount;
 		private int visibleGlyphCount;
 
-		private float nextScrollTimer = 0f; 
+		private float nextScrollTimer = 0f;
+		private float pauseTimer = 0f;
 
-		void Start()
+		void Awake()
 		{
 			document = GetComponentInChildren<UIDocument>();
 			dialogueParser = new DialogueParser();
+		}
 
-			dialogueBoxLabel = document.rootVisualElement.Q<Label>("DialogueBoxLabel");
-
-			dialogueBoxLabel.PostProcessTextVertices += ApplyTextEffects;
+		private void OnEnable()
+		{
+			if (document == null)
+				return;
 			
+			dialogueBoxLabel = document.rootVisualElement.Q<Label>("DialogueBoxLabel");
+			dialogueBoxLabel.PostProcessTextVertices += ApplyTextEffects;
+		}
+
+		void OnDisable()
+		{
+			if (dialogueBoxLabel == null)
+				return;
+
+			dialogueBoxLabel.PostProcessTextVertices -= ApplyTextEffects;
+			dialogueBoxLabel.MarkDirtyRepaint();
+			dialogueBoxLabel = null;
+		}
+
+		void Start()
+		{
 			SetNewLine(testText);
 		}
 
@@ -43,11 +62,19 @@ namespace DialogueSystem
 			if (visibleGlyphCount >= totalGlyphCount)
 				return;
 
+			pauseTimer -= Time.unscaledDeltaTime;
+			if (pauseTimer > 0f)
+				return;
+
 			nextScrollTimer -= Time.unscaledDeltaTime;
 			if (nextScrollTimer <= 0f)
 			{
 				visibleGlyphCount++;
 				nextScrollTimer = scrollWaitTime;
+				
+				foreach (var pause in currentLine.pauses)
+					if (visibleGlyphCount == pause.pauseIndex)
+						pauseTimer = pause.duration;
 			}
 		}
 
@@ -215,14 +242,5 @@ namespace DialogueSystem
 			}
 		}
 
-		void OnDisable()
-		{
-			if (dialogueBoxLabel == null)
-				return;
-
-			dialogueBoxLabel.PostProcessTextVertices -= ApplyTextEffects;
-			dialogueBoxLabel.MarkDirtyRepaint();
-			dialogueBoxLabel = null;
-		}
 	}
 }

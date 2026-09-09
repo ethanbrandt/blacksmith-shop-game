@@ -1680,9 +1680,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DialogueManager
   scrollWaitTime: 0.025
-  testText: <wave amplitude=1>Lorem ipsum</wave> dolor sit amet, consectetur adipiscing
-    elit. Ut ullamcorper vehicula eleifend. Sed eget accumsan mauris. Sed molestie
-    sit amet diam ut eleifend. Nam sit amet ultricies diam, eu blandit <wobble><i>diam</i></wobble>.
+  testText: <wave amplitude=1>Lorem ipsum</wave> dolor<pause=3.0> sit amet, consectetur
+    adipiscing elit. Ut ullamcorper vehicula eleifend. Sed eget accumsan mauris.
+    Sed molestie sit amet diam ut eleifend. Nam sit amet ultricies diam, eu blandit
+    <wobble><i>diam</i></wobble>.
 --- !u!1 &1759063735
 GameObject:
   m_ObjectHideFlags: 0
