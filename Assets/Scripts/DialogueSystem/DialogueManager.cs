@@ -18,6 +18,7 @@ namespace DialogueSystem
 		
 		private UIDocument document;
 		private Label dialogueBoxLabel;
+		private Label speakerNameLabel;
 		private VisualElement choicesElement;
 		private List<Button> choiceButtons;
 		
@@ -26,6 +27,7 @@ namespace DialogueSystem
 		private DialogueScene currentScene;
 		private ParsedLine currentParsedLine;
 		private DialogueLine currentDialogueLine;
+		private DialogueActor currentActor;
 		private DialogueState state;
 
 		private readonly List<Action> choiceCallbacks = new List<Action>();
@@ -63,6 +65,8 @@ namespace DialogueSystem
 			dialogueBoxLabel = document.rootVisualElement.Q<Label>("DialogueBoxLabel");
 			dialogueBoxLabel.PostProcessTextVertices += ApplyTextEffects;
 
+			speakerNameLabel = document.rootVisualElement.Q<Label>("NameLabel");
+
 			choicesElement = document.rootVisualElement.Q<VisualElement>("ChoicesElement");
 			choiceButtons = choicesElement.Query<Button>().ToList();
 			
@@ -83,6 +87,8 @@ namespace DialogueSystem
 				dialogueBoxLabel.MarkDirtyRepaint();
 				dialogueBoxLabel = null;
 			}
+			
+			speakerNameLabel = null;
 
 			if (choiceButtons != null)
 				for (int i = 0; i < choiceCallbacks.Count; i++)
@@ -206,11 +212,16 @@ namespace DialogueSystem
 
 		public void SetDialogueScene(DialogueScene _dialogueScene)
 		{
-			if (_dialogueScene.lines.Count == 0)
+			if (_dialogueScene.lines.Count == 0 || _dialogueScene.actorPrefab == null)
+			{
+				Debug.LogError("Invalid DialogueScene: Missing lines or actor");
 				return;
+			}
 
 			lineIndex = 0;
 			currentScene = _dialogueScene;
+			GameObject actorObject = Instantiate(_dialogueScene.actorPrefab);
+			currentActor = actorObject.GetComponent<DialogueActor>();
 			SetLine(currentScene.lines[lineIndex]);
 		}
 
@@ -228,7 +239,13 @@ namespace DialogueSystem
 				StartNextLine();
 			
 			dialogueBoxLabel.text = currentParsedLine.displayText;
-
+			
+			if (!string.IsNullOrEmpty(_line.speaker))
+				speakerNameLabel.text = _line.speaker;
+			
+			if (currentActor && !string.IsNullOrEmpty(_line.pose))
+				currentActor.SetPose(_line.pose);
+			
 			currentScrollWaitTime = ScrollSpeedToWaitTime(_line.scrollSpeed);
 			
 			choicesElement.EnableInClassList("is-hidden", true);
@@ -418,6 +435,5 @@ namespace DialogueSystem
 				vertices[i] = vertex;
 			}
 		}
-
 	}
 }

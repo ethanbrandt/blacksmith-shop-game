@@ -7,12 +7,15 @@ namespace DialogueSystem
 	[CreateAssetMenu(fileName = "DialogueScene", menuName = "Dialogue/DialogueScene")]
 	public class DialogueScene : ScriptableObject
 	{
+		public GameObject actorPrefab;
 		public List<DialogueLine> lines;
 	}
 
 	[Serializable]
 	public struct RawLine
 	{
+		public string speaker;
+		public string pose;
 		public ScrollSpeed scrollSpeed;
 		[TextArea(3, 8)]
 		public string text;

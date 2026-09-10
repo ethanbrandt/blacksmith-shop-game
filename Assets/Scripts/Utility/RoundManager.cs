@@ -19,16 +19,16 @@ public class RoundManager : MonoBehaviour
         uiHandler = GetComponent<RoundUIHandler>();
     }
 
-    public void BeginRound(Scenario _selectedScenario)
+    public void BeginRound(ForgePiece _selectedForgePiece)
     {
         if (startTime > 0)
             return;
         
         startTime = Time.time;
         
-        partTable.InitializePartLayout(_selectedScenario.PartLayout);
+        partTable.InitializePartLayout(_selectedForgePiece.PartLayout);
 
-        ScenarioPart[] scenarioParts = _selectedScenario.ScenarioParts;
+        ScenarioPart[] scenarioParts = _selectedForgePiece.ScenarioParts;
         if (metalSpawnPoints.Length < scenarioParts.Length)
         {
             Debug.LogError("Need more metal spawn points in the scene to load scenario");

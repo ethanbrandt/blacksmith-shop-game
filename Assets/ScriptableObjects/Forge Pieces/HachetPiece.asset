@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 00127e2c1473187408ca6d3462fca74b, type: 3}
-  m_Name: Broadsword Scenario
+  m_Name: HachetPiece
   m_EditorClassIdentifier: Assembly-CSharp::Scenario
-  partLayout: {fileID: 11400000, guid: fa27f9c2e6376b84f96570c6e447cc69, type: 2}
+  partLayout: {fileID: 11400000, guid: 494f98c7136420349862a1bad8e76998, type: 2}
   scenarioParts:
-  - partDefinition: {fileID: 11400000, guid: 630e2a13aacf90d409234aa80c88d123, type: 2}
+  - partDefinition: {fileID: 11400000, guid: dd87e689b98ec10419873f3bb29dbb9f, type: 2}
     metalType: {fileID: 11400000, guid: f42027317e35fa645b79330363e510f2, type: 2}
-  - partDefinition: {fileID: 11400000, guid: 7bd2cd856bb90644bb0f64f787618f43, type: 2}
+  - partDefinition: {fileID: 11400000, guid: 282717b25fa4b7245b6761cd7dd741bb, type: 2}
     metalType: {fileID: 11400000, guid: f42027317e35fa645b79330363e510f2, type: 2}

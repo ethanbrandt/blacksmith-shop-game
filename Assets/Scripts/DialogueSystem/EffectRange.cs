@@ -20,7 +20,8 @@ namespace DialogueSystem
 	{
 		NONE,
 		WAVEY,
-		WOBBLY
+		WOBBLY,
+		SCROLL_SPEED
 	}
 
 	public struct PauseCue

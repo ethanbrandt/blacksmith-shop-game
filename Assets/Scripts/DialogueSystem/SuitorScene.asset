@@ -1,0 +1,98 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3d592494cdf349147855bd5ce686c568, type: 3}
+  m_Name: SuitorScene
+  m_EditorClassIdentifier: Assembly-CSharp::DialogueSystem.DialogueScene
+  actorPrefab: {fileID: 47726160649387520, guid: ebef852db6730f641967de2b69d5113c, type: 3}
+  lines:
+  - rawLine:
+      speaker: Suitor
+      pose: triumph
+      scrollSpeed: 0
+      text: Hello nobel blacksmith, <pause=0.5>I have but a simple request for you.
+    choices: []
+  - rawLine:
+      speaker: 
+      pose: 
+      scrollSpeed: 0
+      text: I need a ring suitable for a lover such as mine.
+    choices:
+    - optionText: Uh huh
+      responseLine:
+        speaker: 
+        pose: 
+        scrollSpeed: 0
+        text: 
+    - optionText: A ring?
+      responseLine:
+        speaker: 
+        pose: 
+        scrollSpeed: 0
+        text: Old fashioned I know, <pause=0.5> but <i>my</i> lover is worthy of
+          such pursuit.
+    - optionText: How romantic!
+      responseLine:
+        speaker: 
+        pose: 
+        scrollSpeed: 0
+        text: I'm glad you agree.
+  - rawLine:
+      speaker: 
+      pose: determined
+      scrollSpeed: 0
+      text: Despite her <wave amplitude=1>repeated rejection</wave>, <pause=0.5>this
+        is an offer she simply can't refuse.
+    choices: []
+  - rawLine:
+      speaker: 
+      pose: defeated
+      scrollSpeed: 1
+      text: Her <size=80%>many</size>, <wobble>many</wobble> rejections.
+    choices: []
+  - rawLine:
+      speaker: 
+      pose: determined
+      scrollSpeed: 2
+      text: But this time will be different!
+    choices: []
+  - rawLine:
+      speaker: 
+      pose: 
+      scrollSpeed: 2
+      text: <wave amplitude=2.5>Surely!</wave>
+    choices: []
+  - rawLine:
+      speaker: 
+      pose: begging
+      scrollSpeed: 1
+      text: <wobble><size=50%>please blacksmith...</size></wobble>
+    choices: []
+  - rawLine:
+      speaker: 
+      pose: begging
+      scrollSpeed: 1
+      text: <wobble><size=50%>i need this</size></wobble>
+    choices:
+    - optionText: Alright I'll help you
+      responseLine:
+        speaker: 
+        pose: triumph
+        scrollSpeed: 0
+        text: I <wave amplitude=1>knew</wave> you were the right person for the job.
+    - optionText: I don't know
+      responseLine:
+        speaker: 
+        pose: begging
+        scrollSpeed: 2
+        text: <size=35%>please</size><pause=0.25> <size=45%>please</size><pause=0.5>
+          <size=60%>please</size><pause=0.75> <size=75%>PLEASE</size><pause=1> <wobble
+          amplitude=2><size=85%>PLEASE</size></wobble><pause=1.5> <wobble amplitude=4>PLEASE</wobble>

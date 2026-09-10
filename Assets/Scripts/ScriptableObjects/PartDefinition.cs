@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "PartDefinition", menuName = "Forging Prototype/Part Definition", order = 2)]
+[CreateAssetMenu(fileName = "PartDefinition", menuName = "Forging/PartDefinition", order = 2)]
 public class PartDefinition : ScriptableObject
 {
 	[Header("Identity")]

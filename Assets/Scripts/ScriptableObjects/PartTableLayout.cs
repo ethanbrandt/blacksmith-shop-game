@@ -79,7 +79,7 @@ public struct ScoreRankBenchmarks
 	}
 }
 
-[CreateAssetMenu(fileName = "PartTableLayout", menuName = "Forging Prototype/Part Table Layout", order = 3)]
+[CreateAssetMenu(fileName = "PartTableLayout", menuName = "Forging/PartTableLayout", order = 3)]
 public class PartTableLayout : ScriptableObject
 {
 	[SerializeField] PartTableSlot[] partTableSlots;

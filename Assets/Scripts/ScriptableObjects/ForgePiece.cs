@@ -8,8 +8,8 @@ public struct ScenarioPart
     public MetalType metalType;
 }
 
-[CreateAssetMenu(fileName = "Scenario", menuName = "Forging Prototype/Scenario", order = 3)]
-public class Scenario : ScriptableObject
+[CreateAssetMenu(fileName = "Scenario", menuName = "Forging/ForgePiece", order = 3)]
+public class ForgePiece : ScriptableObject
 {
     [SerializeField] PartTableLayout partLayout;
     [SerializeField] ScenarioPart[] scenarioParts;

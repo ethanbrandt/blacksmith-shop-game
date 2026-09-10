@@ -7,7 +7,7 @@ public class RoundUIHandler : MonoBehaviour
 {
     [Tooltip("Rank icons in D, C, B, A, S order.")]
     [SerializeField] Sprite[] rankSprites;
-    [SerializeField] Scenario[] scenarioOptions;
+    [SerializeField] ForgePiece[] scenarioOptions;
     [SerializeField] UIDocument document;
     [SerializeField] UIDocument finalScoreDocument;
     [SerializeField] TextMeshProUGUI timeElapsedText;

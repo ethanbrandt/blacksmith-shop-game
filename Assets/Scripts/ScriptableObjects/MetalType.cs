@@ -11,7 +11,7 @@ public struct MetalFeel
 /// <summary>
 /// Static metal identity: heat response for forging and world furnace temperature bands.
 /// </summary>
-[CreateAssetMenu(fileName = "MetalType", menuName = "Forging Prototype/Metal Type", order = 1)]
+[CreateAssetMenu(fileName = "MetalType", menuName = "Forging/MetalType", order = 1)]
 public class MetalType : ScriptableObject
 {
 	[Header("Identity")]

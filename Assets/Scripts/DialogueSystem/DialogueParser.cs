@@ -73,6 +73,7 @@ namespace DialogueSystem
 				}
 
 				EffectType type = EffectType.NONE;
+				bool IsSingleEntryType = false;
 				switch (name)
 				{
 					case "wave":
@@ -104,29 +105,43 @@ namespace DialogueSystem
 				else
 				{
 					var parameters = new List<EffectParameter>();
-					var paramNames = new HashSet<string>();
-
-					string[] entries = args.Split((char[])null, StringSplitOptions.RemoveEmptyEntries);
-
-					foreach (var entry in entries)
+					if (IsSingleEntryType)
 					{
-						int equalsIndex = entry.IndexOf('=');
-						if (equalsIndex <= 0 || equalsIndex == entry.Length - 1)
+						if (isClosing || !args.StartsWith('='))
 						{
-							Debug.LogError($"Invalid parameter at {tagStart} ( use parameter=value )");
+							Debug.LogError($"Tag starting at {tagStart} is an improperly formatted single entry type ( use <tag=value> )");
 							continue;
 						}
 
-						string label = entry.Substring(0, equalsIndex);
-						string value = entry.Substring(equalsIndex + 1);
-						
-						if (!IsParameter(type, label))
-							Debug.LogError($"Unknown parameter '{label}' at {tagStart}");
-						
-						if (!paramNames.Add(label))
-							Debug.LogError($"Duplicate parameter '{label}' at {tagStart}");
-						
-						parameters.Add(new EffectParameter { label = label, value = ReadNumber(value, tagStart) });
+						float value = ReadNumber(args.Substring(1).Trim(), tagStart);
+						parameters.Add(new EffectParameter { label = name, value = value });
+					}
+					else
+					{
+						var paramNames = new HashSet<string>();
+
+						string[] entries = args.Split((char[])null, StringSplitOptions.RemoveEmptyEntries);
+
+						foreach (var entry in entries)
+						{
+							int equalsIndex = entry.IndexOf('=');
+							if (equalsIndex <= 0 || equalsIndex == entry.Length - 1)
+							{
+								Debug.LogError($"Invalid parameter at {tagStart} ( use parameter=value )");
+								continue;
+							}
+
+							string label = entry.Substring(0, equalsIndex);
+							string value = entry.Substring(equalsIndex + 1);
+							
+							if (!IsParameter(type, label))
+								Debug.LogError($"Unknown parameter '{label}' at {tagStart}");
+							
+							if (!paramNames.Add(label))
+								Debug.LogError($"Duplicate parameter '{label}' at {tagStart}");
+							
+							parameters.Add(new EffectParameter { label = label, value = ReadNumber(value, tagStart) });
+						}
 					}
 					
 					openEffects.Push(effects.Count);
@@ -147,13 +162,13 @@ namespace DialogueSystem
 				case "speed":
 				case "amplitude":
 				case "phase":
-					return true;
+					return _type is EffectType.WAVEY or EffectType.WOBBLY;
 				
 				case "moveSpeed":
 				case "moveAmplitude":
 				case "movePhase":
 					return _type == EffectType.WOBBLY;
-					
+				
 				default:
 					return false;
 			}
