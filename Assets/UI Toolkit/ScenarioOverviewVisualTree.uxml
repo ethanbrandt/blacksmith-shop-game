@@ -2,7 +2,7 @@
     <Style src="project://database/Assets/UI%20Toolkit/ScenarioOverviewStyleSheet.uss?fileID=7433441132597879392&amp;guid=9ca47341726ee7348be0b48c424a9f79&amp;type=3#ScenarioOverviewStyleSheet"/>
     <ui:VisualElement name="BackgroundDim" style="flex-grow: 1; background-color: rgba(0, 0, 0, 0.455);">
         <ui:VisualElement name="VisualElement" style="flex-grow: 1; margin-left: 64px; margin-right: 64px; margin-top: 16px; margin-bottom: 0; background-color: rgb(230, 233, 188); flex-direction: column;">
-            <ui:Label text="FORGE PIECE TITLE" name="PieceTItleLabel" style="-unity-text-align: middle-center; font-size: 24px; -unity-font-definition: url(&quot;project://database/Assets/TextMesh%20Pro/Fonts/Inkbit.ttf?fileID=12800000&amp;guid=c230e0b302d4ab7438ebb477abe2877a&amp;type=3#Inkbit&quot;); white-space: nowrap; margin-bottom: 16px; margin-top: 12px; margin-left: 4px; padding-right: 0; padding-left: 0; padding-top: 0; padding-bottom: 0;"/>
+            <ui:Label text="FORGE PIECE TITLE" name="PieceTitleLabel" style="-unity-text-align: middle-center; font-size: 24px; -unity-font-definition: url(&quot;project://database/Assets/TextMesh%20Pro/Fonts/Inkbit.ttf?fileID=12800000&amp;guid=c230e0b302d4ab7438ebb477abe2877a&amp;type=3#Inkbit&quot;); white-space: nowrap; margin-bottom: 16px; margin-top: 12px; margin-left: 4px; padding-right: 0; padding-left: 0; padding-top: 0; padding-bottom: 0;"/>
             <ui:VisualElement style="flex-grow: 1; flex-direction: row;">
                 <ui:VisualElement style="flex-grow: 0; align-items: center; justify-content: center;">
                     <ui:Image source="project://database/Assets/Art/Part%20Icons/Axe%20Head%20Part%20Icon.png?fileID=21300000&amp;guid=1e6492be9a8d0c04da6d1e4694684312&amp;type=3#Axe Head Part Icon" name="PiecePreviewImage" style="width: 128px; height: 128px; align-self: auto; justify-content: flex-start; align-items: auto; align-content: auto; margin-left: 16px; margin-top: 24px; margin-right: 16px; margin-bottom: 0;"/>
@@ -12,29 +12,32 @@
                         <ui:Label text="Customer: Riley Person" name="CustomerNameLabel"/>
                         <ui:Label text="Reward Estimate: $1000" name="RewardEstimateLabel"/>
                     </ui:VisualElement>
-                    <ui:VisualElement style="flex-grow: 1; flex-direction: row; flex-wrap: wrap; padding-left: 0; padding-top: 8px; padding-right: 0; padding-bottom: 8px;">
-                        <ui:VisualElement class="part-box">
-                            <ui:Label text="Axe Head" style="-unity-text-align: upper-center; padding-left: 0; margin-left: 0; margin-right: 0; padding-right: 0; margin-bottom: 4px; margin-top: 4px;"/>
-                            <ui:Label text="Material: Gold"/>
-                            <ui:Label text="Forging Heat: Low" name="Label"/>
-                            <ui:Label text="Melting Heat: Low" name="Label"/>
+                    <ui:VisualElement name="PartInfoArea" style="flex-grow: 1; flex-direction: row; flex-wrap: wrap; padding-left: 0; padding-top: 8px; padding-right: 0; padding-bottom: 8px;">
+                        <ui:VisualElement name="PartInfoElement" class="part-box">
+                            <ui:Label text="Axe Head" name="PartNameLabel" style="-unity-text-align: upper-center; padding-left: 0; margin-left: 0; margin-right: 0; padding-right: 0; margin-bottom: 4px; margin-top: 4px;"/>
+                            <ui:Label text="Material: Gold" name="MaterialLabel"/>
+                            <ui:Label text="Forging Heat: Low" name="ForgeHeatLabel"/>
+                            <ui:Label text="Melting Heat: Low" name="MeltHeatLabel"/>
                         </ui:VisualElement>
-                        <ui:VisualElement class="part-box">
-                            <ui:Label text="Axe Head" style="-unity-text-align: upper-center; padding-left: 0; margin-left: 0; margin-right: 0; padding-right: 0; margin-bottom: 4px; margin-top: 4px;"/>
-                            <ui:Label text="Material: Gold"/>
-                            <ui:Label text="Forging Heat: Low" name="Label"/>
-                            <ui:Label text="Melting Heat: Low" name="Label"/>
+                        <ui:VisualElement name="PartInfoElement" class="part-box">
+                            <ui:Label text="Axe Head" name="PartNameLabel" style="-unity-text-align: upper-center; padding-left: 0; margin-left: 0; margin-right: 0; padding-right: 0; margin-bottom: 4px; margin-top: 4px;"/>
+                            <ui:Label text="Material: Gold" name="MaterialLabel"/>
+                            <ui:Label text="Forging Heat: Low" name="ForgeHeatLabel"/>
+                            <ui:Label text="Melting Heat: Low" name="MeltHeatLabel"/>
                         </ui:VisualElement>
-                        <ui:VisualElement class="part-box">
-                            <ui:Label text="Axe Head" style="-unity-text-align: upper-center; padding-left: 0; margin-left: 0; margin-right: 0; padding-right: 0; margin-bottom: 4px; margin-top: 4px;"/>
-                            <ui:Label text="Material: Gold"/>
-                            <ui:Label text="Forging Heat: Low" name="Label"/>
-                            <ui:Label text="Melting Heat: Low" name="Label"/>
+                        <ui:VisualElement name="PartInfoElement" class="part-box">
+                            <ui:Label text="Axe Head" name="PartNameLabel" style="-unity-text-align: upper-center; padding-left: 0; margin-left: 0; margin-right: 0; padding-right: 0; margin-bottom: 4px; margin-top: 4px;"/>
+                            <ui:Label text="Material: Gold" name="MaterialLabel"/>
+                            <ui:Label text="Forging Heat: Low" name="ForgeHeatLabel"/>
+                            <ui:Label text="Melting Heat: Low" name="MeltHeatLabel"/>
                         </ui:VisualElement>
                     </ui:VisualElement>
                 </ui:VisualElement>
             </ui:VisualElement>
             <ui:Label text="Customer Note: I need [tool] for [action with tool]. Thanks!" name="CustomerNoteLabel" style="font-size: 10px; height: 32px; margin-left: 0; padding-left: 24px; margin-right: 0; margin-bottom: 4px;"/>
         </ui:VisualElement>
+        <RadialProgress progress="1.06" radial-color="rgb(255, 255, 255)" thickness="5" radius="12" name="ContinueRadialProgress" style="width: 32px; height: 32px; position: absolute; top: 320px; left: 536px; align-items: flex-start; justify-content: center;">
+            <ui:Image source="project://database/Assets/Art/Button%20Icons/A.png?fileID=21300000&amp;guid=5f1ef0923f2ba9d4ca9040ef1053f195&amp;type=3#A" tint-color="rgb(90, 176, 85)" name="ContinueButtonImage" style="width: 32px; height: 32px; align-self: center; align-content: center;"/>
+        </RadialProgress>
     </ui:VisualElement>
 </ui:UXML>

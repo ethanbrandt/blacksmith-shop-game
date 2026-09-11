@@ -14,3 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CustomerScenario
   requestedPiece: {fileID: 11400000, guid: 691412f40a8b9444cae4484075bdee23, type: 2}
   dialogueScene: {fileID: 11400000, guid: 3a033affb6cdb5c46adcefdcfa1e52bd, type: 2}
+  pieceTitle: HATCHET
+  piecePreviewSprite: {fileID: 21300000, guid: b43b923a758fb97438de3459222b64c3, type: 3}
+  customerName: Suitor
+  estimatedReward: 1200 G
+  customerNote: Seems a little obsessive...

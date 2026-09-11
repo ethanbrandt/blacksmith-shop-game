@@ -1,6 +1,10 @@
 :root {
 }
 
+.is-hidden {
+    display: none;
+}
+
 .part-box {
     margin: 4px 8px 4px 8px;
     border-width: 1px;

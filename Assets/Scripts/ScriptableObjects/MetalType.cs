@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public struct MetalFeel
@@ -6,6 +7,14 @@ public struct MetalFeel
 	public float magnet;
 	public float tension;
 	public bool canForge;
+}
+
+[Serializable]
+public enum MetalHeatHeuristic
+{
+	LOW,
+	MEDIUM,
+	HIGH
 }
 
 /// <summary>
@@ -17,6 +26,8 @@ public class MetalType : ScriptableObject
 	[Header("Identity")]
 	public string displayName = "Metal";
 	public Color metalColor = new Color(1f, 0.35f, 0.08f, 1f);
+	public MetalHeatHeuristic forgeHeatHeuristic;
+	public MetalHeatHeuristic meltHeatHeuristic;
 
 	[Header("World Heat Transfer")]
 	[Tooltip("How fast temperature moves toward the furnace internal temp (units/sec).")]

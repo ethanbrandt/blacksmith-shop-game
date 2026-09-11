@@ -164,7 +164,13 @@ public class ForgeSessionController : MonoBehaviour
 		if (document == null)
 			return;
 		
-		document.gameObject.SetActive(!isHidden);
+		if (!isHidden && !document.gameObject.activeSelf)
+			document.gameObject.SetActive(true);
+
+		if (document.rootVisualElement == null)
+			return;
+		
+		document.rootVisualElement.style.display = isHidden ? DisplayStyle.None : DisplayStyle.Flex;
 	}
 
 	void OnDisable() => EndSession();
@@ -191,7 +197,7 @@ public class ForgeSessionController : MonoBehaviour
 	{
 		if (anvil == null || !CanBegin(metal))
 			return;
-			
+		
 		SetHidden(false);
 		EnsureStage();
 		SetHidden(true);

@@ -1,4 +1,3 @@
-using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -7,15 +6,11 @@ public class RoundUIHandler : MonoBehaviour
 {
     [Tooltip("Rank icons in D, C, B, A, S order.")]
     [SerializeField] Sprite[] rankSprites;
-    [SerializeField] ForgePiece[] scenarioOptions;
-    [SerializeField] UIDocument document;
     [SerializeField] UIDocument finalScoreDocument;
     [SerializeField] TextMeshProUGUI timeElapsedText;
     
     RoundManager roundManager;
-    Button button;
     Image rankImage;
-    RadioButtonGroup scenarioSelector;
 
     bool endScreen;
     
@@ -26,34 +21,7 @@ public class RoundUIHandler : MonoBehaviour
         if (finalScoreDocument != null)
             finalScoreDocument.gameObject.SetActive(false);
         
-        document.gameObject.SetActive(true);
-        button = document.rootVisualElement.Q<Button>("StartGameButton");
-        button.clicked += OnStartGame;
-
-        scenarioSelector = document.rootVisualElement.Q<RadioButtonGroup>("ScenarioSelector");
-        
-        document.rootVisualElement.schedule.Execute(() => scenarioSelector.Focus());
-        
-        foreach (var scenario in scenarioOptions)
-            scenario.IsValid();
-    }
-
-    void OnDisable()
-    {
-        if (button != null)
-            button.clicked -= OnStartGame;
-    }
-
-    void OnStartGame()
-    {
-        int selectedScenarioIndex = scenarioSelector.value;
-        if (selectedScenarioIndex < 0 || selectedScenarioIndex >= scenarioSelector.choices.Count() || !scenarioOptions[selectedScenarioIndex].IsValid())
-            return;
-        
-        roundManager.BeginRound(scenarioOptions[selectedScenarioIndex]);
-        document.gameObject.SetActive(false);
         timeElapsedText.text = "0.00";
-
     }
 
     void Update()

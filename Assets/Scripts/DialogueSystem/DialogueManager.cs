@@ -8,8 +8,6 @@ namespace DialogueSystem
 {
 	public class DialogueManager : MonoBehaviour
 	{
-		[SerializeField] DialogueScene testScene;
-		
 		[Header("Text Scroll")]
 		[SerializeField] float slowScrollWaitTime;
 		[SerializeField] float normalScrollWaitTime;
@@ -17,6 +15,7 @@ namespace DialogueSystem
 		[SerializeField] float superFastScrollWaitTime;
 		
 		private UIDocument document;
+		private Image submitButtonImage;
 		private Label dialogueBoxLabel;
 		private Label speakerNameLabel;
 		private VisualElement choicesElement;
@@ -59,8 +58,12 @@ namespace DialogueSystem
 
 		private void OnEnable()
 		{
+			GameManager.Instance.RegisterDialogueManager(this);
+			
 			if (document == null)
 				return;
+
+			submitButtonImage = document.rootVisualElement.Q<Image>("SubmitButtonImage");
 			
 			dialogueBoxLabel = document.rootVisualElement.Q<Label>("DialogueBoxLabel");
 			dialogueBoxLabel.PostProcessTextVertices += ApplyTextEffects;
@@ -81,6 +84,8 @@ namespace DialogueSystem
 
 		void OnDisable()
 		{
+			GameManager.Instance.UnregisterDialogueManager();
+			
 			if (dialogueBoxLabel != null)
 			{
 				dialogueBoxLabel.PostProcessTextVertices -= ApplyTextEffects;
@@ -89,6 +94,8 @@ namespace DialogueSystem
 			}
 			
 			speakerNameLabel = null;
+
+			submitButtonImage = null;
 
 			if (choiceButtons != null)
 				for (int i = 0; i < choiceCallbacks.Count; i++)
@@ -101,7 +108,7 @@ namespace DialogueSystem
 		void Start()
 		{
 			choicesElement.EnableInClassList("is-hidden", true);
-			SetDialogueScene(testScene);
+			SetDialogueScene(GameManager.Instance.GetCurrentScenario().Scene);
 		}
 
 		void Update()
@@ -143,10 +150,16 @@ namespace DialogueSystem
 						}
 					}
 					else
+					{
 						state = DialogueState.FINISHED;
+						submitButtonImage.EnableInClassList("is-hidden", false);
+					}
 				}
 				else if (state == DialogueState.RESPONSE_SCROLLING)
+				{
 					state = DialogueState.FINISHED;
+					submitButtonImage.EnableInClassList("is-hidden", false);
+				}
 				
 				return;
 			}
@@ -208,6 +221,7 @@ namespace DialogueSystem
 		private void EndDialogue()
 		{
 			print("END OF DIALOGUE");
+			GameManager.Instance.EndOfDialogue();
 		}
 
 		public void SetDialogueScene(DialogueScene _dialogueScene)
@@ -242,7 +256,10 @@ namespace DialogueSystem
 			
 			if (!string.IsNullOrEmpty(_line.speaker))
 				speakerNameLabel.text = _line.speaker;
-			
+
+			submitButtonImage?.EnableInClassList("is-hidden", true);
+
+
 			if (currentActor && !string.IsNullOrEmpty(_line.pose))
 				currentActor.SetPose(_line.pose);
 			

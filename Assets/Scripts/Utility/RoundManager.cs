@@ -14,9 +14,19 @@ public class RoundManager : MonoBehaviour
     
     float startTime = -1f;
 
-    void Start()
+    void Awake()
     {
-        uiHandler = GetComponent<RoundUIHandler>();
+	    uiHandler = GetComponent<RoundUIHandler>();
+    }
+
+    private void OnEnable()
+    {
+	    GameManager.Instance.RegisterRoundManager(this);
+    }
+
+    void OnDisable()
+    {
+	    GameManager.Instance.UnregisterRoundManager();
     }
 
     public void BeginRound(ForgePiece _selectedForgePiece)

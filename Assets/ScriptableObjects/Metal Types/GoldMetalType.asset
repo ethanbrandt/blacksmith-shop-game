@@ -10,34 +10,34 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ff1eaae9321ab88499a720c3b8d0a381, type: 3}
-  m_Name: MetalType
+  m_Name: GoldMetalType
   m_EditorClassIdentifier: Assembly-CSharp::MetalType
-  displayName: Metal
-  metalColor: {r: 0.3018868, g: 0.2867985, b: 0.28052688, a: 1}
-  forgeHeatHeuristic: 1
-  meltHeatHeuristic: 2
-  furnaceHeatTransferRate: 60
+  displayName: Rose Gold
+  metalColor: {r: 0.8396226, g: 0.6424881, b: 0.46337664, a: 1}
+  forgeHeatHeuristic: 0
+  meltHeatHeuristic: 0
+  furnaceHeatTransferRate: 45
   worldAmbientCoolRate: 15
   mobilityByHeat:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 3
       time: 0
-      value: 0.15
-      inSlope: 0.1760964
-      outSlope: 0.1760964
+      value: 0.28964844
+      inSlope: 1.2046598
+      outSlope: 1.2046598
       tangentMode: 0
       weightedMode: 0
       inWeight: 0
-      outWeight: 0.40227973
+      outWeight: 0.2334023
     - serializedVersion: 3
-      time: 0.32707205
-      value: 0.5479034
-      inSlope: 1.7775557
-      outSlope: 1.7775557
+      time: 0.26629856
+      value: 0.64909387
+      inSlope: 1.1182264
+      outSlope: 1.1182264
       tangentMode: 0
       weightedMode: 0
-      inWeight: 0.07864958
+      inWeight: 0.20229468
       outWeight: 0.07369977
     - serializedVersion: 3
       time: 1
@@ -57,20 +57,20 @@ MonoBehaviour:
     - serializedVersion: 3
       time: 0
       value: 0.1
-      inSlope: 0
-      outSlope: 0
+      inSlope: 0.5281464
+      outSlope: 0.5281464
       tangentMode: 0
       weightedMode: 0
       inWeight: 0
-      outWeight: 0
+      outWeight: 0.15166102
     - serializedVersion: 3
-      time: 0.42804092
-      value: 0.24186872
-      inSlope: 0.8198298
-      outSlope: 0.8198298
+      time: 0.38661388
+      value: 0.43474382
+      inSlope: 1.3900676
+      outSlope: 1.3900676
       tangentMode: 0
       weightedMode: 0
-      inWeight: 0.22125824
+      inWeight: 0.093226604
       outWeight: 0.33333334
     - serializedVersion: 3
       time: 1
@@ -89,30 +89,21 @@ MonoBehaviour:
     m_Curve:
     - serializedVersion: 3
       time: 0
-      value: 1.2
-      inSlope: -0.008256771
-      outSlope: -0.008256771
+      value: 1.1516666
+      inSlope: -0.22163244
+      outSlope: -0.22163244
       tangentMode: 0
       weightedMode: 0
       inWeight: 0
-      outWeight: 0.61992294
-    - serializedVersion: 3
-      time: 0.6506185
-      value: 1.0318502
-      inSlope: -0.53598684
-      outSlope: -0.53598684
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.09829384
-      outWeight: 0.18360105
+      outWeight: 0.06767956
     - serializedVersion: 3
       time: 1
       value: 0.85
-      inSlope: -0.52806956
-      outSlope: -0.52806956
+      inSlope: -0.44146508
+      outSlope: -0.44146508
       tangentMode: 0
       weightedMode: 0
-      inWeight: 0.20035386
+      inWeight: 0.056629837
       outWeight: 0
     m_PreInfinity: 2
     m_PostInfinity: 2

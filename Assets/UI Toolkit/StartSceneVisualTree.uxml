@@ -1,0 +1,12 @@
+<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="project://database/Assets/UI%20Toolkit/StartSceneStyleSheet.uss?fileID=7433441132597879392&amp;guid=da366c1b553028742b31a9e16c12b9db&amp;type=3#StartSceneStyleSheet"/>
+    <ui:VisualElement style="flex-grow: 1;">
+        <ui:Label text="BLACKSMITH SHOP GAME" name="Label" style="-unity-text-align: upper-center; padding-left: 0; padding-right: 0; margin-left: 4px; text-shadow: 0 0 0 rgb(255, 255, 255); color: rgb(255, 255, 255); font-size: 24px;"/>
+        <ui:Label text="This is a very early build, all art is temp, and nothing is final" style="margin-left: 128px; margin-right: 128px; padding-left: 2px; color: rgb(217, 217, 217); font-size: 12px; -unity-text-align: upper-center; margin-top: 32px;"/>
+        <ui:Label text="THIS BUILD ONLY WORKS ON CONTROLLER &amp; ICONS ARE XBOX ONLY" style="padding-left: 4px; margin-top: 32px; color: rgb(219, 110, 110); margin-left: 4px; padding-right: 4px; -unity-text-align: upper-center; -unity-font-style: normal;"/>
+        <RadialProgress radial-color="rgb(255, 255, 255)" radius="28" thickness="8" progress="0.42" name="RadialProgress" style="width: 25%; height: 25%; justify-content: center; align-items: center; align-self: center; align-content: center; margin-top: 64px;">
+            <ui:Image source="project://database/Assets/Art/Button%20Icons/A.png?fileID=2800000&amp;guid=5f1ef0923f2ba9d4ca9040ef1053f195&amp;type=3#A" tint-color="rgb(107, 185, 81)"/>
+        </RadialProgress>
+        <ui:Label text="TO BEGIN" style="color: rgb(255, 255, 255); -unity-text-align: upper-center; padding-left: 2px; margin-left: 4px; margin-top: -8px;"/>
+    </ui:VisualElement>
+</ui:UXML>
