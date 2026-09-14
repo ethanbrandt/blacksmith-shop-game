@@ -20,7 +20,10 @@ public class GameManager : MonoBehaviour
 	void Awake()
 	{
 		if (Instance != null)
+		{
 			Destroy(this.gameObject);
+			return;
+		}
 
 		Instance = this;
 		DontDestroyOnLoad(this.gameObject);
@@ -99,7 +102,7 @@ public class GameManager : MonoBehaviour
 	public void EndShopFrontScene()
 	{
 		Debug.Log("ENDING SHOP FRONT SCENE");
-		SceneManager.LoadScene("Scenes/WorkshopScene", LoadSceneMode.Single);
+		SceneManager.LoadScene("_Scenes/WorkshopScene", LoadSceneMode.Single);
 	}
 
 	public void EndOfDialogue()
@@ -119,7 +122,19 @@ public class GameManager : MonoBehaviour
 	{
 		if (testScenario != null)
 			return testScenario;
-
+		
 		return customerScenarios[currentScenarioIndex];
+	}
+
+	public void SetScenarioIndex(int _scenarioIndex)
+	{
+		if (_scenarioIndex < 0 || _scenarioIndex >= customerScenarios.Length)
+		{
+			Debug.LogError("Invalid Scenario Index");
+			return;
+		}
+		
+		testScenario = null;
+		currentScenarioIndex = _scenarioIndex;
 	}
 }

@@ -10,12 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9160930ef728755429b7903f6e71f2cf, type: 3}
-  m_Name: SuitorScenario
+  m_Name: HatchetTestScenario
   m_EditorClassIdentifier: Assembly-CSharp::CustomerScenario
-  requestedPiece: {fileID: 11400000, guid: 620f6d380e2878a4c9ee846b859be639, type: 2}
-  dialogueScene: {fileID: 11400000, guid: 3a033affb6cdb5c46adcefdcfa1e52bd, type: 2}
-  pieceTitle: RING
-  piecePreviewSprite: {fileID: 1080000870, guid: 92d746f93f473b94e9e54dd9149c2ca2, type: 3}
-  customerName: Suitor
-  estimatedReward: 1200 G
-  customerNote: Seems a little obsessive...
+  requestedPiece: {fileID: 11400000, guid: 691412f40a8b9444cae4484075bdee23, type: 2}
+  dialogueScene: {fileID: 11400000, guid: 761c4fc17fef49d4d8cd5ff14ed686e9, type: 2}
+  pieceTitle: HATCHET
+  piecePreviewSprite: {fileID: -1153105854, guid: 92d746f93f473b94e9e54dd9149c2ca2, type: 3}
+  customerName: ???
+  estimatedReward: ???
+  customerNote: This is a test scenario for hatchet

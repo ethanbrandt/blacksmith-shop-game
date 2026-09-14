@@ -525,7 +525,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HeatableMetal
   metalType: {fileID: 11400000, guid: f42027317e35fa645b79330363e510f2, type: 2}
   partDefinition: {fileID: 11400000, guid: 282717b25fa4b7245b6761cd7dd741bb, type: 2}
-  temperature: 800
+  temperature: 20
   ambientTemperature: 20
   damage: 0
   forgedVertices: []

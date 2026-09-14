@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 00127e2c1473187408ca6d3462fca74b, type: 3}
+  m_Name: RingPiece
+  m_EditorClassIdentifier: Assembly-CSharp::Scenario
+  partLayout: {fileID: 11400000, guid: 3b3578bebd175514ca9357cafd97d547, type: 2}
+  scenarioParts:
+  - partDefinition: {fileID: 11400000, guid: 9c1ff20ec2d828c409d2692e42dd2be4, type: 2}
+    metalType: {fileID: 11400000, guid: 71b43e2fea2c8c640a9a0303ff19383a, type: 2}
+  - partDefinition: {fileID: 11400000, guid: 140203c03111e544eaa377c0a1db7560, type: 2}
+    metalType: {fileID: 11400000, guid: 71b43e2fea2c8c640a9a0303ff19383a, type: 2}

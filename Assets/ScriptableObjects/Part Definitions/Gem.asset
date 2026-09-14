@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7d3c45066358a0242a7f4c2793673225, type: 3}
+  m_Name: Gem
+  m_EditorClassIdentifier: Assembly-CSharp::ForgingPrototype.PartDefinition
+  displayName: Gem
+  isBladed: 0
+  unforgedSprite: {fileID: 0}
+  qualitySprites:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  partSocketSprite: {fileID: 21300000, guid: 1364da3bd1b511549b90745e8c1bba0a, type: 3}
+  outlineLocal:
+  - {x: -0.6293001, y: 0.96101713}
+  - {x: 0.6293001, y: 0.96101713}
+  - {x: 1.2586002, y: 0.29964262}
+  - {x: 0.16282, y: -1.0532564}
+  - {x: -0.16282, y: -1.0532564}
+  - {x: -1.2586002, y: 0.3066277}
+  outlineCenterOffset: {x: 0, y: 0}
+  outlineEdgeNeedsSharpening: 000000000000
+  defaultMetalType: {fileID: 0}

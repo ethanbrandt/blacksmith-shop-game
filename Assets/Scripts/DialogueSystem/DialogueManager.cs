@@ -46,7 +46,8 @@ namespace DialogueSystem
 			PICKING_CHOICE,
 			STARTING_RESPONSE,
 			RESPONSE_SCROLLING,
-			FINISHED
+			FINISHED,
+			END_OF_DIALOGUE
 		}
 
 		void Awake()
@@ -220,7 +221,11 @@ namespace DialogueSystem
 
 		private void EndDialogue()
 		{
+			if (state == DialogueState.END_OF_DIALOGUE)
+				return;
+			
 			print("END OF DIALOGUE");
+			state = DialogueState.END_OF_DIALOGUE;
 			GameManager.Instance.EndOfDialogue();
 		}
 
@@ -228,7 +233,9 @@ namespace DialogueSystem
 		{
 			if (_dialogueScene.lines.Count == 0 || _dialogueScene.actorPrefab == null)
 			{
-				Debug.LogError("Invalid DialogueScene: Missing lines or actor");
+				EndDialogue();
+				
+				Debug.LogWarning("Invalid DialogueScene: Missing lines or actor");
 				return;
 			}
 
@@ -248,6 +255,12 @@ namespace DialogueSystem
 		private void SetRawLine(RawLine _line)
 		{
 			currentParsedLine = dialogueParser.ParseDialogueLine(_line.text);
+
+			if (string.IsNullOrEmpty(currentParsedLine.displayText))
+			{
+				StartNextLine();
+				return;
+			}
 			
 			if (string.IsNullOrEmpty(currentParsedLine.displayText))
 				StartNextLine();
@@ -296,10 +309,7 @@ namespace DialogueSystem
 		private void ApplyTextEffects(TextElement.GlyphsEnumerable _glyps)
 		{
 			if (string.IsNullOrEmpty(currentParsedLine.displayText))
-			{
-				StartNextLine();
 				return;
-			}
 
 			if (totalGlyphCount < 0)
 			{

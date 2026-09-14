@@ -46,7 +46,6 @@ public class ResetSceneTestScript : MonoBehaviour
 
     public void ResetScene(InputAction.CallbackContext _context)
     {
-        Scene activeScene = SceneManager.GetActiveScene();
-        SceneManager.LoadScene(activeScene.buildIndex);
+        SceneManager.LoadScene(0, LoadSceneMode.Single);
     }
 }

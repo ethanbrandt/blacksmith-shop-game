@@ -1,0 +1,61 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7d3c45066358a0242a7f4c2793673225, type: 3}
+  m_Name: Band
+  m_EditorClassIdentifier: Assembly-CSharp::ForgingPrototype.PartDefinition
+  displayName: Band
+  isBladed: 0
+  unforgedSprite: {fileID: 0}
+  qualitySprites:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  partSocketSprite: {fileID: 21300000, guid: 6bf5838bb4e43f245bf79f9276765f73, type: 3}
+  outlineLocal:
+  - {x: 0, y: 0.7658864}
+  - {x: -0.5, y: 0.705793}
+  - {x: -0.75632143, y: 0.5779072}
+  - {x: -0.89968294, y: 0.4003101}
+  - {x: -1.0430621, y: 0.15036964}
+  - {x: -1.0451841, y: -0.06614968}
+  - {x: -0.98620236, y: -0.2590207}
+  - {x: -0.8497389, y: -0.56606346}
+  - {x: -0.61755717, y: -0.81053406}
+  - {x: -0.68816805, y: -0.97101337}
+  - {x: -1.1264565, y: -0.78213054}
+  - {x: -1.3425236, y: -0.41064674}
+  - {x: -1.3854003, y: -0.10894415}
+  - {x: -1.3971552, y: 0.15562178}
+  - {x: -1.2599347, y: 0.5388035}
+  - {x: -0.9629218, y: 0.8706503}
+  - {x: -0.5, y: 1}
+  - {x: 0, y: 1.0645989}
+  - {x: 0.5, y: 1}
+  - {x: 0.9629218, y: 0.8706503}
+  - {x: 1.2599347, y: 0.5388035}
+  - {x: 1.3971552, y: 0.15562178}
+  - {x: 1.3854003, y: -0.10894415}
+  - {x: 1.3425236, y: -0.41064674}
+  - {x: 1.1264565, y: -0.78213054}
+  - {x: 0.68816805, y: -0.97101337}
+  - {x: 0.61755717, y: -0.81053406}
+  - {x: 0.8497389, y: -0.56606346}
+  - {x: 0.98620236, y: -0.2590207}
+  - {x: 1.0451841, y: -0.06614968}
+  - {x: 1.0430621, y: 0.15036964}
+  - {x: 0.89968294, y: 0.4003101}
+  - {x: 0.75632143, y: 0.5779072}
+  - {x: 0.5, y: 0.705793}
+  outlineCenterOffset: {x: 0, y: 0}
+  outlineEdgeNeedsSharpening: 00000000000000000000000000000000000000000000000000000000000000000000
+  defaultMetalType: {fileID: 0}
