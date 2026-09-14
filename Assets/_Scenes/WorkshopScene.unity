@@ -1981,6 +1981,9 @@ MonoBehaviour:
   idleColor: {r: 1, g: 0.92, b: 0.45, a: 0.7}
   chargeColor: {r: 1, g: 0.55, b: 0.12, a: 0.95}
   strikeColor: {r: 1, g: 0.95, b: 0.7, a: 1}
+  failedStrikeColor: {r: 0.8396226, g: 0.26014784, b: 0.21782663, a: 0.88235295}
+  edgeIdleColor: {r: 1, g: 1, b: 1, a: 0.6745098}
+  edgeChargeColor: {r: 0.9716981, g: 0.6967875, b: 0.2704254, a: 0.7529412}
   ring: {fileID: 1252428399}
   arrow: {fileID: 410098893}
   discFilter: {fileID: 1722008973}
@@ -2035,8 +2038,9 @@ MonoBehaviour:
   ghostFillSortingOrder: 10
   showGhostOverMetal: 1
   showGhostFill: 1
-  sampleResolution: 28
+  sampleResolution: 96
   boundsPadding: 0.35
+  boundaryTolerance: 0.02
   perfectThreshold: 0.975
   excellentThreshold: 0.935
   goodThreshold: 0.85
@@ -2078,15 +2082,15 @@ MonoBehaviour:
   maxImpactRadius: 0.5
   minStrikeStrength: 0.05
   maxStrikeStrength: 0.6
-  minInfluence: 0.13
-  inflateMix: 0.12
+  minInfluence: 0.11
+  inflateMix: 0.151
   splitEdgeUnderHammer: 1
   splitIfFartherThan: 0.18
   maxVertices: 96
-  surfaceTension: 0.668
-  tensionIterations: 3
+  surfaceTension: 0.703
+  tensionIterations: 4
   tensionIncludesAdjacency: 1
-  sharpAngleDegrees: 55
+  sharpAngleDegrees: 50
   sharpCornerExtraSmooth: 1
   outlineMagnetEnabled: 1
   magnetRadius: 4
@@ -2094,13 +2098,11 @@ MonoBehaviour:
   magnetFalloff: 1.4
   magnetHitFalloffMultiplier: 2
   outlineProtectDistance: 0.28
-  splitTensionBoost: 0.029
+  splitTensionBoost: 0.1
   splitExtraTensionIterations: 4
   inwardDotThreshold: 0.2
-  creaseRadiusMultiplier: 0.7
+  creaseRadiusMultiplier: 1
   creaseStrengthScale: 0.5
-  creaseTensionBoost: 0.506
-  creaseExtraTensionIterations: 3
   disableSplitOnInward: 0
   disableMagnetOnInward: 0
   maxVertexTravelPerStrike: 0.95

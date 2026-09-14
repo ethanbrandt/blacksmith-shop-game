@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -24,13 +25,23 @@ public class ForgeHammerPreview : MonoBehaviour
 	[SerializeField] float previewZ = -0.92f;
 	[SerializeField] float ringWidth = 0.035f;
 	[SerializeField] float arrowWidth = 0.055f;
+	[Header("Hammer Colors")]
 	[SerializeField] Color idleColor = new Color(1f, 0.92f, 0.45f, 0.7f);
 	[SerializeField] Color chargeColor = new Color(1f, 0.55f, 0.12f, 0.95f);
 	[SerializeField] Color strikeColor = new Color(1f, 0.95f, 0.7f, 1f);
+	[SerializeField] Color failedStrikeColor = new Color(0.95f, 0.25f, 0.2f, 0.9f);
+
+	[Header("Edge Highlight Colors")]
+	[Tooltip("Uncharged edge highlight. Alpha controls opacity independently of the hammer.")]
+	[SerializeField] Color edgeIdleColor = new Color(1f, 0.92f, 0.45f, 0.7f);
+	[Tooltip("Fully charged edge highlight. Alpha controls opacity independently of the hammer.")]
+	[SerializeField] Color edgeChargeColor = new Color(1f, 0.55f, 0.12f, 0.95f);
 
 	[Header("Scene Objects")]
 	[SerializeField] LineRenderer ring;
 	[SerializeField] LineRenderer arrow;
+	LineRenderer affectedOutline;
+	readonly List<Vector2> affectedPoints = new List<Vector2>();
 	[SerializeField] MeshFilter discFilter;
 	[SerializeField] MeshRenderer discRenderer;
 	[SerializeField] Material discMaterial;
@@ -56,7 +67,7 @@ public class ForgeHammerPreview : MonoBehaviour
 		SetVisible(false);
 	}
 
-	public void ShowAim(Vector2 impact, Vector2 direction, float radius, float charge01)
+	public void ShowAim(Vector2 impact, Vector2 direction, float radius, float charge01, MetalDeformer2D metal = null)
 	{
 		EnsureVisuals();
 		SetVisible(true);
@@ -66,13 +77,24 @@ public class ForgeHammerPreview : MonoBehaviour
 		DrawRing(impact, radius, color);
 		DrawDisc(impact, radius, color);
 		DrawArrow(impact, direction, radius, Mathf.Clamp01(charge01), color);
+		affectedOutline.positionCount = 0;
+		if (metal != null)
+		{
+			metal.CopyBrushPreview(impact, direction, charge01, affectedPoints);
+			affectedOutline.positionCount = affectedPoints.Count;
+			for (int i = 0; i < affectedPoints.Count; i++)
+				affectedOutline.SetPosition(i, new Vector3(affectedPoints[i].x, affectedPoints[i].y, previewZ));
+			Color edgeColor = Color.Lerp(edgeIdleColor, edgeChargeColor, Mathf.Clamp01(charge01));
+			affectedOutline.startColor = affectedOutline.endColor = edgeColor;
+		}
 		ApplyLayer();
 	}
 
-	public void PlayStrikeFlash(Vector2 impact, Vector2 direction, float radius)
+	public void PlayStrikeFlash(Vector2 impact, Vector2 direction, float radius, bool accepted, bool limited)
 	{
 		flashUntil = Time.unscaledTime + StrikeFlashDuration;
-		flashTint = strikeColor;
+		flashTint = !accepted ? failedStrikeColor
+			: limited ? new Color(1f, 0.65f, 0.15f, 0.95f) : strikeColor;
 		ShowAim(impact, direction, radius, 1f);
 	}
 
@@ -155,6 +177,8 @@ public class ForgeHammerPreview : MonoBehaviour
 
 		ring.sharedMaterial = ForgingVisualUtility.GetSpritesDefaultMaterial();
 		arrow.sharedMaterial = ForgingVisualUtility.GetSpritesDefaultMaterial();
+		if (affectedOutline == null)
+			affectedOutline = CreateLine("HammerAffectedOutline", ringWidth * 1.5f, ArrowSortingOrder);
 		int segmentCount = Mathf.Max(MinimumRingSegments, ringSegments);
 		if (ringPoints == null || ringPoints.Length != segmentCount)
 		{
@@ -254,6 +278,8 @@ public class ForgeHammerPreview : MonoBehaviour
 			ring.enabled = visible;
 		if (arrow != null)
 			arrow.enabled = visible;
+		if (affectedOutline != null)
+			affectedOutline.enabled = visible;
 		if (discRenderer != null)
 			discRenderer.enabled = visible;
 	}

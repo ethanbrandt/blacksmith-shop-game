@@ -17,19 +17,19 @@ MonoBehaviour:
   forgeHeatHeuristic: 0
   meltHeatHeuristic: 0
   furnaceHeatTransferRate: 45
-  worldAmbientCoolRate: 15
+  worldAmbientCoolRate: 8
   mobilityByHeat:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 3
       time: 0
       value: 0.28964844
-      inSlope: 1.2046598
-      outSlope: 1.2046598
+      inSlope: 1.6666955
+      outSlope: 1.6666955
       tangentMode: 0
       weightedMode: 0
       inWeight: 0
-      outWeight: 0.2334023
+      outWeight: 0.18672183
     - serializedVersion: 3
       time: 0.26629856
       value: 0.64909387
@@ -57,15 +57,15 @@ MonoBehaviour:
     - serializedVersion: 3
       time: 0
       value: 0.1
-      inSlope: 0.5281464
-      outSlope: 0.5281464
+      inSlope: 0.81881016
+      outSlope: 0.81881016
       tangentMode: 0
       weightedMode: 0
       inWeight: 0
-      outWeight: 0.15166102
+      outWeight: 0.14234158
     - serializedVersion: 3
-      time: 0.38661388
-      value: 0.43474382
+      time: 0.33689603
+      value: 0.47118583
       inSlope: 1.3900676
       outSlope: 1.3900676
       tangentMode: 0

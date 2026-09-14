@@ -18,11 +18,13 @@
 /[Bb]uilds/
 /[Ll]ogs/
 /[Uu]ser[Ss]ettings/
+/[Aa]ssets/[Ee]ditor/
 *.log
 
 # By default unity supports Blender asset imports, *.blend1 blender files do not need to be committed to version control.
 *.blend1
 *.blend1.meta
+Assets/Editor.meta
 
 # MemoryCaptures can get excessive in size.
 # They also could contain extremely sensitive data

@@ -100,6 +100,9 @@ public static class PolygonGeometry
 
 	static bool IsOnSegment(Vector2 point, Vector2 segmentStart, Vector2 segmentEnd)
 	{
+		if (point.x < Mathf.Min(segmentStart.x, segmentEnd.x) - IntersectionTolerance || point.x > Mathf.Max(segmentStart.x, segmentEnd.x) + IntersectionTolerance ||
+			point.y < Mathf.Min(segmentStart.y, segmentEnd.y) - IntersectionTolerance || point.y > Mathf.Max(segmentStart.y, segmentEnd.y) + IntersectionTolerance)
+			return false;
 		Vector2 closestPoint = ClosestOnSegment(point, segmentStart, segmentEnd);
 		return (closestPoint - point).sqrMagnitude <= SquaredDistanceTolerance;
 	}
@@ -113,6 +116,12 @@ public static class PolygonGeometry
 
 	static bool SegmentsIntersect(Vector2 firstStart, Vector2 firstEnd, Vector2 secondStart, Vector2 secondEnd)
 	{
+		// Most edge pairs are far apart. Avoid detailed tests during strike substeps.
+		if (Mathf.Max(firstStart.x, firstEnd.x) < Mathf.Min(secondStart.x, secondEnd.x) - IntersectionTolerance ||
+			Mathf.Max(secondStart.x, secondEnd.x) < Mathf.Min(firstStart.x, firstEnd.x) - IntersectionTolerance ||
+			Mathf.Max(firstStart.y, firstEnd.y) < Mathf.Min(secondStart.y, secondEnd.y) - IntersectionTolerance ||
+			Mathf.Max(secondStart.y, secondEnd.y) < Mathf.Min(firstStart.y, firstEnd.y) - IntersectionTolerance)
+			return false;
 		Vector2 firstSegment = firstEnd - firstStart;
 		Vector2 secondSegment = secondEnd - secondStart;
 		float secondStartSide = Cross(firstSegment, secondStart - firstStart);

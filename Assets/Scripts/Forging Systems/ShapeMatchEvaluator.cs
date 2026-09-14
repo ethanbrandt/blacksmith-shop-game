@@ -30,8 +30,10 @@ public class ShapeMatchEvaluator : MonoBehaviour
 	[SerializeField] bool showGhostFill = true;
 
 	[Header("Sampling")]
-	[SerializeField] int sampleResolution = 28;
+	[SerializeField] int sampleResolution = 96;
 	[SerializeField] float boundsPadding = 0.35f;
+	[Tooltip("Small silhouette errors within this distance are accepted when measuring coverage and overflow.")]
+	[SerializeField, Min(0f)] float boundaryTolerance = 0.02f;
 
 	[Header("Quality Thresholds (match %)")]
 	[Range(0f, 1f)]
@@ -145,7 +147,8 @@ public class ShapeMatchEvaluator : MonoBehaviour
 			return;
 		}
 
-		Bounds combined = GetTargetBounds();
+		Bounds targetBounds = GetTargetBounds();
+		Bounds combined = targetBounds;
 		combined.Encapsulate(metal.GetBounds());
 		combined.Expand(boundsPadding);
 
@@ -154,20 +157,21 @@ public class ShapeMatchEvaluator : MonoBehaviour
 		int totalMetalSamples = 0;
 		int overflowMetalSamples = 0;
 
-		float minX = combined.min.x;
-		float minY = combined.min.y;
-		float maxX = combined.max.x;
-		float maxY = combined.max.y;
-		int res = Mathf.Max(8, sampleResolution);
+		// Anchor the sampling grid to the target. Moving a metal extremity must
+		// not shift every sample or reduce precision elsewhere on a thin part.
+		float spacing = Mathf.Max(0.001f, Mathf.Max(targetBounds.size.x, targetBounds.size.y) / Mathf.Max(8, sampleResolution));
+		Vector2 origin = targetBounds.min;
+		int minX = Mathf.FloorToInt((combined.min.x - origin.x) / spacing);
+		int minY = Mathf.FloorToInt((combined.min.y - origin.y) / spacing);
+		int maxX = Mathf.CeilToInt((combined.max.x - origin.x) / spacing);
+		int maxY = Mathf.CeilToInt((combined.max.y - origin.y) / spacing);
 
-		for (int y = 0; y < res; y++)
+		for (int y = minY; y < maxY; y++)
 		{
-			float v = (y + 0.5f) / res;
-			float py = Mathf.Lerp(minY, maxY, v);
-			for (int x = 0; x < res; x++)
+			float py = origin.y + (y + 0.5f) * spacing;
+			for (int x = minX; x < maxX; x++)
 			{
-				float u = (x + 0.5f) / res;
-				float px = Mathf.Lerp(minX, maxX, u);
+				float px = origin.x + (x + 0.5f) * spacing;
 				var p = new Vector2(px, py);
 
 				bool inTarget = PointInPolygon(p, targetVertices);
@@ -176,14 +180,14 @@ public class ShapeMatchEvaluator : MonoBehaviour
 				if (inTarget)
 				{
 					totalTargetSamples++;
-					if (inMetal)
+					if (inMetal || DistanceToPolygonBoundary(p, metal.Vertices) <= boundaryTolerance)
 						coveredTargetSamples++;
 				}
 
 				if (inMetal)
 				{
 					totalMetalSamples++;
-					if (!inTarget)
+					if (!inTarget && DistanceToPolygonBoundary(p, targetVertices) > boundaryTolerance)
 						overflowMetalSamples++;
 				}
 			}
@@ -266,28 +270,17 @@ public class ShapeMatchEvaluator : MonoBehaviour
 		return ShapeQuality.Incomplete;
 	}
 
-	static float DistanceToPolygonBoundary(Vector2 point, Vector2[] polygon)
+	static float DistanceToPolygonBoundary(Vector2 point, IReadOnlyList<Vector2> polygon)
 	{
 		float best = float.MaxValue;
-		for (int i = 0; i < polygon.Length; i++)
+		for (int i = 0; i < polygon.Count; i++)
 		{
 			Vector2 a = polygon[i];
-			Vector2 b = polygon[(i + 1) % polygon.Length];
-			best = Mathf.Min(best, DistancePointToSegment(point, a, b));
+			Vector2 b = polygon[(i + 1) % polygon.Count];
+			best = Mathf.Min(best, Vector2.Distance(point, PolygonGeometry.ClosestOnSegment(point, a, b)));
 		}
 
 		return best;
-	}
-
-	static float DistancePointToSegment(Vector2 p, Vector2 a, Vector2 b)
-	{
-		Vector2 ab = b - a;
-		float denom = Vector2.Dot(ab, ab);
-		if (denom < 0.000001f)
-			return Vector2.Distance(p, a);
-
-		float t = Mathf.Clamp01(Vector2.Dot(p - a, ab) / denom);
-		return Vector2.Distance(p, a + ab * t);
 	}
 
 	void EnsureOutline()

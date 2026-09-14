@@ -391,21 +391,22 @@ public class ForgeSessionController : MonoBehaviour
 			return;
 		
 		float charge01 = CurrentCharge01();
-		charging = false;
 		ResolveStrike(out Vector2 impact, out Vector2 direction, out _);
-		deformer.TryStrike(impact, direction, charge01);
+		float radius = deformer.ImpactRadius(impact, direction, charge01);
+		charging = false;
+		bool accepted = deformer.TryStrike(impact, direction, charge01);
 		
 		if (hammerPreview != null)
-			hammerPreview.PlayStrikeFlash(impact, direction, deformer.ImpactRadius(CurrentCharge01()));
+			hammerPreview.PlayStrikeFlash(impact, direction, radius, accepted, deformer.LastStrikeLimited);
 	}
 
 	bool StrikePressed()
 	{
 		Gamepad pad = Gamepad.current;
 		bool triggerPressed = pad != null && pad.rightTrigger.wasPressedThisFrame;
-		bool strikeButtonPressed = pad != null && pad.buttonWest.wasPressedThisFrame;
+		bool bumperPressed = pad != null && pad.rightShoulder.wasPressedThisFrame;
 		
-		if (triggerPressed || strikeButtonPressed)
+		if (triggerPressed || bumperPressed)
 			return true;
 		
 		return false;
@@ -415,9 +416,9 @@ public class ForgeSessionController : MonoBehaviour
 	{
 		Gamepad pad = Gamepad.current;
 		bool triggerReleased = pad != null && pad.rightTrigger.wasReleasedThisFrame;
-		bool strikeButtonReleased = pad != null && pad.buttonWest.wasReleasedThisFrame;
+		bool bumperReleased = pad != null && pad.rightShoulder.wasReleasedThisFrame;
 		
-		if (triggerReleased || strikeButtonReleased)
+		if (triggerReleased || bumperReleased)
 			return true;
 		
 		return false;
@@ -431,8 +432,8 @@ public class ForgeSessionController : MonoBehaviour
 		if (!charging && hammerPreview.IsFlashing)
 			return;
 		
-		ResolveStrike(out Vector2 impact, out Vector2 direction, out _);
-		hammerPreview.ShowAim(impact, direction, deformer.ImpactRadius(CurrentCharge01()), CurrentCharge01());
+		ResolveStrike(out Vector2 impact, out Vector2 direction, out float charge);
+		hammerPreview.ShowAim(impact, direction, deformer.ImpactRadius(impact, direction, charge), charge, deformer);
 	}
 
 	float CurrentCharge01()

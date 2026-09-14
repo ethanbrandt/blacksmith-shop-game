@@ -1,0 +1,20 @@
+<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="project://database/Assets/UI%20Toolkit/GrindScreenStyleSheet.uss?fileID=7433441132597879392&amp;guid=fd4ff89049194604586684e4f8bba36c&amp;type=3#GrindScreenStyleSheet"/>
+    <ui:VisualElement style="flex-grow: 1; background-color: rgba(0, 0, 0, 0.353);">
+        <ui:VisualElement style="flex-grow: 1; background-image: resource(&quot;GraphView/Nodes/BlackboardFieldPillBackground&quot;); margin-left: 24px; margin-top: 24px; margin-right: 24px; margin-bottom: 24px; flex-direction: row; align-items: auto; align-self: stretch; justify-content: space-evenly; background-color: rgb(0, 0, 0); -unity-background-image-tint-color: rgb(255, 255, 255); border-left-color: rgb(0, 0, 0); border-right-color: rgb(0, 0, 0); border-top-color: rgb(0, 0, 0); border-bottom-color: rgb(0, 0, 0);">
+            <ui:VisualElement style="flex-grow: 0; align-self: center; justify-content: flex-start; align-items: auto; align-content: auto;">
+                <ui:VisualElement name="QualityElement" style="flex-grow: 1; position: relative; align-self: center; align-content: flex-start; align-items: stretch; justify-content: space-between; top: 0; width: 256px; height: 48px; background-color: rgba(198, 202, 167, 0);">
+                    <ui:Label text="INCOMPLETE" name="QualityLabel" style="-unity-text-align: middle-center; margin-top: 4px; margin-bottom: 4px; margin-right: 0; margin-left: 0; padding-right: 0; padding-bottom: 0; padding-top: 0; padding-left: 0; align-self: auto; align-items: auto; justify-content: flex-start; align-content: auto; flex-grow: 1; -unity-font-definition: url(&quot;project://database/Assets/TextMesh%20Pro/Fonts/Inkbit.ttf?fileID=12800000&amp;guid=c230e0b302d4ab7438ebb477abe2877a&amp;type=3#Inkbit&quot;); color: rgb(255, 255, 255); font-size: 16px;"/>
+                    <ui:VisualElement name="QualityLights" style="flex-grow: 0; flex-direction: row; justify-content: center; flex-shrink: 0; background-color: rgba(86, 74, 94, 0.286); align-self: center;">
+                        <ui:VisualElement name="LightD" class="d-quality" style="flex-grow: 0; width: 8px; height: 8px; flex-shrink: 0; margin-right: 4px; margin-left: 4px; margin-top: 4px; margin-bottom: 4px;"/>
+                        <ui:VisualElement name="LightC" class="c-quality" style="flex-grow: 0; width: 8px; height: 8px; flex-shrink: 0; margin-right: 4px; margin-left: 4px; margin-top: 4px; margin-bottom: 4px;"/>
+                        <ui:VisualElement name="LightB" class="b-quality" style="flex-grow: 0; width: 8px; height: 8px; flex-shrink: 0; margin-right: 4px; margin-left: 4px; margin-top: 4px; margin-bottom: 4px;"/>
+                        <ui:VisualElement name="LightA" class="a-quality" style="flex-grow: 0; width: 8px; height: 8px; flex-shrink: 0; margin-right: 4px; margin-left: 4px; margin-top: 4px; margin-bottom: 4px;"/>
+                        <ui:VisualElement name="LightS" class="s-quality" style="flex-grow: 0; width: 8px; height: 8px; flex-shrink: 0; margin-right: 4px; margin-left: 4px; margin-top: 4px; margin-bottom: 4px;"/>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:Image source="project://database/Assets/Art/Runtime%20Forging%20Stuff/GrindView.renderTexture?fileID=8400000&amp;guid=5e2cfbdec8878bf4b9a3670f83b38298&amp;type=2#GrindView" name="ForgeView" style="width: 400px; height: 256px; align-self: center; align-content: center; align-items: auto; justify-content: center; flex-direction: column; flex-wrap: nowrap; flex-grow: 0;"/>
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
