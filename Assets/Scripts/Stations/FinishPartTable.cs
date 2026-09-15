@@ -18,6 +18,8 @@ public class FinishPartTable : Station
 	PartSocket[] partSockets;
 	Highlightable highlight;
 
+	private bool hasFinished = false;
+	
 	public override Highlightable Highlight { get { return highlight; } }
 
     public override bool CanAccept(Pickable _pickable)
@@ -156,6 +158,11 @@ public class FinishPartTable : Station
 
 	void Finish()
 	{
+		if (hasFinished)
+			return;
+
+		hasFinished = true;
+		
 		LogText.Instance.SetText("PIECE COMPLETE");
 
 		HeatableMetal[] finishedParts = new HeatableMetal[partSockets.Length];

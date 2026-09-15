@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
@@ -9,6 +8,7 @@ public class ResetSceneTestScript : MonoBehaviour
 {
     [SerializeField] GameObject resetObject;
     [SerializeField] Slider resetSlider;
+    [SerializeField] float resetTime = 3.0f;
     
     private InputAction resetAction;
     
@@ -18,7 +18,7 @@ public class ResetSceneTestScript : MonoBehaviour
             name: "ResetScene",
             type: InputActionType.Button,
             binding: "<Gamepad>/start",
-            interactions: "hold(duration=3)"
+            interactions: $"hold(duration={resetTime})"
         );
 
         resetAction.performed += ResetScene;

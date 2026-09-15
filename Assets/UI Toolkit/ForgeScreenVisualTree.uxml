@@ -22,7 +22,22 @@
                         <ui:VisualElement name="LightS" class="s-quality" style="flex-grow: 0; width: 8px; height: 8px; flex-shrink: 0; margin-right: 4px; margin-left: 4px; margin-top: 4px; margin-bottom: 4px;"/>
                     </ui:VisualElement>
                 </ui:VisualElement>
-                <ui:Image source="project://database/Assets/Art/Runtime%20Forging%20Stuff/ForgeView.renderTexture?fileID=8400000&amp;guid=60c1aede1c092f349b030dbe56266039&amp;type=2#ForgeView" name="ForgeView" style="width: 400px; height: 256px; align-self: center; align-content: center; align-items: auto; justify-content: center; flex-direction: column; flex-wrap: nowrap; flex-grow: 0;"/>
+                <ui:Image source="project://database/Assets/Art/Runtime%20Forging%20Stuff/ForgeView.renderTexture?fileID=8400000&amp;guid=60c1aede1c092f349b030dbe56266039&amp;type=2#ForgeView" name="ForgeView" style="width: 400px; height: 256px; align-self: center; align-content: center; align-items: auto; justify-content: center; flex-direction: column; flex-wrap: nowrap; flex-grow: 0;">
+                    <ui:VisualElement name="ControlsVisual" style="flex-grow: 1; bottom: auto; right: auto; top: auto; justify-content: flex-end; align-self: flex-end; flex-direction: row; align-items: auto; margin-bottom: 4px;">
+                        <ui:VisualElement name="LeftStick" style="flex-grow: 0; flex-direction: row; color: rgb(255, 255, 255); font-size: 8px; margin-left: 4px; margin-right: 4px;">
+                            <ui:Image source="project://database/Assets/Art/Button%20Icons/Left%20Stick%20All.png?fileID=21300000&amp;guid=dd2ce0b37f556984f814cd0ef4a0a01d&amp;type=3#Left Stick All" name="ButtonIcon" style="width: 16px; height: 16px; margin-right: 2px;"/>
+                            <ui:Label text="Move" name="ActionLabel" style="margin-top: 0; margin-left: 0; margin-bottom: 0; margin-right: 0; padding-top: 0; padding-left: 0; padding-right: 0; padding-bottom: 0; -unity-text-align: middle-left;"/>
+                        </ui:VisualElement>
+                        <ui:VisualElement name="RightStick" style="flex-grow: 0; flex-direction: row; color: rgb(255, 255, 255); font-size: 8px; margin-left: 4px; margin-right: 4px;">
+                            <ui:Image source="project://database/Assets/Art/Button%20Icons/Right%20Stick%20All.png?fileID=21300000&amp;guid=114e4b92548cc5848bf7929629a5dfad&amp;type=3#Right Stick All" name="ButtonIcon" style="width: 16px; height: 16px; margin-right: 2px;"/>
+                            <ui:Label text="Aim" name="ActionLabel" style="margin-top: 0; margin-left: 0; margin-bottom: 0; margin-right: 0; padding-top: 0; padding-left: 0; padding-right: 0; padding-bottom: 0; -unity-text-align: middle-left;"/>
+                        </ui:VisualElement>
+                        <ui:VisualElement name="RightBumperButton" style="flex-grow: 0; flex-direction: row; color: rgb(255, 255, 255); font-size: 8px; margin-left: 4px; margin-right: 4px;">
+                            <ui:Image source="project://database/Assets/Art/Button%20Icons/Right%20Bumper.png?fileID=21300000&amp;guid=de6a96230227e6d4eb6ad5410661616e&amp;type=3#Right Bumper" name="ButtonIcon" style="width: 16px; height: 16px; margin-right: 1px;"/>
+                            <ui:Label text="Hit" name="ActionLabel" style="margin-top: 0; margin-left: 0; margin-bottom: 0; margin-right: 0; padding-top: 0; padding-left: 0; padding-right: 0; padding-bottom: 0; -unity-text-align: middle-left;"/>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:Image>
             </ui:VisualElement>
         </ui:VisualElement>
     </ui:VisualElement>

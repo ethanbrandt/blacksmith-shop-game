@@ -4,6 +4,8 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.UI;
+using UnityEngine.UIElements;
+using Image = UnityEngine.UI.Image;
 
 public class GrindSessionController : MonoBehaviour
 {
@@ -26,28 +28,19 @@ public class GrindSessionController : MonoBehaviour
 	const float MinimumPressureDepth = 0.05f;
 	const float FullPressureRadiusFraction = 0.45f;
 	const float PercentageScale = 100f;
-	const int OverlaySortingOrder = 85;
-	const int UiLayer = 5;
-	const float StatusFontSize = 22f;
-	const float QualityFontSize = 52f;
+
 	public static GrindSessionController Instance { get; private set; }
 
 	[Header("Scene Refs")]
 	[SerializeField] Camera grindCamera;
-	[SerializeField] RawImage viewport;
-	[SerializeField] Image frameImage;
-	[SerializeField] Sprite frameSprite;
-	[SerializeField] TextMeshProUGUI statusText;
-	[SerializeField] TextMeshProUGUI qualityText;
-	[SerializeField] RectTransform overlayRoot;
 	[SerializeField] GrindBladeBody blade;
 	[SerializeField] EdgeGrindEvaluator evaluator;
 	[SerializeField] GrindMetalView metalView;
 	[SerializeField] GrindstoneWheel wheel;
 	[SerializeField] GrindSparks sparks;
 	[SerializeField] Transform stageRoot;
-	[SerializeField] Canvas overlayCanvas;
 	[SerializeField] RenderTexture grindTexture;
+	[SerializeField] UIDocument document;
 
 	[Header("Stage")]
 	[SerializeField] Vector3 stageWorldPosition = new Vector3(40f, 180f, 0f);
@@ -82,6 +75,13 @@ public class GrindSessionController : MonoBehaviour
 	HeatableMetal activeMetal;
 	Vector2 stageOrigin;
 	float closeInputUnblockTime;
+	
+	private Label qualityLabel;
+	private VisualElement dLight;
+	private VisualElement cLight;
+	private VisualElement bLight;
+	private VisualElement aLight;
+	private VisualElement sLight;
 
 	public bool IsOpen { get; private set; }
 
@@ -122,9 +122,39 @@ public class GrindSessionController : MonoBehaviour
 		}
 
 		Instance = this;
+		
+		SetHidden(false);
+		EnsureDocumentElements();
 		EnsureStage();
-		EnsureOverlay();
-		SetOverlayVisible(false);
+		SetHidden(true);
+	}
+	
+	void EnsureDocumentElements()
+	{
+		var qualityElement = document.rootVisualElement.Q<VisualElement>("QualityElement");
+		
+		qualityLabel = qualityElement.Q<Label>("QualityLabel");
+		
+		dLight = qualityElement.Q<VisualElement>("LightD");
+		cLight = qualityElement.Q<VisualElement>("LightC");
+		bLight = qualityElement.Q<VisualElement>("LightB");
+		aLight = qualityElement.Q<VisualElement>("LightA");
+		sLight = qualityElement.Q<VisualElement>("LightS");
+	}
+	
+	
+	private void SetHidden(bool isHidden)
+	{
+		if (document == null)
+			return;
+		
+		if (!isHidden && !document.gameObject.activeSelf)
+			document.gameObject.SetActive(true);
+
+		if (document.rootVisualElement == null)
+			return;
+		
+		document.rootVisualElement.style.display = isHidden ? DisplayStyle.None : DisplayStyle.Flex;
 	}
 
 	void OnDestroy()
@@ -172,10 +202,13 @@ public class GrindSessionController : MonoBehaviour
 		if (station == null || !CanBegin(metal))
 			return;
 
+		SetHidden(false);
 		EnsureStage();
-		EnsureOverlay();
+		SetHidden(true);
+		
 		if (!StationSessionCoordinator.TryAcquire(this))
 			return;
+		
 		activeStation = station;
 		activeMetal = metal;
 		stageOrigin = stageRoot != null ? new Vector2(stageRoot.position.x, stageRoot.position.y) : new Vector2(stageWorldPosition.x, stageWorldPosition.y);
@@ -195,12 +228,16 @@ public class GrindSessionController : MonoBehaviour
 
 		if (autoFitCamera)
 			FitCamera();
+		
 		if (grindCamera != null)
 			grindCamera.enabled = true;
+		
 		closeInputUnblockTime = Time.unscaledTime + CloseInputDelay;
 		IsOpen = true;
-		SetOverlayVisible(true);
+		
 		UpdateStatus();
+		
+		SetHidden(false);
 	}
 
 	public void EndSession()
@@ -218,9 +255,9 @@ public class GrindSessionController : MonoBehaviour
 		activeMetal = null;
 		IsOpen = false;
 		StationSessionCoordinator.Release(this);
-		SetOverlayVisible(false);
 		if (grindCamera != null)
 			grindCamera.enabled = false;
+		SetHidden(true);
 	}
 
 	public void NotifyStationEmptied(Grindstone station)
@@ -389,25 +426,33 @@ public class GrindSessionController : MonoBehaviour
 
 	void UpdateStatus()
 	{
-		if (statusText == null)
-			return;
+		uint quality = (uint)evaluator.Quality;
+		
+		dLight.EnableInClassList("quality-light-on", true);
+		qualityLabel.text = "BLUNT";
 
-		string partName = activeMetal != null && activeMetal.PartDefinition != null ? activeMetal.PartDefinition.DisplayLabel : "Blade";
-		SharpnessQuality quality = evaluator != null ? evaluator.Quality : SharpnessQuality.Blunt;
-		int match = evaluator != null ? Mathf.RoundToInt(evaluator.MatchPercent * PercentageScale) : 0;
-		int waste = evaluator != null ? Mathf.RoundToInt(evaluator.WastePercent * PercentageScale) : 0;
-		statusText.text = $"{partName}\n{quality}  {match}%\nWaste {waste}%\nLS move  ·  RS rotate  ·  B / Y finish";
-		if (qualityText != null)
+		if (quality >= (uint)SharpnessQuality.Dull)
 		{
-			qualityText.text = quality.ToString().ToUpperInvariant();
-			qualityText.color = quality switch
-			{
-				SharpnessQuality.Dull => dullColor,
-				SharpnessQuality.Fine => fineColor,
-				SharpnessQuality.Honed => honedColor,
-				SharpnessQuality.Keen => keenColor,
-				_ => bluntColor
-			};
+			qualityLabel.text = "DULL";
+			cLight.EnableInClassList("quality-light-on", true);
+		}
+		
+		if (quality >= (uint)SharpnessQuality.Fine)
+		{
+			qualityLabel.text = "FINE";
+			bLight.EnableInClassList("quality-light-on", true);
+		}
+		
+		if (quality >= (uint)SharpnessQuality.Honed)
+		{
+			qualityLabel.text = "HONED";
+			aLight.EnableInClassList("quality-light-on", true);
+		}
+		
+		if (quality >= (uint)SharpnessQuality.Keen)
+		{
+			qualityLabel.text = "KEEN";
+			sLight.EnableInClassList("quality-light-on", true);
 		}
 	}
 
@@ -424,14 +469,6 @@ public class GrindSessionController : MonoBehaviour
 		grindCamera.orthographicSize = Mathf.Max(MinimumCameraHalfHeight, extent);
 		grindCamera.transform.position = new Vector3(bounds.center.x, bounds.center.y, (stageRoot != null ? stageRoot.position.z : stageWorldPosition.z) - cameraDistance);
 		grindCamera.transform.rotation = Quaternion.identity;
-	}
-
-	void SetOverlayVisible(bool visible)
-	{
-		if (overlayRoot != null)
-			overlayRoot.gameObject.SetActive(visible);
-		if (overlayCanvas != null)
-			overlayCanvas.enabled = visible;
 	}
 
 	void EnsureStage()
@@ -553,119 +590,5 @@ public class GrindSessionController : MonoBehaviour
 		grindCamera.targetTexture = grindTexture;
 		grindCamera.transform.position = stageWorldPosition + new Vector3(0f, 0f, -cameraDistance);
 		grindCamera.transform.rotation = Quaternion.identity;
-	}
-
-	void EnsureOverlay()
-	{
-		if (overlayRoot != null && viewport != null)
-		{
-			if (grindTexture != null)
-				viewport.texture = grindTexture;
-			if (qualityText == null)
-				CreateQualityText(overlayRoot.Find("GrindFrame") ?? overlayRoot);
-			return;
-		}
-
-		var canvasGo = new GameObject("GrindOverlayCanvas");
-		canvasGo.transform.SetParent(transform, false);
-		canvasGo.layer = UiLayer;
-		overlayCanvas = canvasGo.AddComponent<Canvas>();
-		overlayCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-		overlayCanvas.sortingOrder = OverlaySortingOrder;
-		var scaler = canvasGo.AddComponent<CanvasScaler>();
-		scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-		scaler.referenceResolution = new Vector2(1280f, 720f);
-		scaler.matchWidthOrHeight = 0.5f;
-		canvasGo.AddComponent<GraphicRaycaster>();
-
-		overlayRoot = canvasGo.GetComponent<RectTransform>();
-		CreateFullRectImage(overlayRoot, "Dimmer", new Color(0.02f, 0.01f, 0.03f, 0.72f));
-
-		var panel = CreatePanel(overlayRoot, "GrindFrame", new Vector2(0.07f, 0.06f), new Vector2(0.93f, 0.94f));
-		frameImage = panel.GetComponent<Image>();
-		frameImage.color = new Color(0.22f, 0.12f, 0.18f, 0.96f);
-		if (frameSprite != null)
-		{
-			frameImage.sprite = frameSprite;
-			frameImage.type = Image.Type.Sliced;
-			frameImage.color = Color.white;
-		}
-
-		var inner = CreatePanel(panel.transform, "ViewportFrame", new Vector2(0.08f, 0.18f), new Vector2(0.92f, 0.9f));
-		inner.GetComponent<Image>().color = new Color(0.08f, 0.04f, 0.07f, 1f);
-
-		var viewportGo = new GameObject("GrindViewport", typeof(RectTransform), typeof(CanvasRenderer), typeof(RawImage));
-		viewportGo.transform.SetParent(inner.transform, false);
-		viewport = viewportGo.GetComponent<RawImage>();
-		viewport.texture = grindTexture;
-		viewport.color = Color.white;
-		Stretch(viewport.rectTransform, new Vector2(0.03f, 0.04f), new Vector2(0.97f, 0.96f));
-		var aspect = viewportGo.AddComponent<AspectRatioFitter>();
-		aspect.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
-		aspect.aspectRatio = 1f;
-		statusText = CreateTmp(panel.transform, "StatusText", StatusFontSize, TextAlignmentOptions.TopLeft);
-		var statusRect = statusText.rectTransform;
-		statusRect.anchorMin = new Vector2(0.08f, 0.02f);
-		statusRect.anchorMax = new Vector2(0.55f, 0.16f);
-		statusRect.offsetMin = Vector2.zero;
-		statusRect.offsetMax = Vector2.zero;
-		statusText.color = new Color(0.95f, 0.86f, 0.78f, 1f);
-
-		CreateQualityText(panel.transform);
-	}
-
-	void CreateQualityText(Transform parent)
-	{
-		if (qualityText != null || parent == null)
-			return;
-		qualityText = CreateTmp(parent, "QualityText", QualityFontSize, TextAlignmentOptions.Center);
-		var rect = qualityText.rectTransform;
-		rect.anchorMin = new Vector2(0.55f, 0.02f);
-		rect.anchorMax = new Vector2(0.92f, 0.16f);
-		rect.offsetMin = Vector2.zero;
-		rect.offsetMax = Vector2.zero;
-		qualityText.fontStyle = FontStyles.Bold;
-		qualityText.color = fineColor;
-		qualityText.text = "BLUNT";
-	}
-
-	static Image CreateFullRectImage(Transform parent, string name, Color color)
-	{
-		var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-		go.transform.SetParent(parent, false);
-		var image = go.GetComponent<Image>();
-		image.color = color;
-		Stretch(go.GetComponent<RectTransform>(), Vector2.zero, Vector2.one);
-		return image;
-	}
-
-	static GameObject CreatePanel(Transform parent, string name, Vector2 anchorMin, Vector2 anchorMax)
-	{
-		var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-		go.transform.SetParent(parent, false);
-		Stretch(go.GetComponent<RectTransform>(), anchorMin, anchorMax);
-		return go;
-	}
-
-	static void Stretch(RectTransform rect, Vector2 anchorMin, Vector2 anchorMax)
-	{
-		rect.anchorMin = anchorMin;
-		rect.anchorMax = anchorMax;
-		rect.offsetMin = Vector2.zero;
-		rect.offsetMax = Vector2.zero;
-	}
-
-	static TextMeshProUGUI CreateTmp(Transform parent, string name, float size, TextAlignmentOptions align)
-	{
-		var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
-		go.transform.SetParent(parent, false);
-		var tmp = go.GetComponent<TextMeshProUGUI>();
-		tmp.fontSize = size;
-		tmp.alignment = align;
-		tmp.textWrappingMode = TextWrappingModes.Normal;
-		tmp.raycastTarget = false;
-		if (TMP_Settings.defaultFontAsset != null)
-			tmp.font = TMP_Settings.defaultFontAsset;
-		return tmp;
 	}
 }

@@ -7,6 +7,7 @@ public class RoundManager : MonoBehaviour
     [SerializeField] FinishPartTable partTable;
     [SerializeField] Transform[] metalSpawnPoints;
     [SerializeField] GameObject metalPrefab;
+    [SerializeField] PlayerController player;
     
     public float TimeElapsed => Time.time - startTime;
     
@@ -56,6 +57,8 @@ public class RoundManager : MonoBehaviour
 
     public void EndRound(HeatableMetal[] finishedParts, PartDefinition[] partDefinitions, PartTableLayout partLayout)
     {
+	    player.NotifyEnding();
+	    
         if (uiHandler == null)
             uiHandler = GetComponent<RoundUIHandler>();
 

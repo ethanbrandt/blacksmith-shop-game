@@ -16,6 +16,8 @@ public class PlayerController : MonoBehaviour
 	Vector3 moveDir;
 	Pickable held;
 	Highlightable currentHighlight;
+	private bool endOfRound = false;
+	
 	static bool IsMinigameBlocking => StationSessionCoordinator.IsActive;
 	public Pickable Held => held;
 
@@ -29,7 +31,7 @@ public class PlayerController : MonoBehaviour
 
 	void FixedUpdate()
 	{
-		if (IsMinigameBlocking)
+		if (IsMinigameBlocking || endOfRound)
 		{
 			moveDir = Vector3.zero;
 			rb.linearVelocity = new Vector3(0f, rb.linearVelocity.y, 0f);
@@ -37,6 +39,11 @@ public class PlayerController : MonoBehaviour
 		}
 
 		rb.linearVelocity = new Vector3(moveDir.x * moveSpeed, rb.linearVelocity.y, moveDir.z * moveSpeed);
+	}
+
+	public void NotifyEnding()
+	{
+		endOfRound = true;
 	}
 
 	void Update()

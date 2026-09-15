@@ -429,9 +429,6 @@ public class ForgeSessionController : MonoBehaviour
 		if (hammerPreview == null || deformer == null)
 			return;
 		
-		if (!charging && hammerPreview.IsFlashing)
-			return;
-		
 		ResolveStrike(out Vector2 impact, out Vector2 direction, out float charge);
 		hammerPreview.ShowAim(impact, direction, deformer.ImpactRadius(impact, direction, charge), charge, deformer);
 	}

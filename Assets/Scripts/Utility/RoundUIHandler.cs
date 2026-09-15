@@ -36,6 +36,9 @@ public class RoundUIHandler : MonoBehaviour
 
     public void ShowFinalScores(HeatableMetal[] finishedParts, PartDefinition[] partDefinitions, PartTableLayout partLayout, float elapsedSeconds)
     {
+	    if (endScreen)
+		    return;
+	    
         endScreen = true;
         
         if (finalScoreDocument == null)
