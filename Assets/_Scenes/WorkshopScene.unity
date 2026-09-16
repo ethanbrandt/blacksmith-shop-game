@@ -1805,8 +1805,9 @@ GameObject:
   m_Component:
   - component: {fileID: 448335667}
   - component: {fileID: 448335671}
-  - component: {fileID: 448335669}
   - component: {fileID: 448335670}
+  - component: {fileID: 448335669}
+  - component: {fileID: 448335672}
   - component: {fileID: 448335668}
   m_Layer: 6
   m_Name: ForgeStage
@@ -1904,17 +1905,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 16704a6ad7b5e7747b3567c9ad6a061f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShapeMatchEvaluator
-  targetVertices: []
-  targetOutlineColor: {r: 0.75, g: 0.9, b: 1, a: 0.39607844}
-  targetGhostOutlineColor: {r: 0.7, g: 0.9, b: 1, a: 0.49019608}
-  targetGhostFillColor: {r: 0.55, g: 0.8, b: 1, a: 0.13333334}
-  targetLineWidth: 0.05
-  ghostLineWidth: 0.04
-  outlineSortingOrder: 2
-  ghostOutlineSortingOrder: 12
-  ghostFillSortingOrder: 10
-  showGhostOverMetal: 1
-  showGhostFill: 1
   sampleResolution: 96
   boundsPadding: 0.35
   boundaryTolerance: 0.02
@@ -1932,11 +1922,6 @@ MonoBehaviour:
   excellentMaxSpikeDistance: 0.2
   goodMaxSpikeDistance: 0.35
   flawedMaxSpikeDistance: 0.6
-  metal: {fileID: 448335671}
-  targetOutline: {fileID: 840428146}
-  targetGhostOutline: {fileID: 1276961918}
-  ghostFillFilter: {fileID: 1914739284}
-  ghostFillRenderer: {fileID: 1914739283}
 --- !u!114 &448335671
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1949,11 +1934,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 316098885f7cf9d4b8cb3854b6b734a1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MetalDeformer2D
-  startingShape: 0
-  vertexCount: 32
-  ovalRadii: {x: 1, y: 0.8}
-  rectangleSize: {x: 2.4, y: 1.1}
-  shapeCenter: {x: 0, y: 0}
   falloffExponent: 1.8
   minImpactRadius: 0.35
   maxImpactRadius: 0.5
@@ -1984,7 +1964,32 @@ MonoBehaviour:
   disableMagnetOnInward: 0
   maxVertexTravelPerStrike: 0.95
   minEdgeLength: 0.06
-  metalType: {fileID: 0}
+--- !u!114 &448335672
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 448335666}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a40a0869e93f7241969bab805c19195, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ForgeTargetView
+  targetOutlineColor: {r: 0.75, g: 0.9, b: 1, a: 0.55}
+  targetGhostOutlineColor: {r: 0.7, g: 0.9, b: 1, a: 0.7}
+  targetGhostFillColor: {r: 0.55, g: 0.8, b: 1, a: 0.12}
+  targetLineWidth: 0.05
+  ghostLineWidth: 0.04
+  outlineSortingOrder: 2
+  ghostOutlineSortingOrder: 12
+  ghostFillSortingOrder: 10
+  showGhostOverMetal: 1
+  showGhostFill: 1
+  targetOutline: {fileID: 0}
+  targetGhostOutline: {fileID: 0}
+  ghostFillFilter: {fileID: 0}
+  ghostFillRenderer: {fileID: 0}
 --- !u!1 &456041855
 GameObject:
   m_ObjectHideFlags: 0
@@ -7687,6 +7692,7 @@ MonoBehaviour:
   evaluator: {fileID: 448335670}
   metalView: {fileID: 448335669}
   hammerPreview: {fileID: 448335668}
+  targetView: {fileID: 0}
   stageRoot: {fileID: 448335667}
   forgeTexture: {fileID: 8400000, guid: 60c1aede1c092f349b030dbe56266039, type: 2}
   document: {fileID: 666108262}

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -216,7 +217,8 @@ public class GrindSessionController : MonoBehaviour
 		LoadBlade(metal);
 
 		PartDefinition part = metal.PartDefinition;
-		Vector2[] outline = part.BuildWorldOutline(Vector2.zero);
+		IReadOnlyList<Vector2> outlineList = part.BuildWorldOutline(Vector2.zero);
+		Vector2[] outline = outlineList.ToArray();
 		bool[] edgeSharpenFlags = part != null && part.outlineEdgeNeedsSharpening != null ? part.outlineEdgeNeedsSharpening : System.Array.Empty<bool>();
 
 		evaluator.Configure(blade, outline, edgeSharpenFlags);
@@ -273,7 +275,6 @@ public class GrindSessionController : MonoBehaviour
 		vertexScratch.Clear();
 		grindScratch.Clear();
 
-		// Prefer the piece's actual forged silhouette (even if messy), then grind save, then authored outline.
 		if (metal.HasGrindProgress)
 		{
 			for (int i = 0; i < metal.GroundVertices.Count; i++)
@@ -281,20 +282,10 @@ public class GrindSessionController : MonoBehaviour
 			for (int i = 0; i < metal.GrindAmounts.Count; i++)
 				grindScratch.Add(metal.GrindAmounts[i]);
 		}
-
-		else if (metal.HasForgeProgress)
-		{
-			for (int i = 0; i < metal.ForgedVertices.Count; i++)
-				vertexScratch.Add(metal.ForgedVertices[i]);
-		}
-
-		else if (metal.PartDefinition != null && metal.PartDefinition.HasValidOutline)
-		{
-			vertexScratch.AddRange(metal.PartDefinition.BuildWorldOutline(Vector2.zero));
-		}
 		else
 		{
-			Debug.LogError("[GRIND SESSION] Unable to create or load part shape");
+			for (int i = 0; i < metal.ShapeVertices.Count; i++)
+				vertexScratch.Add(metal.ShapeVertices[i]);
 		}
 
 		while (grindScratch.Count < vertexScratch.Count)

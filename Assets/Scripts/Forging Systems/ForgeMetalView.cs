@@ -166,7 +166,7 @@ public class ForgeMetalView : MonoBehaviour
 	void Rebuild()
 	{
 		EnsureVisuals();
-		if (deformer == null || deformer.VertexCount < 3)
+		if (deformer == null || deformer.MetalVertices.Count < 3)
 		{
 			if (fillMesh != null)
 				fillMesh.Clear();
@@ -175,7 +175,7 @@ public class ForgeMetalView : MonoBehaviour
 			return;
 		}
 
-		var source = deformer.Vertices;
+		var source = deformer.MetalVertices;
 		int count = source.Count;
 		fillBuilder.Build(fillMesh, source, fillFilter.transform.position.z + fillZ, Color.white, fillFilter.transform);
 		outline.positionCount = count;

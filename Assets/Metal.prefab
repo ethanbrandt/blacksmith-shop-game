@@ -523,18 +523,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 186b8422df6577145ba7640f85af69c6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HeatableMetal
-  metalType: {fileID: 11400000, guid: f42027317e35fa645b79330363e510f2, type: 2}
-  partDefinition: {fileID: 11400000, guid: 282717b25fa4b7245b6761cd7dd741bb, type: 2}
-  temperature: 20
+  temperature: 790.2
   ambientTemperature: 20
   damage: 0
-  forgedVertices: []
-  hasForgeProgress: 0
-  forgeQuality: 0
-  groundVertices: []
-  grindAmounts: []
-  hasGrindProgress: 0
-  sharpnessQuality: 0
+  startingVertexCount: 36
+  ovalRadii: {x: 1.1, y: 0.9}
   overheatGraceOverride: -1
   overheatDamagePerSecondOverride: -1
   coolToMeltRateOverride: -1

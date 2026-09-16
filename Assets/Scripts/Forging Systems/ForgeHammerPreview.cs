@@ -21,10 +21,12 @@ public class ForgeHammerPreview : MonoBehaviour
 	const float ArrowHeadWidthFraction = 0.55f;
 	const float MinimumArrowWidthScale = 0.85f;
 	const float MaximumArrowWidthScale = 1.25f;
+	
 	[SerializeField] int ringSegments = 48;
 	[SerializeField] float previewZ = -0.92f;
 	[SerializeField] float ringWidth = 0.035f;
 	[SerializeField] float arrowWidth = 0.055f;
+	
 	[Header("Hammer Colors")]
 	[SerializeField] Color idleColor = new Color(1f, 0.92f, 0.45f, 0.7f);
 	[SerializeField] Color chargeColor = new Color(1f, 0.55f, 0.12f, 0.95f);
@@ -40,11 +42,12 @@ public class ForgeHammerPreview : MonoBehaviour
 	[Header("Scene Objects")]
 	[SerializeField] LineRenderer ring;
 	[SerializeField] LineRenderer arrow;
-	LineRenderer affectedOutline;
-	readonly List<Vector2> affectedPoints = new List<Vector2>();
 	[SerializeField] MeshFilter discFilter;
 	[SerializeField] MeshRenderer discRenderer;
 	[SerializeField] Material discMaterial;
+	
+	LineRenderer affectedOutline;
+	readonly List<Vector2> affectedPoints = new List<Vector2>();
 	Mesh discMesh;
 	Color[] discColors;
 
@@ -93,8 +96,7 @@ public class ForgeHammerPreview : MonoBehaviour
 	public void PlayStrikeFlash(Vector2 impact, Vector2 direction, float radius, bool accepted, bool limited)
 	{
 		flashUntil = Time.unscaledTime + StrikeFlashDuration;
-		flashTint = !accepted ? failedStrikeColor
-			: limited ? new Color(1f, 0.65f, 0.15f, 0.95f) : strikeColor;
+		flashTint = !accepted ? failedStrikeColor : limited ? new Color(1f, 0.65f, 0.15f, 0.95f) : strikeColor;
 		ShowAim(impact, direction, radius, 1f);
 	}
 
@@ -256,8 +258,8 @@ public class ForgeHammerPreview : MonoBehaviour
 		Vector2 tip = origin + aimDirection * length;
 		Vector2 side = new Vector2(-aimDirection.y, aimDirection.x);
 		float arrowHeadLength = Mathf.Max(MinimumArrowHeadLength, radius * ArrowHeadRadiusFraction);
-		Vector2 left = tip - aimDirection * arrowHeadLength + side * arrowHeadLength * ArrowHeadWidthFraction;
-		Vector2 right = tip - aimDirection * arrowHeadLength - side * arrowHeadLength * ArrowHeadWidthFraction;
+		Vector2 left = tip - aimDirection * arrowHeadLength + side * (arrowHeadLength * ArrowHeadWidthFraction);
+		Vector2 right = tip - aimDirection * arrowHeadLength - side * (arrowHeadLength * ArrowHeadWidthFraction);
 		arrow.positionCount = 5;
 		arrow.SetPosition(0, new Vector3(origin.x, origin.y, previewZ));
 		arrow.SetPosition(1, new Vector3(tip.x, tip.y, previewZ));

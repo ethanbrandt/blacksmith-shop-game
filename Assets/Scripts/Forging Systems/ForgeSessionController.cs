@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Rendering.Universal;
@@ -28,6 +29,7 @@ public class ForgeSessionController : MonoBehaviour
 	[SerializeField] ShapeMatchEvaluator evaluator;
 	[SerializeField] ForgeMetalView metalView;
 	[SerializeField] ForgeHammerPreview hammerPreview;
+	[SerializeField] ForgeTargetView targetView;
 	[SerializeField] Transform stageRoot;
 	[SerializeField] RenderTexture forgeTexture;
 	[SerializeField] UIDocument document;
@@ -209,17 +211,15 @@ public class ForgeSessionController : MonoBehaviour
 		activeMetal = metal;
 		forgeOrigin = stageRoot != null ? new Vector2(stageRoot.position.x, stageRoot.position.y) : new Vector2(stageWorldPosition.x, stageWorldPosition.y);
 
-		deformer.ShapeCenter = forgeOrigin;
 		deformer.SetMetalType(metal.MetalType);
 		deformer.Heat = metal.Heat01;
 		
-		if (metal.HasForgeProgress)
-			LoadLocalVertices(metal.ForgedVertices);
-		else
-			deformer.InitializeShape();
-		
-		Vector2[] outline = metal.PartDefinition != null ? metal.PartDefinition.BuildForgeOutline(forgeOrigin) : System.Array.Empty<Vector2>();
-		evaluator.Configure(deformer, outline.Length >= 3 ? outline : null);
+		LoadLocalVertices(metal.ShapeVertices);
+
+		IReadOnlyList<Vector2> targetOutlineList = metal.PartDefinition.BuildForgeOutline(forgeOrigin);
+		Vector2[] targetOutline = targetOutlineList.ToArray();
+		deformer.SetTargetOutline(targetOutline);
+		targetView.Configure(targetOutline);
 		metalView.Configure(deformer);
 		
 		if (hammerPreview != null)
@@ -250,8 +250,6 @@ public class ForgeSessionController : MonoBehaviour
 	{
 		if (!IsOpen && activeMetal == null)
 			return;
-		
-		SaveActiveMetal();
 		
 		activeAnvil = null;
 		activeMetal = null;
@@ -285,7 +283,7 @@ public class ForgeSessionController : MonoBehaviour
 		if (!hasSaveTarget)
 			return;
 		
-		bool hasValidShape = deformer.VertexCount >= PolygonGeometry.MinimumVertexCount;
+		bool hasValidShape = deformer.MetalVertices.Count >= PolygonGeometry.MinimumVertexCount;
 		if (!hasValidShape)
 			return;
 		
@@ -294,11 +292,7 @@ public class ForgeSessionController : MonoBehaviour
 		for (int i = 0; i < vertexScratch.Count; i++)
 			vertexScratch[i] -= forgeOrigin;
 		
-		if (evaluator != null)
-			evaluator.Evaluate();
-		
-		ShapeQuality quality = evaluator != null ? evaluator.Quality : ShapeQuality.Incomplete;
-		activeMetal.SaveForgeProgress(vertexScratch, deformer.Heat, quality, evaluator != null ? evaluator.MatchPercent : 0f, activeMetal.PartDefinition);
+		activeMetal.CommitShapeVertices(vertexScratch);
 	}
 
 	void LoadLocalVertices(IReadOnlyList<Vector2> local)
@@ -307,7 +301,7 @@ public class ForgeSessionController : MonoBehaviour
 		for (int i = 0; i < local.Count; i++)
 			vertexScratch.Add(local[i] + forgeOrigin);
 		
-		deformer.LoadVertices(vertexScratch, true);
+		deformer.LoadVertices(vertexScratch);
 	}
 
 	void HandleForgeInput()
@@ -394,7 +388,12 @@ public class ForgeSessionController : MonoBehaviour
 		ResolveStrike(out Vector2 impact, out Vector2 direction, out _);
 		float radius = deformer.ImpactRadius(impact, direction, charge01);
 		charging = false;
+		
+		LoadLocalVertices(activeMetal.ShapeVertices);
 		bool accepted = deformer.TryStrike(impact, direction, charge01);
+
+		if (accepted)
+			SaveActiveMetal();
 		
 		if (hammerPreview != null)
 			hammerPreview.PlayStrikeFlash(impact, direction, radius, accepted, deformer.LastStrikeLimited);
@@ -490,7 +489,9 @@ public class ForgeSessionController : MonoBehaviour
 
 	void UpdateQualityStatusElements()
 	{
-		uint quality = (uint)evaluator.Quality;
+		IReadOnlyList<Vector2> localTarget = activeMetal.PartDefinition.BuildForgeOutline(Vector2.zero);
+		ShapeQuality shapeQuality = evaluator.EvaluateQuality(activeMetal.ShapeVertices, localTarget);
+		uint quality = (uint)shapeQuality;
 		
 		dLight.EnableInClassList("quality-light-on", true);
 		qualityLabel.text = "AWFUL";
@@ -525,14 +526,14 @@ public class ForgeSessionController : MonoBehaviour
 		if (forgeCamera == null || deformer == null)
 			return;
 		
-		Bounds bounds = deformer.GetBounds();
-		bool hasTargetVertices = evaluator != null && evaluator.TargetVertices != null;
-		bool hasTargetOutline = hasTargetVertices && evaluator.TargetVertices.Count >= PolygonGeometry.MinimumVertexCount;
+		Bounds bounds = PolygonGeometry.ComputeBounds(deformer.MetalVertices);
+		bool hasTargetVertices = targetView != null && targetView.TargetVertices != null;
+		bool hasTargetOutline = hasTargetVertices && targetView.TargetVertices.Count >= PolygonGeometry.MinimumVertexCount;
 		if (hasTargetOutline)
 		{
-			var targetBounds = new Bounds(evaluator.TargetVertices[0], Vector3.zero);
-			for (int i = 1; i < evaluator.TargetVertices.Count; i++)
-				targetBounds.Encapsulate(evaluator.TargetVertices[i]);
+			var targetBounds = new Bounds(targetView.TargetVertices[0], Vector3.zero);
+			for (int i = 1; i < targetView.TargetVertices.Count; i++)
+				targetBounds.Encapsulate(targetView.TargetVertices[i]);
 			bounds.Encapsulate(targetBounds);
 		}
 
@@ -564,6 +565,11 @@ public class ForgeSessionController : MonoBehaviour
 			metalView = stageRoot.GetComponent<ForgeMetalView>();
 		if (metalView == null)
 			metalView = stageRoot.gameObject.AddComponent<ForgeMetalView>();
+
+		if (targetView == null)
+			targetView = stageRoot.GetComponent<ForgeTargetView>();
+		if (targetView == null)
+			targetView = stageRoot.gameObject.AddComponent<ForgeTargetView>();
 
 		if (evaluator == null)
 			evaluator = stageRoot.GetComponent<ShapeMatchEvaluator>();

@@ -1,25 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>
-/// Local outline forging. Brush influence follows the boundary so nearby, opposite
-/// walls stay independent. Inward strikes smooth displacement instead of flattening dents.
-/// </summary>
 public class MetalDeformer2D : MonoBehaviour
 {
 	const float MinimumWallClearance = 0.01f;
-	public enum StartingShape
-	{
-		Oval,
-		Rectangle
-	}
-
-	[Header("Starting Shape")]
-	[SerializeField] StartingShape startingShape = StartingShape.Oval;
-	[SerializeField] int vertexCount = 24;
-	[SerializeField] Vector2 ovalRadii = new Vector2(1.4f, 0.7f);
-	[SerializeField] Vector2 rectangleSize = new Vector2(2.4f, 1.1f);
-	[SerializeField] Vector2 shapeCenter = Vector2.zero;
 
 	[Header("Spatial Brush")]
 	[SerializeField] float falloffExponent = 1.8f;
@@ -81,12 +65,8 @@ public class MetalDeformer2D : MonoBehaviour
 	[Header("Stability")]
 	[SerializeField] float maxVertexTravelPerStrike = 0.95f;
 	[SerializeField] float minEdgeLength = 0.06f;
-
-	[Header("Metal Type")]
-	[SerializeField] MetalType metalType;
 	
 	readonly List<Vector2> vertices = new List<Vector2>();
-	readonly List<Vector2> initialVertices = new List<Vector2>();
 	readonly List<Vector2> smoothBuffer = new List<Vector2>();
 	readonly List<float> influenceBuffer = new List<float>();
 	readonly List<float> tensionMask = new List<float>();
@@ -102,110 +82,48 @@ public class MetalDeformer2D : MonoBehaviour
 	float strikeTensionMultiplier = 1f;
 	float heat = 0f;
 	float impactRadius = 0f;
+	private MetalType metalType;
 	
-	public IReadOnlyList<Vector2> Vertices => vertices;
-	public int VertexCount => vertices.Count;
 	public float ImpactRadius(float charge01) => Mathf.Lerp(minImpactRadius, maxImpactRadius, charge01);
 	public float ImpactRadius(Vector2 point, Vector2 direction, float charge01)
 	{
 		bool inward = vertices.Count >= 3 && Vector2.Dot(direction.normalized, EstimateOutwardAt(point)) <= -inwardDotThreshold;
 		return ImpactRadius(charge01) * (inward ? Mathf.Clamp(creaseRadiusMultiplier, 0.25f, 1.5f) : 1f);
 	}
+	
 	public bool LastStrikeLimited { get; private set; }
-	public float MinStrikeStrength => minStrikeStrength;
-	public float MaxStrikeStrength => maxStrikeStrength;
-	public float FalloffExponent => falloffExponent;
 	public float Heat { get => heat; set => heat = value; }
-	public Vector2 ShapeCenter { get => shapeCenter; set => shapeCenter = value; }
 	public MetalType MetalType => metalType;
-	public string MetalDisplayName => metalType != null ? metalType.displayName : "Metal";
-	public MetalFeel CurrentFeel => SampleFeel();
+	public IReadOnlyList<Vector2> MetalVertices => vertices;
 
 	public event System.Action VerticesChanged;
 	public event System.Action<Vector2, float> Struck;
-	public event System.Action MetalTypeChanged;
 	
-	void Awake()
-	{
-		if (vertices.Count == 0)
-			InitializeShape();
-	}
-
 	public void SetTargetOutline(Vector2[] targetVertices)
 	{
 		targetOutline = targetVertices;
 	}
 
-	public void SetMetalType(MetalType type)
+	public void SetMetalType(MetalType _metalType)
 	{
-		metalType = type;
-
-		MetalTypeChanged?.Invoke();
+		metalType = _metalType;
 	}
 
-	public MetalFeel SampleFeel()
+	private MetalFeel SampleFeel()
 	{
-		return metalType != null ? metalType.Sample(heat) : default;
+		return metalType != null ? metalType.Sample(Heat) : default;
 	}
 
-	public void InitializeShape()
-	{
-		vertices.Clear();
-		initialVertices.Clear();
-		vertexCount = Mathf.Clamp(vertexCount, 8, maxVertices);
-
-		if (startingShape == StartingShape.Oval)
-		{
-			for (int i = 0; i < vertexCount; i++)
-			{
-				float t = (i / (float)vertexCount) * Mathf.PI * 2f;
-				vertices.Add(shapeCenter + new Vector2(Mathf.Cos(t) * ovalRadii.x, Mathf.Sin(t) * ovalRadii.y));
-			}
-		}
-		else
-		{
-			float w = rectangleSize.x;
-			float h = rectangleSize.y;
-			float perimeter = 2f * (w + h);
-			for (int i = 0; i < vertexCount; i++)
-			{
-				float d = (i / (float)vertexCount) * perimeter;
-				
-				Vector2 local;
-				
-				if (d < w)
-					local = new Vector2(-w * 0.5f + d, -h * 0.5f);
-				else if (d < w + h)
-					local = new Vector2(w * 0.5f, -h * 0.5f + (d - w));
-				else if (d < w + h + w)
-					local = new Vector2(w * 0.5f - (d - w - h), h * 0.5f);
-				else
-					local = new Vector2(-w * 0.5f, h * 0.5f - (d - w - h - w));
-				
-				vertices.Add(shapeCenter + local);
-			}
-		}
-
-		initialVertices.AddRange(vertices);
-		VerticesChanged?.Invoke();
-	}
-
-	public void LoadVertices(IReadOnlyList<Vector2> source, bool replaceInitialSnapshot = false)
+	public void LoadVertices(IReadOnlyList<Vector2> source)
 	{
 		if (!PolygonGeometry.IsSimple(source))
 			return;
-		
+
 		vertices.Clear();
 		
 		for (int i = 0; i < source.Count; i++)
 			vertices.Add(source[i]);
 		
-		if (replaceInitialSnapshot || initialVertices.Count == 0)
-		{
-			initialVertices.Clear();
-			initialVertices.AddRange(vertices);
-		}
-
 		VerticesChanged?.Invoke();
 	}
 
@@ -231,7 +149,6 @@ public class MetalDeformer2D : MonoBehaviour
 		int focus = Vector2.Distance(point, vertices[edge]) <= Vector2.Distance(point, vertices[next]) ? edge : next;
 		if (Vector2.Distance(point, vertices[focus]) > radius)
 		{
-			// A strike will insert a vertex here; preview just this long edge's local span.
 			Vector2 tangent = (vertices[next] - vertices[edge]).normalized;
 			destination.Add(PolygonGeometry.ClosestOnSegment(closest - tangent * radius, vertices[edge], vertices[next]));
 			destination.Add(closest);
@@ -258,32 +175,25 @@ public class MetalDeformer2D : MonoBehaviour
 		}
 	}
 
-	public void ResetShape()
-	{
-		vertices.Clear();
-		vertices.AddRange(initialVertices);
-		VerticesChanged?.Invoke();
-	}
-
 	public bool TryStrike(Vector2 _impactPoint, Vector2 _direction, float _charge01)
 	{
 		LastStrikeLimited = false;
 		if (vertices.Count < 3 || _direction.sqrMagnitude < 0.0001f)
 			return false;
 		
-		_direction = _direction.normalized;
-		_charge01 = Mathf.Clamp01(_charge01);
 		MetalFeel feel = SampleFeel();
-		strikeMagnetMultiplier = feel.magnet;
-		strikeTensionMultiplier = feel.tension;
-		impactRadius = ImpactRadius(_impactPoint, _direction, _charge01);
 		
 		float strength = Mathf.Lerp(minStrikeStrength, maxStrikeStrength, _charge01) * feel.mobility;
 		if (strength <= 0.0001f)
 			return false;
 		
-		splitThisStrike = false;
+		_direction = _direction.normalized;
+		_charge01 = Mathf.Clamp01(_charge01);
+		strikeMagnetMultiplier = feel.magnet;
+		strikeTensionMultiplier = feel.tension;
+		impactRadius = ImpactRadius(_impactPoint, _direction, _charge01);
 		
+		splitThisStrike = false;
 		
 		Vector2 centroid = ComputeCentroid();
 		Vector2 localOutward = EstimateOutwardAt(_impactPoint);
@@ -306,8 +216,6 @@ public class MetalDeformer2D : MonoBehaviour
 			return false;
 		}
 
-		// Keep matching vertex indices until all displacement, smoothing and assistance
-		// have been validated. The earlier snapshot also rolls back inserted geometry.
 		strikeStart.Clear();
 		strikeStart.AddRange(vertices);
 		BuildBrushInfluence(_impactPoint, focusIndex, impactRadius, inwardStrike);
@@ -332,8 +240,8 @@ public class MetalDeformer2D : MonoBehaviour
 		CollapseTinyEdgesNear(_impactPoint);
 		SubdivideStretchedEdges();
 
-		VerticesChanged?.Invoke();
 		Struck?.Invoke(_impactPoint, impactRadius);
+		VerticesChanged?.Invoke();
 		return true;
 	}
 
@@ -381,7 +289,6 @@ public class MetalDeformer2D : MonoBehaviour
 			Vector2 pushDirection = direction;
 			if (inward)
 			{
-				// Soften the new displacement, never the existing indentation.
 				float prev = influenceBuffer[(i - 1 + vertices.Count) % vertices.Count];
 				float next = influenceBuffer[(i + 1) % vertices.Count];
 				influence = Mathf.Lerp(influence, (prev + 2f * influence + next) * 0.25f, surfaceTension);
@@ -408,7 +315,6 @@ public class MetalDeformer2D : MonoBehaviour
 		if (maxTravel < 0.0001f)
 			return false;
 
-		// Small steps also catch a hit that would pass entirely through a thin wall.
 		int steps = Mathf.Max(1, Mathf.CeilToInt(maxTravel / (MinimumWallClearance * 0.5f)));
 		float accepted = 0f;
 		float winding = Mathf.Sign(PolygonGeometry.SignedArea(strikeStart));
@@ -418,7 +324,6 @@ public class MetalDeformer2D : MonoBehaviour
 			InterpolateStrike(amount);
 			if (!IsValidStrikeShape(winding))
 			{
-				// Refine the last safe step instead of throwing away the whole hit.
 				float blocked = amount;
 				for (int refinement = 0; refinement < 8; refinement++)
 				{
@@ -550,7 +455,6 @@ public class MetalDeformer2D : MonoBehaviour
 		if (!tensionIncludesAdjacency)
 			return;
 
-		// Expand mask by one ring for smoothing only (does not add strike displacement).
 		tensionScratch.Clear();
 		for (int i = 0; i < count; i++)
 		{
@@ -591,7 +495,6 @@ public class MetalDeformer2D : MonoBehaviour
 
 				float blend = tension * mask;
 
-				// Extra smooth on very sharp corners inside the struck region.
 				Vector2 toPrev = (prev - curr).normalized;
 				Vector2 toNext = (next - curr).normalized;
 				float ang = Vector2.Angle(toPrev, toNext);
@@ -601,11 +504,9 @@ public class MetalDeformer2D : MonoBehaviour
 					blend = Mathf.Max(blend, sharpCornerExtraSmooth * sharpness * mask * strengthScale);
 				}
 
-				// Extra polish on brand-new split geometry and its neighbors.
 				if (splitThisStrike && influenceBuffer[i] > 0f)
 					blend = Mathf.Max(blend, (surfaceTension + splitTensionBoost) * mask);
 
-				// Outline priority: don't smooth verts off an outline they're already near.
 				float outlineDist = DistanceToTargetOutline(curr, VertexOutward(strikeStart, i));
 				if (outlineDist < outlineProtectDistance)
 				{
@@ -637,11 +538,9 @@ public class MetalDeformer2D : MonoBehaviour
 		float hitFalloffRadius = Mathf.Max(0.01f, impactRadius * Mathf.Max(1f, magnetHitFalloffMultiplier));
 		for (int i = 0; i < vertices.Count; i++)
 		{
-			// Only verts this strike actually pushed.
 			if (influenceBuffer[i] <= 0f)
 				continue;
-			// Match surfaces by their pre-strike normal. Inner and outer band walls
-			// can be close in space but face in opposite directions.
+			
 			if (!TryClosestPointOnOutline(vertices[i], VertexOutward(strikeStart, i), out Vector2 closest, out float outlineDist))
 				continue;
 
@@ -649,7 +548,6 @@ public class MetalDeformer2D : MonoBehaviour
 			if (outlineDist > reach || reach <= 0f)
 				continue;
 
-			// Soft falloff from the hammer — no hard cliff at the brush edge.
 			float hitDist = Vector2.Distance(vertices[i], impactPoint);
 			float hitT = 1f - Mathf.Clamp01(hitDist / hitFalloffRadius);
 			float hitWeight = hitT * hitT * (3f - 2f * hitT);
@@ -667,7 +565,6 @@ public class MetalDeformer2D : MonoBehaviour
 			if (pull <= 0.001f)
 				continue;
 			Vector2 assisted = Vector2.Lerp(vertices[i], closest, Mathf.Clamp01(pull));
-			// Assistance may brake an overshoot, but must not reverse the aimed hit.
 			float alongAim = Vector2.Dot(assisted - strikeStart[i], direction);
 			if (alongAim < 0f)
 				assisted -= direction * alongAim;
@@ -691,7 +588,7 @@ public class MetalDeformer2D : MonoBehaviour
 		if (vertices.Count <= 8 || minEdgeLength <= 0f)
 			return;
 
-		// Merge only tiny edges near the impact so split spam doesn't create sawteeth.
+		// Merge only tiny edges near the impact so split spam doesn't create jagged edges
 		for (int pass = 0; pass < 3; pass++)
 		{
 			bool merged = false;
@@ -736,29 +633,7 @@ public class MetalDeformer2D : MonoBehaviour
 				break;
 		}
 	}
-
-	public bool ContainsPoint(Vector2 point)
-	{
-		return PolygonGeometry.Contains(point, vertices);
-	}
-
-	public Bounds GetBounds()
-	{
-		if (vertices.Count == 0)
-			return new Bounds(shapeCenter, Vector3.one);
-		Vector2 min = vertices[0];
-		Vector2 max = vertices[0];
-		for (int i = 1; i < vertices.Count; i++)
-		{
-			min = Vector2.Min(min, vertices[i]);
-			max = Vector2.Max(max, vertices[i]);
-		}
-
-		var center = (min + max) * 0.5f;
-		var size = max - min;
-		return new Bounds(center, new Vector3(size.x, size.y, 0.1f));
-	}
-
+	
 	public Vector2 ComputeCentroid()
 	{
 		Vector2 c = Vector2.zero;

@@ -19,6 +19,21 @@ public static class PolygonGeometry
 		float projectionFraction = Mathf.Clamp01(Vector2.Dot(point - segmentStart, segment) / segment.sqrMagnitude);
 		return segmentStart + segment * projectionFraction;
 	}
+	
+	public static Bounds ComputeBounds(IReadOnlyList<Vector2> _vertices)
+	{
+		Vector2 min = _vertices[0];
+		Vector2 max = _vertices[0];
+		for (int i = 1; i < _vertices.Count; i++)
+		{
+			min = Vector2.Min(min, _vertices[i]);
+			max = Vector2.Max(max, _vertices[i]);
+		}
+
+		var center = (min + max) * 0.5f;
+		var size = max - min;
+		return new Bounds(center, new Vector3(size.x, size.y, 0.1f));
+	}
 
 	public static bool Contains(Vector2 point, IReadOnlyList<Vector2> polygon)
 	{
