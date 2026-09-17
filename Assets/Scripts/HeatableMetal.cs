@@ -287,11 +287,8 @@ public class HeatableMetal : MonoBehaviour
 
 		MeltFeel feel = metalType.SampleMelt(intensity);
 		float distance = feel.outwardSpeed * _deltaTime;
-
 		if (!ClipperMeltGeometry.TryExpand(shapeVertices, distance, maxRadius, meltResult))
 			return false;
-		
-		//? INVALIDATE OLD SCORES
 		
 		PolygonGeometry.CopyVertices(meltResult, shapeVertices);
 		ShapeChanged?.Invoke();

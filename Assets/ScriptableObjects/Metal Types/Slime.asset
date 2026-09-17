@@ -1,0 +1,221 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d929a65cf29e96b44b946d031cacc83e, type: 3}
+  m_Name: Slime
+  m_EditorClassIdentifier: Assembly-CSharp::SlimeMetalType
+  displayName: Slime
+  metalColor: {r: 0.29383236, g: 0.8773585, b: 0.6771554, a: 1}
+  forgeHeatHeuristic: 0
+  meltHeatHeuristic: 0
+  furnaceHeatTransferRate: 35
+  worldAmbientCoolRate: 10
+  referenceMaxTemp: 500
+  mobilityByHeat:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0.9914531
+      inSlope: -0.06166122
+      outSlope: -0.06166122
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0.19124894
+    - serializedVersion: 3
+      time: 0.35877487
+      value: 0.9410745
+      inSlope: -0.3075999
+      outSlope: -0.3075999
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.62012935
+      value: 0.53477216
+      inSlope: -3.3907616
+      outSlope: -3.3907616
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.11532054
+      outWeight: 0.038959242
+    - serializedVersion: 3
+      time: 1
+      value: 0.10882523
+      inSlope: -0.3343688
+      outSlope: -0.3343688
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.1711272
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  magnetByHeat:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0.77857846
+      inSlope: 0.084124744
+      outSlope: 0.084124744
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0.23539302
+    - serializedVersion: 3
+      time: 0.3408043
+      value: 0.8370919
+      inSlope: 0.11517324
+      outSlope: 0.11517324
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.20453386
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.60037005
+      value: 0.6537498
+      inSlope: -2.434405
+      outSlope: -2.434405
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.058471907
+    - serializedVersion: 3
+      time: 1.0014038
+      value: 0.25174206
+      inSlope: -0.41671118
+      outSlope: -0.41671118
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.14336123
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  tensionByHeat:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0.9998509
+      inSlope: 0.0415106
+      outSlope: 0.0415106
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0.0718232
+    - serializedVersion: 3
+      time: 1.0023193
+      value: 1.1986771
+      inSlope: 0.061494846
+      outSlope: 0.061494846
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.08149171
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  meltingEnabled: 1
+  meltGracePeriod: 1.25
+  meltOutwardSpeed: 0.015
+  meltSpeedByIntensity:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0.040484037
+      inSlope: 0.029622918
+      outSlope: 0.029622918
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0.0801105
+    - serializedVersion: 3
+      time: 0.39641592
+      value: 0.17058799
+      inSlope: 0.9294507
+      outSlope: 0.9294507
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.18750001
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.66494435
+      value: 0.8755274
+      inSlope: 1.3439891
+      outSlope: 1.3439891
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0.103428304
+      outSlope: 0.103428304
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.2061174
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  heatGaugeRegions:
+  - startHeat: 0
+    regionColor: {r: 0.2741189, g: 0.710933, b: 0.754717, a: 1}
+  - startHeat: 0.25
+    regionColor: {r: 0.8773585, g: 0.8773585, b: 0.8773585, a: 1}
+  applyHeatTint: 1
+  metalColorBlend: 0.96
+  heatTintGradient:
+    serializedVersion: 2
+    key0: {r: 0.53733534, g: 0.990566, b: 0.90537226, a: 1}
+    key1: {r: 0.33579564, g: 0.9245283, b: 0.9185802, a: 1}
+    key2: {r: 0.18422927, g: 0.32929733, b: 0.5660378, a: 0}
+    key3: {r: 0.55156064, g: 0.2585565, b: 0.59302753, a: 0}
+    key4: {r: 0.8509804, g: 0.23529409, b: 0.32857335, a: 0}
+    key5: {r: 0, g: 0, b: 0, a: 0}
+    key6: {r: 0, g: 0, b: 0, a: 0}
+    key7: {r: 0, g: 0, b: 0, a: 0}
+    ctime0: 0
+    ctime1: 9994
+    ctime2: 19987
+    ctime3: 36131
+    ctime4: 55157
+    ctime5: 0
+    ctime6: 0
+    ctime7: 0
+    atime0: 0
+    atime1: 65535
+    atime2: 0
+    atime3: 0
+    atime4: 0
+    atime5: 0
+    atime6: 0
+    atime7: 0
+    m_Mode: 0
+    m_ColorSpace: -1
+    m_NumColorKeys: 5
+    m_NumAlphaKeys: 2
+  quenchedTint: {r: 0.6415094, g: 0.15432537, b: 0.5741098, a: 1}
+  showMeltIndicator: 1
+  meltPulseColor: {r: 1, g: 1, b: 1, a: 1}
+  meltPulseSpeed: 4
+  meltPulseStrength: 0.868
+  meltHeat: 0.25
+  meltCoolRate: 5
+  slimyStrikeMobility: 1
+  slimyStrikeMagnet: 0.05
+  slimyStrikeTension: 0.01

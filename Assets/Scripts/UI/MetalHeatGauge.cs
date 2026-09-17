@@ -45,34 +45,38 @@ public class MetalHeatGauge : MonoBehaviour
         regionImages.Clear();
         
         MetalType metalType = _metal.MetalType;
+		BuildRegions(metalType);
+    }
 
-        if (metalType == null)
-	        return;
-
-        List<HeatGaugeRegion> heatGaugeRegions = metalType.GetHeatGaugeRegions();
+    private void BuildRegions(MetalType _metalType)
+    {
+	    if (_metalType == null)
+		    return;
+	    
+	    List<HeatGaugeRegion> heatGaugeRegions = _metalType.GetHeatGaugeRegions();
         
-        for (int i = 0; i < metalType.heatGaugeRegions.Count; i++)
-        {
-	        HeatGaugeRegion region = heatGaugeRegions[i];
+	    for (int i = 0; i < _metalType.heatGaugeRegions.Count; i++)
+	    {
+		    HeatGaugeRegion region = heatGaugeRegions[i];
 
-	        float start = Mathf.Clamp01(region.startHeat);
-	        float end = i + 1 < heatGaugeRegions.Count ? Mathf.Clamp01(heatGaugeRegions[i + 1].startHeat) : 1f;
+		    float start = Mathf.Clamp01(region.startHeat);
+		    float end = i + 1 < heatGaugeRegions.Count ? Mathf.Clamp01(heatGaugeRegions[i + 1].startHeat) : 1f;
 	        
-	        if (end <= start)
-		        continue;
+		    if (end <= start)
+			    continue;
 
-	        Image image = Instantiate(regionPrefab, fillRect);
-	        image.color = region.regionColor;
-	        image.raycastTarget = false;
+		    Image image = Instantiate(regionPrefab, fillRect);
+		    image.color = region.regionColor;
+		    image.raycastTarget = false;
 
-	        RectTransform rect = image.rectTransform;
-	        rect.anchorMin = new Vector2(start, 0f);
-	        rect.anchorMax = new Vector2(end, 1f);
-	        rect.offsetMin = Vector2.zero;
-	        rect.offsetMax = Vector2.zero;
+		    RectTransform rect = image.rectTransform;
+		    rect.anchorMin = new Vector2(start, 0f);
+		    rect.anchorMax = new Vector2(end, 1f);
+		    rect.offsetMin = Vector2.zero;
+		    rect.offsetMax = Vector2.zero;
 	        
-	        regionImages.Add(image);
-        }
+		    regionImages.Add(image);
+	    }    
     }
 
     public void SetEnable(bool _enabled)

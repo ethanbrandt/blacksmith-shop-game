@@ -1905,7 +1905,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 16704a6ad7b5e7747b3567c9ad6a061f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShapeMatchEvaluator
-  sampleResolution: 64
+  sampleResolution: 96
   boundsPadding: 0.35
   boundaryTolerance: 0.02
   perfectThreshold: 0.975

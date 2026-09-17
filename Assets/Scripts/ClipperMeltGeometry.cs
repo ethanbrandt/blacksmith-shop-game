@@ -31,14 +31,13 @@ public static class ClipperMeltGeometry
 			path.Reverse();
 
 		var original = new PathsD { path };
-		
 		PathsD expanded = Clipper.InflatePaths(original, _distance, JoinType.Round, EndType.Polygon, 2.0, PRECISION, ARC_TOLERANCE);
 		expanded = Clipper.SimplifyPaths(expanded, SIMPLIFY_TOLERANCE);
-
+		
 		PathsD bounded = Clipper.Intersect(expanded, GetBoundary(_maxRadius), FillRule.NonZero, PRECISION);
-
+		
 		PathsD resolved = Clipper.Union(original, bounded, FillRule.NonZero, PRECISION);
-
+		
 		PathD outer = null;
 
 		foreach (var contour in resolved)
@@ -54,6 +53,8 @@ public static class ClipperMeltGeometry
 
 		if (outer == null)
 			return false;
+
+		outer = Clipper.SimplifyPath(outer, SIMPLIFY_TOLERANCE);
 
 		foreach (var point in outer)
 			_destination.Add(new Vector2((float)point.x, (float)point.y));

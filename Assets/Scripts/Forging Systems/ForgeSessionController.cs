@@ -63,9 +63,7 @@ public class ForgeSessionController : MonoBehaviour
 	float chargeStartTime;
 	float closeInputUnblockTime;
 	
-	private VisualElement quenchTempVisualElement;
-	private VisualElement normalTempVisualElement;
-	private VisualElement coldTempVisualElement;
+	private VisualElement heatGaugeBackground;
 	private Slider heatSlider;
 
 	private Label qualityLabel;
@@ -129,10 +127,7 @@ public class ForgeSessionController : MonoBehaviour
 
 		heatSlider = heatElement.Q<Slider>("HeatSlider");
 		
-		var heatGaugeBackground = heatElement.Q<VisualElement>("HeatGaugeBackground");
-		quenchTempVisualElement = heatGaugeBackground.Q<VisualElement>("QuenchTemp");
-		normalTempVisualElement = heatGaugeBackground.Q<VisualElement>("NormalTemp");
-		coldTempVisualElement = heatGaugeBackground.Q<VisualElement>("ColdTemp");
+		heatGaugeBackground = heatElement.Q<VisualElement>("HeatGaugeBackground");
 
 		var qualityElement = document.rootVisualElement.Q<VisualElement>("QualityElement");
 		
@@ -249,10 +244,46 @@ public class ForgeSessionController : MonoBehaviour
 		closeInputUnblockTime = Time.unscaledTime + CloseInputDelay;
 		IsOpen = true;
 		
+		BuildHeatGaugeRegions(heatGaugeBackground, metal.MetalType);
+		
 		UpdateStatus();
 		UpdateHammerPreview();
 
 		SetHidden(false);
+	}
+
+	private void BuildHeatGaugeRegions(VisualElement _container, MetalType _metalType)
+	{
+		if (_metalType == null || _container == null)
+			return;
+
+		_container.Clear();
+
+		List<HeatGaugeRegion> heatGaugeRegions = _metalType.GetHeatGaugeRegions();
+		for (int i = 0; i < heatGaugeRegions.Count; i++)
+		{
+			float start = Mathf.Clamp01(heatGaugeRegions[i].startHeat);
+			float end = i + 1 < heatGaugeRegions.Count ? Mathf.Clamp01(heatGaugeRegions[i + 1].startHeat) : 1f;
+			
+			if (end <= start)
+				continue;
+
+			var element = new VisualElement
+			{
+				pickingMode = PickingMode.Ignore,
+				style =
+				{
+					position = Position.Absolute,
+					left = 0,
+					right = 0,
+					bottom = new Length(start * 100f, LengthUnit.Percent),
+					height = new Length((end - start) * 100f, LengthUnit.Percent),
+					backgroundColor = heatGaugeRegions[i].regionColor
+				}
+			};
+			
+			_container.Add(element);
+		}
 	}
 
 	public void EndSession()
@@ -495,17 +526,6 @@ public class ForgeSessionController : MonoBehaviour
 	void UpdateHeatStatusElements()
 	{
 		heatSlider.value = activeMetal.Heat01;
-		MetalType metalType = activeMetal.MetalType;
-		
-		//! FIX float quenchPercent = (1f - metalType.minHeatToQuench);
-		float quenchPercent = 1f;
-		//! FIX float coldPercent = metalType.minHeatToForge;
-		float coldPercent = 0f;
-		float normalPercent = 1f - (quenchPercent + coldPercent);
-		
-		quenchTempVisualElement.style.height = new Length(quenchPercent * 100f, LengthUnit.Percent);
-		coldTempVisualElement.style.height = new Length(coldPercent * 100f, LengthUnit.Percent);
-		normalTempVisualElement.style.height = new Length(normalPercent * 100f, LengthUnit.Percent);
 	}
 
 	void UpdateQualityStatusElements()

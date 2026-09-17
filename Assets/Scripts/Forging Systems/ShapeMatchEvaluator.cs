@@ -12,12 +12,6 @@ public enum ShapeQuality
 
 public class ShapeMatchEvaluator : MonoBehaviour
 {
-	[Header("Sampling")]
-	[SerializeField] int sampleResolution = 96;
-	[SerializeField] float boundsPadding = 0.35f;
-	[Tooltip("Small silhouette errors within this distance are accepted when measuring coverage and overflow.")]
-	[SerializeField, Min(0f)] float boundaryTolerance = 0.02f;
-
 	[Header("Quality Thresholds (match %)")]
 	[Range(0f, 1f)]
 	[SerializeField] float perfectThreshold = 0.95f;
@@ -109,53 +103,10 @@ public class ShapeMatchEvaluator : MonoBehaviour
 
 	void RecomputeCache(IReadOnlyList<Vector2> _metalVertices, IReadOnlyList<Vector2> _targetVertices)
 	{
-		Bounds targetBounds = PolygonGeometry.ComputeBounds(_targetVertices);
-		targetBounds.Expand(boundsPadding);
-
-		int totalTargetSamples = 0;
-		int coveredTargetSamples = 0;
-		int totalMetalSamples = 0;
-		int overflowMetalSamples = 0;
-
-		float spacing = Mathf.Max(0.001f, Mathf.Max(targetBounds.size.x, targetBounds.size.y) / Mathf.Max(8, sampleResolution));
-		Vector2 origin = targetBounds.min;
-		int minX = Mathf.FloorToInt((targetBounds.min.x - origin.x) / spacing);
-		int minY = Mathf.FloorToInt((targetBounds.min.y - origin.y) / spacing);
-		int maxX = Mathf.CeilToInt((targetBounds.max.x - origin.x) / spacing);
-		int maxY = Mathf.CeilToInt((targetBounds.max.y - origin.y) / spacing);
-
-		for (int y = minY; y < maxY; y++)
-		{
-			float py = origin.y + (y + 0.5f) * spacing;
-			for (int x = minX; x < maxX; x++)
-			{
-				float px = origin.x + (x + 0.5f) * spacing;
-				var p = new Vector2(px, py);
-
-				bool inTarget = PolygonGeometry.Contains(p, _targetVertices);
-				bool inMetal = PolygonGeometry.Contains(p, _metalVertices);
-
-				if (inTarget)
-				{
-					totalTargetSamples++;
-					if (inMetal || DistanceToPolygonBoundary(p, _metalVertices) <= boundaryTolerance)
-						coveredTargetSamples++;
-				}
-
-				if (inMetal)
-				{
-					totalMetalSamples++;
-					if (!inTarget && DistanceToPolygonBoundary(p, _targetVertices) > boundaryTolerance)
-						overflowMetalSamples++;
-				}
-			}
-		}
-
 		float maxVertexProtrusion = ComputeMaxVertexProtrusion(_metalVertices, _targetVertices);
 		float spikeScore = ComputeSpikeScore(maxVertexProtrusion);
 
-		float coverageScore = totalTargetSamples > 0 ? coveredTargetSamples / (float)totalTargetSamples : 0f;
-		float overflowScore = 1f - (totalMetalSamples > 0 ? overflowMetalSamples / (float)totalMetalSamples : 0f);
+		ShapeMatchScores scores = ClipperShapeMatch.CalculateCoverageAndOverflow(_metalVertices, _targetVertices);
 
 		float wC = Mathf.Max(0f, coverageWeight);
 		float wO = Mathf.Max(0f, overflowPenaltyWeight);
@@ -167,7 +118,10 @@ public class ShapeMatchEvaluator : MonoBehaviour
 			wSum = 3f;
 		}
 
-		float matchPercent = Mathf.Clamp01((coverageScore * wC + overflowScore * wO + spikeScore * wS) / wSum);
+		float matchPercent = Mathf.Clamp01((scores.coverage * wC + scores.overflow * wO + spikeScore * wS) / wSum);
+
+		if (scores.coverage == 0f && scores.overflow == 0f)
+			matchPercent = 0f;
 
 		cachedQuality = new CachedQuality
 		{
@@ -239,5 +193,10 @@ public class ShapeMatchEvaluator : MonoBehaviour
 		}
 
 		return best;
+	}
+
+	private void OnValidate()
+	{
+		cachedQuality = null;
 	}
 }

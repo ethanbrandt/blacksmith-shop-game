@@ -158,6 +158,7 @@ MonoBehaviour:
   meltFullHeat: 0.9
   overheatingCoolRate: 50
   applyHeatTint: 1
+  metalColorBlend: 0.908
   heatTintGradient:
     serializedVersion: 2
     key0: {r: 0.29636878, g: 0.299696, b: 0.33962262, a: 1}
