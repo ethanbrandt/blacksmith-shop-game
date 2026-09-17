@@ -152,6 +152,38 @@ public static class PolygonGeometry
 		bool firstTouchesSecond = IsOnSegment(firstStart, secondStart, secondEnd) || IsOnSegment(firstEnd, secondStart, secondEnd);
 		return secondTouchesFirst || firstTouchesSecond;
 	}
+	
+	public static Vector2 VertexOutward(IReadOnlyList<Vector2> polygon, int index)
+	{
+		Vector2 prev = polygon[index] - polygon[(index - 1 + polygon.Count) % polygon.Count];
+		Vector2 next = polygon[(index + 1) % polygon.Count] - polygon[index];
+		Vector2 tangent = prev.normalized + next.normalized;
+		return new Vector2(tangent.y, -tangent.x).normalized * Mathf.Sign(PolygonGeometry.SignedArea(polygon));
+	}
+
+	public static void CopyVertices(IReadOnlyList<Vector2> source, List<Vector2> destination)
+	{
+		if (ReferenceEquals(source, destination))
+			return;
+		
+		destination.Clear();
+		destination.AddRange(source);
+	}
+
+	public static bool IsSameVertices(IReadOnlyList<Vector2> a, IReadOnlyList<Vector2> b)
+	{
+		if (a == null || b == null || a.Count != b.Count)
+			return false;
+		
+		if (ReferenceEquals(a, b))
+			return true;
+
+		for (int i = 0; i < a.Count; i++)
+			if (!a[i].Equals(b[i]))
+				return false;
+
+		return true;
+	}
 
 	/// <summary>Ear clipping with original vertex indices; accepts either winding and collinear perimeter samples.</summary>
 	public static bool Triangulate(IReadOnlyList<Vector2> polygon, List<int> triangles, List<int> remainingIndices)

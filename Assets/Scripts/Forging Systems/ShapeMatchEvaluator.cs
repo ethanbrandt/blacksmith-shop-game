@@ -59,6 +59,7 @@ public class ShapeMatchEvaluator : MonoBehaviour
 		public IReadOnlyList<Vector2> metalVertices;
 		public IReadOnlyList<Vector2> targetVertices;
 		public ShapeQuality quality;
+		public float matchPercent;
 	}
 
 	private CachedQuality cachedQuality;
@@ -70,13 +71,46 @@ public class ShapeMatchEvaluator : MonoBehaviour
 		if (!hasMetalOutline || !hasTargetOutline)
 			return ShapeQuality.Incomplete;
 
-		if (IsCached(_metalVertices, _targetVertices))
-			return cachedQuality.quality;
+		if (!IsCached(_metalVertices, _targetVertices))
+			RecomputeCache(_metalVertices, _targetVertices);
 		
+		return cachedQuality.quality;
+	}
+
+	public float EvaluateMatchPercent(IReadOnlyList<Vector2> _metalVertices, IReadOnlyList<Vector2> _targetVertices)
+	{
+		bool hasMetalOutline = _metalVertices != null && _metalVertices.Count >= PolygonGeometry.MinimumVertexCount;
+		bool hasTargetOutline = _targetVertices != null && _targetVertices.Count >= PolygonGeometry.MinimumVertexCount;
+		if (!hasMetalOutline || !hasTargetOutline)
+			return 0f;
+
+		if (!IsCached(_metalVertices, _targetVertices))
+			RecomputeCache(_metalVertices, _targetVertices);
+		
+		return cachedQuality.matchPercent;
+	}
+
+	bool IsCached(IReadOnlyList<Vector2> _metalVertices, IReadOnlyList<Vector2> _targetVertices)
+	{
+		if (cachedQuality == null)
+			return false;
+		
+		if (cachedQuality.metalVertices.Count != _metalVertices.Count || cachedQuality.targetVertices.Count != _targetVertices.Count)
+			return false;
+		
+		if (!PolygonGeometry.IsSameVertices(_metalVertices, cachedQuality.metalVertices))
+			return false;
+
+		if (!PolygonGeometry.IsSameVertices(_targetVertices, cachedQuality.targetVertices))
+			return false;
+		
+		return true;
+	}
+
+	void RecomputeCache(IReadOnlyList<Vector2> _metalVertices, IReadOnlyList<Vector2> _targetVertices)
+	{
 		Bounds targetBounds = PolygonGeometry.ComputeBounds(_targetVertices);
-		Bounds combined = targetBounds;
-		combined.Encapsulate(PolygonGeometry.ComputeBounds(_metalVertices));
-		combined.Expand(boundsPadding);
+		targetBounds.Expand(boundsPadding);
 
 		int totalTargetSamples = 0;
 		int coveredTargetSamples = 0;
@@ -85,10 +119,10 @@ public class ShapeMatchEvaluator : MonoBehaviour
 
 		float spacing = Mathf.Max(0.001f, Mathf.Max(targetBounds.size.x, targetBounds.size.y) / Mathf.Max(8, sampleResolution));
 		Vector2 origin = targetBounds.min;
-		int minX = Mathf.FloorToInt((combined.min.x - origin.x) / spacing);
-		int minY = Mathf.FloorToInt((combined.min.y - origin.y) / spacing);
-		int maxX = Mathf.CeilToInt((combined.max.x - origin.x) / spacing);
-		int maxY = Mathf.CeilToInt((combined.max.y - origin.y) / spacing);
+		int minX = Mathf.FloorToInt((targetBounds.min.x - origin.x) / spacing);
+		int minY = Mathf.FloorToInt((targetBounds.min.y - origin.y) / spacing);
+		int maxX = Mathf.CeilToInt((targetBounds.max.x - origin.x) / spacing);
+		int maxY = Mathf.CeilToInt((targetBounds.max.y - origin.y) / spacing);
 
 		for (int y = minY; y < maxY; y++)
 		{
@@ -139,28 +173,9 @@ public class ShapeMatchEvaluator : MonoBehaviour
 		{
 			metalVertices = new List<Vector2>(_metalVertices),
 			targetVertices = new List<Vector2>(_targetVertices),
-			quality = ResolveQuality(matchPercent, maxVertexProtrusion)
+			quality = ResolveQuality(matchPercent, maxVertexProtrusion),
+			matchPercent = matchPercent
 		};
-		return cachedQuality.quality;
-	}
-
-	bool IsCached(IReadOnlyList<Vector2> _metalVertices, IReadOnlyList<Vector2> _targetVertices)
-	{
-		if (cachedQuality == null)
-			return false;
-		
-		if (cachedQuality.metalVertices.Count != _metalVertices.Count || cachedQuality.targetVertices.Count != _targetVertices.Count)
-			return false;
-		
-		for (int i = 0; i < _metalVertices.Count; i++)
-			if (!_metalVertices[i].Equals(cachedQuality.metalVertices[i]))
-				return false;
-
-		for (int i = 0; i < _targetVertices.Count; i++)
-			if (!_targetVertices[i].Equals(cachedQuality.targetVertices[i]))
-				return false;
-		
-		return true;
 	}
 	
 	float ComputeMaxVertexProtrusion(IReadOnlyList<Vector2> _metalVertices, IReadOnlyList<Vector2> _targetVertices)
@@ -225,6 +240,4 @@ public class ShapeMatchEvaluator : MonoBehaviour
 
 		return best;
 	}
-
-
 }

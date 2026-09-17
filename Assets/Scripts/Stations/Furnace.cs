@@ -235,7 +235,13 @@ public class Furnace : Station
 			fuelGauge.gameObject.SetActive(false);
 	}
 
-	void OnTriggerEnter(Collider other) => TryAcceptFromCollider(other);
+	void OnTriggerEnter(Collider other)
+	{
+		if (other == null)
+			return;
+		
+		TryAcceptFromCollider(other);
+	}
 
 	void TryAcceptFromCollider(Collider other)
 	{

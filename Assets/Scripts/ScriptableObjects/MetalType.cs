@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 public struct MetalFeel
@@ -6,7 +7,11 @@ public struct MetalFeel
 	public float mobility;
 	public float magnet;
 	public float tension;
-	public bool canForge;
+}
+
+public struct MeltFeel
+{
+	public float outwardSpeed;
 }
 
 [Serializable]
@@ -17,11 +22,14 @@ public enum MetalHeatHeuristic
 	HIGH
 }
 
-/// <summary>
-/// Static metal identity: heat response for forging and world furnace temperature bands.
-/// </summary>
-[CreateAssetMenu(fileName = "MetalType", menuName = "Forging/MetalType", order = 1)]
-public class MetalType : ScriptableObject
+[Serializable]
+public class HeatGaugeRegion
+{
+	[Range(0f, 1f)] public float startHeat;
+	public Color regionColor;
+}
+
+public abstract class MetalType : ScriptableObject
 {
 	[Header("Identity")]
 	public string displayName = "Metal";
@@ -30,77 +38,53 @@ public class MetalType : ScriptableObject
 	public MetalHeatHeuristic meltHeatHeuristic;
 
 	[Header("World Heat Transfer")]
-	[Tooltip("How fast temperature moves toward the furnace internal temp (units/sec).")]
 	public float furnaceHeatTransferRate = 55f;
-	[Tooltip("How fast temperature falls toward ambient when outside a furnace (units/sec).")]
 	public float worldAmbientCoolRate = 18f;
+	[Min(1f)] public float referenceMaxTemp = 1000f;
 
 	[Header("Forging Heat Curves (X = heat 0-1, Y = multiplier)")]
 	public AnimationCurve mobilityByHeat = AnimationCurve.Linear(0f, 0.15f, 1f, 1f);
 	public AnimationCurve magnetByHeat = AnimationCurve.Linear(0f, 0.1f, 1f, 1f);
 	public AnimationCurve tensionByHeat = AnimationCurve.Linear(0f, 1.2f, 1f, 0.85f);
 
-	[Header("Forging Workability")]
-	[Range(0f, 1f)] public float minHeatToForge = 0.2f;
-	[Tooltip("Below min heat, strikes still land but at this mobility floor.")]
-	[Range(0f, 1f)] public float coldStrikeScale = 0.15f;
-	[Range(0f, 1f)] public float minHeatToQuench = 0.8f;
+	[Header("Melting")]
+	public bool meltingEnabled = true;
+	public float meltGracePeriod = 1.25f;
+	[Min(0.001f)] public float meltOutwardSpeed = 0.05f;
+	public AnimationCurve meltSpeedByIntensity = AnimationCurve.Linear(0f, 0f, 1f, 1f);
 
-	[Header("World Temperature Bands")]
-	[Tooltip("At or above this temperature the metal begins taking overheat damage after the grace timer.")]
-	public float overheatTemp = 780f;
-	[Tooltip("Reference max used for tint / 0-1 normalization.")]
-	public float referenceMaxTemp = 1000f;
+	[Header("Heat Gauge Information")]
+	public List<HeatGaugeRegion> heatGaugeRegions;
 
-	[Header("Overheat Damage Defaults")]
-	[Tooltip("Seconds above overheatTemp before damage starts accumulating.")]
-	public float overheatGraceDuration = 1.25f;
-	[Tooltip("Damage added per second while overheated after the grace timer.")]
-	public float overheatDamagePerSecond = 8f;
+	public abstract bool IsWorkable(float _heat01);
+	public abstract bool IsMelting(float _heat01);
+	public abstract float GetMeltIntensity(float _heat01);
+	public abstract float GetMeltingTempOverride(float _temperature, float _deltaTime);
+	public abstract Color SampleColor(float _heat01, bool _inAnvil = false);
+	public abstract Color GetQuenchColor();
+	public abstract MetalFeel Sample(float _heat01);
+	public abstract List<HeatGaugeRegion> GetHeatGaugeRegions();
 
-	public bool IsTooCold(float temperature) => temperature < minHeatToForge;
-	public bool IsOverheating(float temperature) => temperature >= overheatTemp;
-	public bool IsQuenchTemp(float temperature) => temperature >= minHeatToQuench;
-
-	public float NormalizeHeat01(float temperature)
+	public MeltFeel SampleMelt(float intensity)
 	{
-		float max = Mathf.Max(0.0001f, referenceMaxTemp);
-		return Mathf.Clamp01(temperature / max);
-	}
+		intensity = Mathf.Clamp01(intensity);
 
-	public MetalFeel Sample(float heat01)
-	{
-		heat01 = Mathf.Clamp01(heat01);
-		// World heat is temperature / referenceMaxTemp, so "just workable" is only ~0.27.
-		// The forge curves were authored for the old 0-1 overlay slider that started at 0.55.
-		float curveHeat = RemapWorldHeatToForgeCurve(heat01);
-		float mobility = Mathf.Max(0f, mobilityByHeat.Evaluate(curveHeat));
-		float magnet = Mathf.Max(0f, magnetByHeat.Evaluate(curveHeat));
-		float tension = Mathf.Max(0.05f, tensionByHeat.Evaluate(curveHeat));
+		float mult = Mathf.Max(0f, meltSpeedByIntensity.Evaluate(intensity));
 
-		bool canForge = !IsTooCold(heat01);
-		
-		if (!canForge)
+		return new MeltFeel
 		{
-			mobility *= coldStrikeScale;
-			magnet *= coldStrikeScale;
-		}
-
-		return new MetalFeel
-		{
-			mobility = mobility,
-			magnet = magnet,
-			tension = tension,
-			canForge = canForge
+			outwardSpeed = intensity > 0f ? meltOutwardSpeed * mult : 0f
 		};
 	}
 
-	float RemapWorldHeatToForgeCurve(float heat01)
+	public float NormalizeHeat01(float _temperature)
 	{
-		const float workingCurveHeat = 0.55f;
-		if (heat01 <= minHeatToForge)
-			return minHeatToForge <= 0.0001f ? 0f : workingCurveHeat * (heat01 / minHeatToForge);
+		float max = Mathf.Max(1f, referenceMaxTemp);
+		return Mathf.Clamp01(_temperature / max);
+	}
 
-		return Mathf.Lerp(workingCurveHeat, 1f, Mathf.InverseLerp(minHeatToForge , 1f, heat01));
+	public float GetHeatGaugeRegionEnd(int _i)
+	{
+		return _i + 1 < heatGaugeRegions.Count ? heatGaugeRegions[_i + 1].startHeat : 1f;
 	}
 }

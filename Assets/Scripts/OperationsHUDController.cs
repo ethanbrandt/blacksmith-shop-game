@@ -66,12 +66,20 @@ public class OperationsHUDController : MonoBehaviour
             player.OnPickUp -= OnPickUpEvent;
     }
 
+    private float statusTimer = 0f;
     void FixedUpdate()
     {
         if (!currentMetal || currentMetal.Pickable.Type == Pickable.PickableType.QuenchedMetal)
             return;
         
         quenchStatusIcon.sprite = currentMetal.IsQuenchTemp ? null : lockIcon;
+
+        statusTimer -= Time.fixedDeltaTime;
+        if (currentMetal.IsMelting && statusTimer <= 0f)
+        {
+	        statusTimer = 0.5f;
+	        UpdateUI(currentMetal);
+        }
     }
 
     private void OnPickUpEvent(Transform _transform)
@@ -88,7 +96,7 @@ public class OperationsHUDController : MonoBehaviour
             EnableUI(true);
             
             currentMetal = metal;
-            UpdateUIOnPickup(metal);
+            UpdateUI(metal);
         }
     }
     
@@ -97,7 +105,7 @@ public class OperationsHUDController : MonoBehaviour
         document.rootVisualElement.EnableInClassList("is-hidden", !_enable);
     }
 
-    private void UpdateUIOnPickup(HeatableMetal _metal)
+    private void UpdateUI(HeatableMetal _metal)
     {
         grindStep.EnableInClassList("is-hidden", !_metal.PartDefinition.isBladed);
 
@@ -119,7 +127,7 @@ public class OperationsHUDController : MonoBehaviour
             ChangeOperationClassState(grindStep, grindStatusIcon, ClassState.FUTURE);
             ChangeOperationClassState(finishStep, finishStatusIcon, ClassState.FUTURE);
             
-            ChangeOperationRankStatusIcon(anvilStatusIcon, (uint)_metal.ForgeQuality);
+            ChangeOperationRankStatusIcon(anvilStatusIcon, (uint)_metal.GetForgedShapeQuality());
         }
     }
 

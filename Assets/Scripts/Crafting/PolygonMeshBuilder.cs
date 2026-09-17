@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>Reusable buffers for a simple polygon fill, including concave outlines.</summary>
 public sealed class PolygonMeshBuilder
 {
 	readonly List<Vector3> vertices = new List<Vector3>();

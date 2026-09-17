@@ -190,21 +190,20 @@ public class ForgeMetalView : MonoBehaviour
 
 	void RefreshTint()
 	{
-		if (deformer == null)
+		if (deformer == null || deformer.MetalType == null)
 			return;
 
-		Color baseColor = deformer.MetalType != null ? deformer.MetalType.metalColor : Color.white;
 		float heat01 = deformer.Heat;
-		Color heatedColor = Color.Lerp(Color.Lerp(coldTint, baseColor, MetalColorBlend), hotTint, heat01);
+		Color tint = deformer.MetalType.SampleColor(heat01, true);
 		float flash01 = 1f - Mathf.Clamp01((Time.unscaledTime - hitFlashStartTime) / Mathf.Max(MinimumFlashDuration, hitFlashDuration));
 		flash01 *= flash01;
-		heatedColor = (heatedColor * 0.5f) + (0.5f * Color.Lerp(heatedColor, hitFlashColor, flash01));
+		tint = (tint * 0.5f) + (0.5f * Color.Lerp(tint, hitFlashColor, flash01));
 		if (fillRenderer != null)
 		{
 			tintBlock ??= new MaterialPropertyBlock();
 			fillRenderer.GetPropertyBlock(tintBlock);
-			tintBlock.SetColor("_Color", heatedColor);
-			tintBlock.SetColor("_BaseColor", heatedColor);
+			tintBlock.SetColor("_Color", tint);
+			tintBlock.SetColor("_BaseColor", tint);
 			tintBlock.SetColor("_RendererColor", Color.white);
 			if (fillMaterial != null && fillMaterial.HasProperty("_MainTex"))
 				tintBlock.SetTexture("_MainTex", Texture2D.whiteTexture);
@@ -213,7 +212,7 @@ public class ForgeMetalView : MonoBehaviour
 
 		if (outline != null)
 		{
-			Color edge = Color.Lerp(heatedColor, Color.black, OutlineDarkening);
+			Color edge = Color.Lerp(tint, Color.black, OutlineDarkening);
 			outline.startColor = edge;
 			outline.endColor = edge;
 		}

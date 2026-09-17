@@ -29,7 +29,12 @@ public class FinishPartTable : Station
 
     public override bool TryUse(Pickable _pickable)
     {
-        return TryAcceptPickable(_pickable);
+	    bool accepted = TryAcceptPickable(_pickable);
+	    
+	    if (IsFinished())
+		    Finish();
+	    
+        return accepted;
     }
 
     void Awake()

@@ -176,7 +176,8 @@ public class ForgeSessionController : MonoBehaviour
 	}
 
 	void OnDisable() => EndSession();
-	
+
+	private float statusTimer = 0f;
 	void Update()
 	{
 		if (!IsOpen)
@@ -190,8 +191,14 @@ public class ForgeSessionController : MonoBehaviour
 
 		if (deformer != null)
 			deformer.Heat = activeMetal.Heat01;
+
+		statusTimer -= Time.deltaTime;
+		if (statusTimer <= 0f)
+		{
+			statusTimer = 0.25f;
+			UpdateStatus();
+		}
 		
-		UpdateStatus();
 		HandleForgeInput();
 	}
 
@@ -206,6 +213,8 @@ public class ForgeSessionController : MonoBehaviour
 		
 		if (!StationSessionCoordinator.TryAcquire(this))
 			return;
+
+		metal.ShapeChanged += OnMetalShapeChanged;
 		
 		activeAnvil = anvil;
 		activeMetal = metal;
@@ -250,6 +259,8 @@ public class ForgeSessionController : MonoBehaviour
 	{
 		if (!IsOpen && activeMetal == null)
 			return;
+
+		activeMetal.ShapeChanged -= OnMetalShapeChanged;
 		
 		activeAnvil = null;
 		activeMetal = null;
@@ -277,6 +288,11 @@ public class ForgeSessionController : MonoBehaviour
 		EndSession();
 	}
 
+	void OnMetalShapeChanged()
+	{
+		LoadLocalVertices(activeMetal.ShapeVertices);
+	}
+
 	void SaveActiveMetal()
 	{
 		bool hasSaveTarget = activeMetal != null && deformer != null;
@@ -288,11 +304,11 @@ public class ForgeSessionController : MonoBehaviour
 			return;
 		
 		vertexScratch.Clear();
-		deformer.CopyVerticesTo(vertexScratch);
+		PolygonGeometry.CopyVertices(deformer.MetalVertices, vertexScratch);
 		for (int i = 0; i < vertexScratch.Count; i++)
 			vertexScratch[i] -= forgeOrigin;
 		
-		activeMetal.CommitShapeVertices(vertexScratch);
+		activeMetal.TryCommitShapeVertices(vertexScratch);
 	}
 
 	void LoadLocalVertices(IReadOnlyList<Vector2> local)
@@ -393,7 +409,10 @@ public class ForgeSessionController : MonoBehaviour
 		bool accepted = deformer.TryStrike(impact, direction, charge01);
 
 		if (accepted)
+		{
 			SaveActiveMetal();
+			UpdateStatus();
+		}
 		
 		if (hammerPreview != null)
 			hammerPreview.PlayStrikeFlash(impact, direction, radius, accepted, deformer.LastStrikeLimited);
@@ -478,8 +497,10 @@ public class ForgeSessionController : MonoBehaviour
 		heatSlider.value = activeMetal.Heat01;
 		MetalType metalType = activeMetal.MetalType;
 		
-		float quenchPercent = (1f - metalType.minHeatToQuench);
-		float coldPercent = metalType.minHeatToForge;
+		//! FIX float quenchPercent = (1f - metalType.minHeatToQuench);
+		float quenchPercent = 1f;
+		//! FIX float coldPercent = metalType.minHeatToForge;
+		float coldPercent = 0f;
 		float normalPercent = 1f - (quenchPercent + coldPercent);
 		
 		quenchTempVisualElement.style.height = new Length(quenchPercent * 100f, LengthUnit.Percent);
@@ -495,6 +516,11 @@ public class ForgeSessionController : MonoBehaviour
 		
 		dLight.EnableInClassList("quality-light-on", true);
 		qualityLabel.text = "AWFUL";
+		
+		cLight.EnableInClassList("quality-light-on", false);
+		bLight.EnableInClassList("quality-light-on", false);
+		aLight.EnableInClassList("quality-light-on", false);
+		sLight.EnableInClassList("quality-light-on", false);
 
 		if (quality >= (uint)ShapeQuality.Flawed)
 		{

@@ -95,7 +95,7 @@ public class PartDefinition : ScriptableObject
 
 		Vector2 origin = anvilCenter + outlineCenterOffset;
 		
-		if (cachedWorldOutline == null || cachedWorldOutline.origin != anvilCenter)
+		if (cachedWorldOutline == null || cachedWorldOutline.origin != origin)
 		{
 			var world = new Vector2[outlineLocal.Length];
 			for (int i = 0; i < outlineLocal.Length; i++)
@@ -129,6 +129,9 @@ public class PartDefinition : ScriptableObject
 			if (oldEdgeFlags != null && i < oldEdgeFlags.Length)
 				outlineEdgeNeedsSharpening[i] = oldEdgeFlags[i];
 		}
+
+		cachedForgeOutline = null;
+		cachedWorldOutline = null;
 	}
 
 	public void EnsureSharpeningFlagsMatchOutline()

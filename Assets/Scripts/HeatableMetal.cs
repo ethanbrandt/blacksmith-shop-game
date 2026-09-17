@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -5,14 +6,13 @@ using UnityEngine;
 public class HeatableMetal : MonoBehaviour
 {
 	const float MinimumReferenceTemperature = 0.0001f;
-	const float MetalColorBlend = 0.65f;
-	const float DamageForMaximumDarkening = 100f;
 
 	[Header("Metal")]
 	[SerializeField] float temperature = 20f;
 	[SerializeField] float ambientTemperature = 20f;
-	[SerializeField] float damage;
-
+	[Min(0.1f)]
+	[SerializeField] float maxRadius = 2f;
+	
 	[Header("Starting Shape")]
 	[SerializeField] int startingVertexCount = 24;
 	[SerializeField] Vector2 ovalRadii = new Vector2(1.4f, 0.7f);
@@ -25,66 +25,52 @@ public class HeatableMetal : MonoBehaviour
 	[Tooltip("If >= 0, cool rate toward melt temp when removed while overheated. Otherwise uses MetalType.worldAmbientCoolRate.")]
 	[SerializeField] float coolToMeltRateOverride = -1f;
 
-	[Header("Heat Tint")]
-	[SerializeField] bool applyHeatTint = true;
-	[SerializeField] Color coldTint = new Color(0.45f, 0.48f, 0.55f, 1f);
-	[SerializeField] Color hotTint = new Color(1f, 0.45f, 0.12f, 1f);
-	[SerializeField] Color quenchedTint = new Color(0.2f, 0.1f, 0.35f);
-	[SerializeField] float damageDarken = 0.35f;
-
-	[Header("Overheat Indicator")]
-	[SerializeField] bool showOverheatIndicator = true;
-	[SerializeField] Color overheatPulseColor = new Color(1f, 0.95f, 0.35f, 1f);
-	[SerializeField] float overheatPulseSpeed = 6f;
-	[Range(0f, 1f)]
-	[SerializeField] float overheatPulseStrength = 0.75f;
 	MetalHeatGauge metalHeatGauge;
 
 	static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
 	static readonly int ColorId = Shader.PropertyToID("_Color");
 
 	List<Vector2> shapeVertices = new List<Vector2>();
-	ShapeQuality forgeQuality = ShapeQuality.Incomplete;
 
 	List<Vector2> groundVertices = new List<Vector2>();
 	List<float> grindAmounts = new List<float>();
 	bool hasGrindProgress;
 	SharpnessQuality sharpnessQuality = SharpnessQuality.Blunt;
+
+	readonly List<Vector2> meltResult = new List<Vector2>();
 	
 	Pickable pickable;
 	Renderer visualRenderer;
 	MaterialPropertyBlock tintBlock;
+	ShapeMatchEvaluator shapeMatchEvaluator;
 	MetalType metalType = null;
 	PartDefinition partDefinition = null;
 	
 	float overheatTimer;
-	float forgeMatchPercent;
 	float grindMatchPercent;
 
 	public MetalType MetalType => metalType;
 	public PartDefinition PartDefinition => partDefinition;
 	public Pickable Pickable => pickable;
 	public float Temperature => temperature;
-	public float Damage => damage;
-	public bool IsTooCold => metalType != null && metalType.IsTooCold(Heat01);
-	public bool IsQuenchTemp => metalType != null && metalType.IsQuenchTemp(Heat01);
-	public bool IsOverheating => metalType != null && metalType.IsOverheating(temperature);
+	public bool IsQuenchTemp => metalType != null && metalType.IsWorkable(Heat01);
+	public bool IsMelting => metalType != null && metalType.IsMelting(Heat01);
 	public float Heat01 => metalType != null ? metalType.NormalizeHeat01(temperature) : 0f;
 	public IReadOnlyList<Vector2> ShapeVertices => shapeVertices;
-	public ShapeQuality ForgeQuality => forgeQuality;
-	public float ForgeMatchPercent => forgeMatchPercent;
 	public bool HasGrindProgress => hasGrindProgress && groundVertices != null && groundVertices.Count >= PolygonGeometry.MinimumVertexCount;
 	public IReadOnlyList<Vector2> GroundVertices => groundVertices;
 	public IReadOnlyList<float> GrindAmounts => grindAmounts;
 	public SharpnessQuality SharpnessQuality => sharpnessQuality;
 	public float GrindMatchPercent => grindMatchPercent;
 
+	public Action ShapeChanged;
 
 	void Awake()
 	{
 		pickable = GetComponent<Pickable>();
 		visualRenderer = GetComponent<Renderer>();
 		metalHeatGauge = GetComponentInChildren<MetalHeatGauge>();
+		shapeMatchEvaluator = FindFirstObjectByType<ShapeMatchEvaluator>();
 		
 		BuildStartingShape();
 	}
@@ -126,12 +112,19 @@ public class HeatableMetal : MonoBehaviour
 			metalHeatGauge.SetFollowMetal(this);
 	}
 
-	void Update()
+	void FixedUpdate()
 	{
 		var furnace = pickable != null ? pickable.ContainingStation as Furnace : null;
 		bool isInActiveFurnace = furnace != null && furnace.isActiveAndEnabled;
 		float? furnaceTemperature = isInActiveFurnace ? furnace.InternalTemperature : null;
-		TickTemperature(Time.deltaTime, furnaceTemperature);
+		TickTemperature(Time.fixedDeltaTime, furnaceTemperature);
+		TickMelting(Time.fixedDeltaTime);
+	}
+
+	void LateUpdate()
+	{
+		RefreshTint();
+		
 		if (metalHeatGauge != null)
 			metalHeatGauge.SetEnable(temperature > ambientTemperature);
 	}
@@ -144,7 +137,6 @@ public class HeatableMetal : MonoBehaviour
 			return;
 		}
 		metalType = type;
-		RefreshTint();
 	}
 
 	public void SetPartDefinition(PartDefinition part)
@@ -164,9 +156,8 @@ public class HeatableMetal : MonoBehaviour
 		if (float.IsNaN(value) || float.IsInfinity(value))
 			return;
 		temperature = value;
-		if (!IsOverheating)
+		if (!IsMelting)
 			overheatTimer = 0f;
-		RefreshTint();
 	}
 
 	public void SetHeat01(float heat01)
@@ -176,7 +167,22 @@ public class HeatableMetal : MonoBehaviour
 			temperature = heat01 * Mathf.Max(MinimumReferenceTemperature, metalType.referenceMaxTemp);
 		else
 			temperature = heat01;
-		RefreshTint();
+	}
+
+	public ShapeQuality GetForgedShapeQuality()
+	{
+		if (shapeMatchEvaluator == null || partDefinition == null || shapeVertices == null)
+			return ShapeQuality.Incomplete;
+
+		return shapeMatchEvaluator.EvaluateQuality(shapeVertices, partDefinition.outlineLocal);
+	}
+
+	public float GetMatchPercent()
+	{
+		if (shapeMatchEvaluator == null || partDefinition == null || shapeVertices == null)
+			return 0f;
+
+		return shapeMatchEvaluator.EvaluateMatchPercent(shapeVertices, partDefinition.outlineLocal);
 	}
 
 	public void Quench()
@@ -185,7 +191,7 @@ public class HeatableMetal : MonoBehaviour
 		overheatTimer = 0f;
 		if (visualRenderer == null)
 			return;
-		var quenchColor = Color.Lerp(quenchedTint, metalType != null ? metalType.metalColor : Color.white, MetalColorBlend);
+		var quenchColor = metalType.GetQuenchColor();
 		tintBlock ??= new MaterialPropertyBlock();
 		visualRenderer.GetPropertyBlock(tintBlock);
 		tintBlock.SetColor(BaseColorId, quenchColor);
@@ -193,7 +199,7 @@ public class HeatableMetal : MonoBehaviour
 		visualRenderer.SetPropertyBlock(tintBlock);
 	}
 
-	public bool CommitShapeVertices(IReadOnlyList<Vector2> _shapeVertices)
+	public bool TryCommitShapeVertices(IReadOnlyList<Vector2> _shapeVertices)
 	{
 		if (ReferenceEquals(_shapeVertices, shapeVertices))
 			return true;
@@ -236,96 +242,79 @@ public class HeatableMetal : MonoBehaviour
 		grindMatchPercent = Mathf.Clamp01(matchPercent);
 	}
 
-	public void TickTemperature(float deltaTime, float? furnaceTemperature = null)
+	void TickTemperature(float deltaTime, float? furnaceTemperature = null)
 	{
 		if (metalType == null || deltaTime <= 0f)
 			return;
-		if (furnaceTemperature > temperature)
-			temperature = Mathf.MoveTowards(temperature, furnaceTemperature.Value, metalType.furnaceHeatTransferRate * deltaTime);
+
+		if (furnaceTemperature != null)
+		{
+			float heatTransferRate = furnaceTemperature > temperature ? metalType.furnaceHeatTransferRate : metalType.worldAmbientCoolRate;
+			temperature = Mathf.MoveTowards(temperature, furnaceTemperature.Value, heatTransferRate * deltaTime);
+		}
 		else
 			TickOutsideFurnace(deltaTime);
-
-		TickOverheatDamage(deltaTime);
-		RefreshTint();
 	}
 
 	void ApplyQualityVisual()
 	{
-	// TODO Add quality visuals
+		// TODO Add quality visuals
 	}
 
 	void TickOutsideFurnace(float deltaTime)
 	{
 		if (metalType == null || deltaTime <= 0f)
 			return;
-		if (temperature > metalType.overheatTemp)
+		
+		if (IsMelting)
 		{
-			float coolRate = coolToMeltRateOverride >= 0f ? coolToMeltRateOverride : metalType.worldAmbientCoolRate;
-			temperature = Mathf.MoveTowards(temperature, metalType.overheatTemp, coolRate * deltaTime);
+			temperature = metalType.GetMeltingTempOverride(temperature, deltaTime);
 			return;
 		}
 
 		temperature = Mathf.MoveTowards(temperature, ambientTemperature, metalType.worldAmbientCoolRate * deltaTime);
 	}
 
-	void TickOverheatDamage(float deltaTime)
+	bool TickMelting(float _deltaTime)
 	{
-		if (metalType == null || deltaTime <= 0f)
-			return;
+		if (metalType == null || !metalType.meltingEnabled || shapeVertices == null || shapeVertices.Count < PolygonGeometry.MinimumVertexCount)
+			return false;
 
-		if (!metalType.IsOverheating(temperature))
-		{
-			overheatTimer = 0f;
-			return;
-		}
+		float intensity = metalType.GetMeltIntensity(Heat01);
 
-		float previousTimer = overheatTimer;
-		overheatTimer += deltaTime;
-		float graceDuration = overheatGraceOverride >= 0f ? overheatGraceOverride : metalType.overheatGraceDuration;
-		if (overheatTimer < graceDuration)
-			return;
+		if (!IsFinite(intensity) || intensity <= 0f)
+			return false;
+
+		MeltFeel feel = metalType.SampleMelt(intensity);
+		float distance = feel.outwardSpeed * _deltaTime;
+
+		if (!ClipperMeltGeometry.TryExpand(shapeVertices, distance, maxRadius, meltResult))
+			return false;
 		
-		float damagePerSecond = overheatDamagePerSecondOverride >= 0f ? overheatDamagePerSecondOverride : metalType.overheatDamagePerSecond;
-		float previousDamageDuration = Mathf.Max(0f, previousTimer - graceDuration);
-		float currentDamageDuration = Mathf.Max(0f, overheatTimer - graceDuration);
-		float damageDuration = currentDamageDuration - previousDamageDuration;
-		damage += damagePerSecond * damageDuration;
+		//? INVALIDATE OLD SCORES
+		
+		PolygonGeometry.CopyVertices(meltResult, shapeVertices);
+		ShapeChanged?.Invoke();
+		return true;
 	}
 
 	void RefreshTint()
 	{
 		bool hasTintTarget = visualRenderer != null && pickable != null;
-		if (!applyHeatTint || !hasTintTarget)
+		
+		if (!hasTintTarget)
 			return;
+		
 		bool isQuenched = pickable.Type == Pickable.PickableType.QuenchedMetal;
 		if (isQuenched)
 			return;
 
-		Color baseColor = metalType != null ? metalType.metalColor : Color.white;
-		float heat01 = Heat01;
-		Color heatedColor = Color.Lerp(Color.Lerp(coldTint, baseColor, MetalColorBlend), hotTint, heat01);
-		if (damage > 0f)
-		{
-			float damageDarkening = Mathf.Clamp01(damage / DamageForMaximumDarkening) * damageDarken;
-			heatedColor = Color.Lerp(heatedColor, Color.black, damageDarkening);
-		}
-
-		if (showOverheatIndicator && IsOverheating)
-		{
-			float pulse = (Mathf.Sin(Time.time * overheatPulseSpeed) + 1f) * 0.5f;
-			heatedColor = Color.Lerp(heatedColor, overheatPulseColor, pulse * overheatPulseStrength);
-		}
-
-		if (visualRenderer is SpriteRenderer spriteRenderer)
-		{
-			spriteRenderer.color = heatedColor;
-			return;
-		}
+		Color tint = metalType.SampleColor(Heat01);
 
 		tintBlock ??= new MaterialPropertyBlock();
 		visualRenderer.GetPropertyBlock(tintBlock);
-		tintBlock.SetColor(BaseColorId, heatedColor);
-		tintBlock.SetColor(ColorId, heatedColor);
+		tintBlock.SetColor(BaseColorId, tint);
+		tintBlock.SetColor(ColorId, tint);
 		visualRenderer.SetPropertyBlock(tintBlock);
 	}
 

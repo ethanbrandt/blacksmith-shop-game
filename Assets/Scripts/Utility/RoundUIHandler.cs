@@ -82,7 +82,7 @@ public class RoundUIHandler : MonoBehaviour
                 definition = metal.PartDefinition;
 
             string partName = definition != null ? definition.DisplayLabel : $"Part {i + 1}";
-            float forgingScore = metal != null ? Mathf.Clamp01(metal.ForgeMatchPercent) : 0f;
+            float forgingScore = metal != null ? Mathf.Clamp01(metal.GetMatchPercent()) : 0f;
 
             forgingTotal += forgingScore;
             forgingCount++;

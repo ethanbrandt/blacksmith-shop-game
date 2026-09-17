@@ -127,15 +127,6 @@ public class MetalDeformer2D : MonoBehaviour
 		VerticesChanged?.Invoke();
 	}
 
-	public void CopyVerticesTo(List<Vector2> destination)
-	{
-		if (destination == null)
-			return;
-		
-		destination.Clear();
-		destination.AddRange(vertices);
-	}
-
 	public void CopyBrushPreview(Vector2 point, Vector2 direction, float charge, List<Vector2> destination)
 	{
 		destination.Clear();
@@ -507,7 +498,7 @@ public class MetalDeformer2D : MonoBehaviour
 				if (splitThisStrike && influenceBuffer[i] > 0f)
 					blend = Mathf.Max(blend, (surfaceTension + splitTensionBoost) * mask);
 
-				float outlineDist = DistanceToTargetOutline(curr, VertexOutward(strikeStart, i));
+				float outlineDist = DistanceToTargetOutline(curr, PolygonGeometry.VertexOutward(strikeStart, i));
 				if (outlineDist < outlineProtectDistance)
 				{
 					float protect = outlineDist / Mathf.Max(0.0001f, outlineProtectDistance);
@@ -541,7 +532,7 @@ public class MetalDeformer2D : MonoBehaviour
 			if (influenceBuffer[i] <= 0f)
 				continue;
 			
-			if (!TryClosestPointOnOutline(vertices[i], VertexOutward(strikeStart, i), out Vector2 closest, out float outlineDist))
+			if (!TryClosestPointOnOutline(vertices[i], PolygonGeometry.VertexOutward(strikeStart, i), out Vector2 closest, out float outlineDist))
 				continue;
 
 			float reach = Mathf.Min(magnetRadius, impactRadius);
@@ -640,14 +631,6 @@ public class MetalDeformer2D : MonoBehaviour
 		for (int i = 0; i < vertices.Count; i++)
 			c += vertices[i];
 		return c / Mathf.Max(1, vertices.Count);
-	}
-
-	static Vector2 VertexOutward(IReadOnlyList<Vector2> polygon, int index)
-	{
-		Vector2 prev = polygon[index] - polygon[(index - 1 + polygon.Count) % polygon.Count];
-		Vector2 next = polygon[(index + 1) % polygon.Count] - polygon[index];
-		Vector2 tangent = prev.normalized + next.normalized;
-		return new Vector2(tangent.y, -tangent.x).normalized * Mathf.Sign(PolygonGeometry.SignedArea(polygon));
 	}
 
 	bool TryClosestPointOnOutline(Vector2 point, Vector2 outward, out Vector2 closest, out float distance)

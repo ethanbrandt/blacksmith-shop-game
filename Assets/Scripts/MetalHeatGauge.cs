@@ -1,10 +1,11 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class MetalHeatGauge : MonoBehaviour
 {
-    [SerializeField] RectTransform quenchTempFill;
-    [SerializeField] RectTransform tooColdFill;
+    [SerializeField] RectTransform fillRect;
+    [SerializeField] Image regionPrefab;
 
     private Slider heatGaugeSlider;
     private Canvas canvas;
@@ -12,6 +13,7 @@ public class MetalHeatGauge : MonoBehaviour
     private bool gaugeEnabled;
     private Vector3 localOffset;
     private Transform attachedTransform;
+    private List<Image> regionImages = new List<Image>();
     
     void Awake()
     {
@@ -37,17 +39,40 @@ public class MetalHeatGauge : MonoBehaviour
     {
         currentMetal = _metal;
 
+        foreach (var image in regionImages)
+	        Destroy(image.gameObject);
+
+        regionImages.Clear();
+        
         MetalType metalType = _metal.MetalType;
 
-        var sliderRectTransform = heatGaugeSlider.transform as RectTransform;
+        if (metalType == null)
+	        return;
+
+        List<HeatGaugeRegion> heatGaugeRegions = metalType.GetHeatGaugeRegions();
         
-        float tooColdSize = Mathf.Lerp(0, sliderRectTransform.rect.width, metalType.minHeatToForge);
-        tooColdFill.sizeDelta = new Vector2(tooColdSize, tooColdFill.sizeDelta.y);
-        tooColdFill.anchoredPosition = new Vector2(tooColdSize / 2f, 0f);
-        
-        float quenchTempSize = Mathf.Lerp(0, sliderRectTransform.rect.width, 1f - metalType.minHeatToQuench);
-        quenchTempFill.sizeDelta = new Vector2(quenchTempSize, quenchTempFill.sizeDelta.y);
-        quenchTempFill.anchoredPosition = new Vector2(sliderRectTransform.rect.width - quenchTempSize / 2f, 0f);
+        for (int i = 0; i < metalType.heatGaugeRegions.Count; i++)
+        {
+	        HeatGaugeRegion region = heatGaugeRegions[i];
+
+	        float start = Mathf.Clamp01(region.startHeat);
+	        float end = i + 1 < heatGaugeRegions.Count ? Mathf.Clamp01(heatGaugeRegions[i + 1].startHeat) : 1f;
+	        
+	        if (end <= start)
+		        continue;
+
+	        Image image = Instantiate(regionPrefab, fillRect);
+	        image.color = region.regionColor;
+	        image.raycastTarget = false;
+
+	        RectTransform rect = image.rectTransform;
+	        rect.anchorMin = new Vector2(start, 0f);
+	        rect.anchorMax = new Vector2(end, 1f);
+	        rect.offsetMin = Vector2.zero;
+	        rect.offsetMax = Vector2.zero;
+	        
+	        regionImages.Add(image);
+        }
     }
 
     public void SetEnable(bool _enabled)

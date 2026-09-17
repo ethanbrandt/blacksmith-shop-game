@@ -119,7 +119,7 @@ public class PlayerController : MonoBehaviour
 
 	void OnMove(InputValue _value)
 	{
-		if (IsMinigameBlocking)
+		if (IsMinigameBlocking || endOfRound)
 		{
 			moveDir = Vector3.zero;
 			return;
@@ -137,7 +137,7 @@ public class PlayerController : MonoBehaviour
 
 	void OnInteract()
 	{
-		if (IsMinigameBlocking)
+		if (IsMinigameBlocking || endOfRound)
 			return;
 
 		if (held != null)
@@ -177,7 +177,7 @@ public class PlayerController : MonoBehaviour
 
 	void OnAttack()
 	{
-		if (IsMinigameBlocking)
+		if (IsMinigameBlocking || endOfRound)
 			return;
 
 		if (held == null)
