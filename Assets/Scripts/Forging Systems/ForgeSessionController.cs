@@ -90,6 +90,8 @@ public class ForgeSessionController : MonoBehaviour
 
 	public bool IsOpen { get; private set; }
 	public static bool IsBlockingPlayer => Instance != null && Instance.IsOpen;
+	public HeatableMetal ActiveMetal => activeMetal;
+	public MetalDeformer2D MetalDeformer => deformer;
 
 	public static ForgeSessionController EnsureExists()
 	{

@@ -73,9 +73,9 @@ public class Furnace : Station
 	public override bool CanAccept(Pickable _pickable)
 	{
 		if (containedMetal)
-			return _pickable.Type == Pickable.PickableType.Fuel;
+			return _pickable.Type == Pickable.PickableType.FUEL;
 
-		return _pickable.Type != Pickable.PickableType.QuenchedMetal;
+		return _pickable.Type != Pickable.PickableType.QUENCHED_METAL;
 	}
 
 	public override bool TryUse(Pickable _pickable)
@@ -194,7 +194,7 @@ public class Furnace : Station
 		if (containedMetal != null)
 			return false;
 
-		if (pickable.Type == Pickable.PickableType.QuenchedMetal)
+		if (pickable.Type == Pickable.PickableType.QUENCHED_METAL)
 		{
 			LogText.Instance.SetText("CANNOT INSERT QUENCHED METAL INTO FURNACE");
 			return false;

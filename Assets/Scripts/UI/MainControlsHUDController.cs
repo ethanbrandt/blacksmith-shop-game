@@ -120,7 +120,7 @@ public class MainControlsHUDController : MonoBehaviour
         if (!_pickable)
             return "";
         
-        if (_pickable.Type == Pickable.PickableType.Fuel)
+        if (_pickable.Type == Pickable.PickableType.FUEL)
             return " Fuel";
         
         if (_pickable.TryGetComponent(out HeatableMetal metal))

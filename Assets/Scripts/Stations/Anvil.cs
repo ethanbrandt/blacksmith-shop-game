@@ -29,7 +29,7 @@ public class Anvil : Station
 	public override bool CanAccept(Pickable _pickable)
 	{
 		bool hasEmptySocket = containedMetal == null;
-		bool hasAcceptedItemType = _pickable != null && _pickable.Type == Pickable.PickableType.HeatableMetal;
+		bool hasAcceptedItemType = _pickable != null && _pickable.Type == Pickable.PickableType.HEATABLE_METAL;
 		if (!hasEmptySocket || !hasAcceptedItemType)
 			return false;
 		var session = ForgeSessionController.Instance;
@@ -82,7 +82,7 @@ public class Anvil : Station
 		if (pickable == null || pickable.InStation)
 			return false;
 
-		if (pickable.Type == Pickable.PickableType.QuenchedMetal)
+		if (pickable.Type == Pickable.PickableType.QUENCHED_METAL)
 		{
 			LogText.Instance.SetText("CANNOT PLACE QUENCHED METAL ON ANVIL");
 			return false;

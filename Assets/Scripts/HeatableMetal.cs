@@ -46,7 +46,7 @@ public class HeatableMetal : MonoBehaviour
 	public Pickable Pickable => pickable;
 	public float Temperature => temperature;
 	public bool IsQuenchTemp => metalType != null && metalType.IsWorkable(Heat01);
-	public bool IsMelting => metalType != null && metalType.IsMelting(Heat01) && pickable.Type == Pickable.PickableType.HeatableMetal;
+	public bool IsMelting => metalType != null && metalType.IsMelting(Heat01) && pickable.Type == Pickable.PickableType.HEATABLE_METAL;
 	public float Heat01 => metalType != null ? metalType.NormalizeHeat01(temperature) : 0f;
 	public IReadOnlyList<Vector2> ShapeVertices => shapeVertices;
 	public bool HasGrindProgress => hasGrindProgress && groundVertices != null && groundVertices.Count >= PolygonGeometry.MinimumVertexCount;
@@ -115,7 +115,7 @@ public class HeatableMetal : MonoBehaviour
 
 	void Update()
 	{
-		metalType.Tick(Time.deltaTime, Heat01);
+		metalType.Tick(Time.deltaTime, this);
 	}
 
 	void LateUpdate()
@@ -303,7 +303,7 @@ public class HeatableMetal : MonoBehaviour
 		if (!hasTintTarget)
 			return;
 		
-		bool isQuenched = pickable.Type == Pickable.PickableType.QuenchedMetal;
+		bool isQuenched = pickable.Type == Pickable.PickableType.QUENCHED_METAL;
 		if (isQuenched)
 			return;
 

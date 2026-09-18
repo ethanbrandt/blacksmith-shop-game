@@ -57,7 +57,7 @@ public abstract class MetalType : ScriptableObject
 	public List<HeatGaugeRegion> heatGaugeRegions;
 
 	public virtual void Initialize(HeatableMetal _metal) { }
-	public virtual void Tick(float _deltaTime, float _heat01) { }
+	public virtual void Tick(float _deltaTime, HeatableMetal _metal) { }
 	
 	public abstract bool IsWorkable(float _heat01);
 	public abstract bool IsMelting(float _heat01);

@@ -1,14 +1,23 @@
-using Unity.Mathematics;
+using System;
 using UnityEngine;
+using UnityEngine.AI;
 
 [RequireComponent(typeof(Rigidbody))]
 public class Pickable : MonoBehaviour
 {
 	public enum PickableType
 	{
-		HeatableMetal,
-		QuenchedMetal,
-		Fuel
+		HEATABLE_METAL,
+		QUENCHED_METAL,
+		FUEL
+	}
+
+	public enum PickableState
+	{
+		FREE,
+		HELD,
+		IN_STATION,
+		FINISHED
 	}
 
 	[SerializeField] bool canBePickedUp = true;
@@ -21,37 +30,40 @@ public class Pickable : MonoBehaviour
 	Transform followTarget;
 	Vector3 followLocalOffset;
 	Collider[] ignoredHolderColliders;
-	bool isHeld;
-	bool isOnFinalTable;
+	PickableState state;
 	PickableType pickableType;
 	public bool CanBePickedUp
 	{
 		get
 		{
-			bool isLockedInStation = InStation && StationSessionCoordinator.IsActive;
-			bool isUnavailable = isHeld || isOnFinalTable;
+			bool isLockedInStation = state == PickableState.IN_STATION && StationSessionCoordinator.IsActive;
+			bool isUnavailable = state == PickableState.HELD || state == PickableState.FINISHED;
 			bool isPickupBlocked = isLockedInStation || isUnavailable;
 			return canBePickedUp && !isPickupBlocked;
 		}
 	}
 
 	public Station ContainingStation => containingStation;
-	public bool IsHeld => isHeld;
+	public bool IsHeld => state == PickableState.HELD;
 	public bool InStation => containingStation != null;
+	public bool IsOnFinalTable => state == PickableState.FINISHED;
 	public PickableType Type => pickableType;
+	public PickableState State => state;
+
+	public Action<PickableState> OnStateChanged;
 
 	void Awake()
 	{
 		if (TryGetComponent(out HeatableMetal heatableMetal))
-			pickableType = PickableType.HeatableMetal;
+			pickableType = PickableType.HEATABLE_METAL;
 		else if (TryGetComponent(out FuelItem fuelItem))
-			pickableType = PickableType.Fuel;
+			pickableType = PickableType.FUEL;
 
 		rb = GetComponent<Rigidbody>();
 		if (itemCollider == null)
 			itemCollider = GetComponent<Collider>();
 		if (itemCollider == null)
-			itemCollider = gameObject.AddComponent<SphereCollider>();
+			itemCollider = gameObject.AddComponent<BoxCollider>();
 
 		defaultParent = transform.parent;
 		rb.interpolation = RigidbodyInterpolation.Interpolate;
@@ -69,10 +81,12 @@ public class Pickable : MonoBehaviour
 	{
 		if (!CanBePickedUp)
 			return;
+		
+		state = PickableState.HELD;
+		OnStateChanged?.Invoke(PickableState.HELD);
 
 		CancelInvoke(nameof(ClearHolderCollisionIgnore));
 		ClearStationContainment();
-		isHeld = true;
 		SetPhysicsActive(false);
 		IgnoreHolderCollisions(holder, true);
 
@@ -89,11 +103,13 @@ public class Pickable : MonoBehaviour
 		if (!_station.CanAccept(this))
 			return false;
 
+		state = PickableState.IN_STATION;
+		OnStateChanged?.Invoke(PickableState.IN_STATION);
+
 		CancelInvoke(nameof(ClearHolderCollisionIgnore));
 		SetHolderCollisionIgnored(false);
 		ignoredHolderColliders = null;
 		containingStation = _station;
-		isHeld = false;
 		followTarget = null;
 		SetPhysicsActive(false);
 
@@ -102,21 +118,22 @@ public class Pickable : MonoBehaviour
 		transform.rotation = Quaternion.identity;
 
 		if (_station is QuenchVat)
-			pickableType = PickableType.QuenchedMetal;
+			pickableType = PickableType.QUENCHED_METAL;
 
 		return true;
 	}
 
 	public bool TryPlaceOnFinalTable(Transform socket)
 	{
-		if (socket == null || pickableType != PickableType.QuenchedMetal)
+		if (socket == null || pickableType != PickableType.QUENCHED_METAL)
 			return false;
 
+		state = PickableState.FINISHED;
+		OnStateChanged?.Invoke(PickableState.FINISHED);
+		
 		CancelInvoke(nameof(ClearHolderCollisionIgnore));
 		SetHolderCollisionIgnored(false);
 		ignoredHolderColliders = null;
-		isHeld = false;
-		isOnFinalTable = true;
 		followTarget = null;
 		SetPhysicsActive(false);
 
@@ -128,7 +145,7 @@ public class Pickable : MonoBehaviour
 
 	public void Drop(Vector3 worldPosition, Vector3 velocity)
 	{
-		if (!isHeld)
+		if (state != PickableState.HELD)
 			return;
 
 		Release(worldPosition, velocity);
@@ -136,7 +153,7 @@ public class Pickable : MonoBehaviour
 
 	public void Throw(Vector3 worldPosition, Vector3 velocity)
 	{
-		if (!isHeld)
+		if (state != PickableState.HELD)
 			return;
 
 		Release(worldPosition, velocity);
@@ -144,8 +161,11 @@ public class Pickable : MonoBehaviour
 
 	void Release(Vector3 worldPosition, Vector3 velocity)
 	{
+
+		state = PickableState.FREE;
+		OnStateChanged?.Invoke(PickableState.FREE);
+		
 		ClearStationContainment();
-		isHeld = false;
 		followTarget = null;
 		transform.SetParent(defaultParent, true);
 		transform.position = worldPosition;

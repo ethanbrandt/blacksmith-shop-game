@@ -23,7 +23,7 @@ public class QuenchVat : Station
 	    if (!_pickable.TryGetComponent(out HeatableMetal heatableMetal))
 		    return false;
 	    
-        return !containedMetal && _pickable.Type == Pickable.PickableType.HeatableMetal && heatableMetal.IsQuenchTemp;
+        return !containedMetal && _pickable.Type == Pickable.PickableType.HEATABLE_METAL && heatableMetal.IsQuenchTemp;
     }
 
     public override bool TryUse(Pickable _pickable)
@@ -40,7 +40,7 @@ public class QuenchVat : Station
 
 	public bool TryAcceptPickable(Pickable pickable)
 	{
-		if (pickable == null || pickable.InStation || pickable.Type != Pickable.PickableType.HeatableMetal)
+		if (pickable == null || pickable.InStation || pickable.Type != Pickable.PickableType.HEATABLE_METAL)
 			return false;
 
 		if (pickable.TryGetComponent(out HeatableMetal metal))

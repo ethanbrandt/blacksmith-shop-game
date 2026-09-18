@@ -70,7 +70,7 @@ public class OperationsHUDController : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (!currentMetal || currentMetal.Pickable.Type == Pickable.PickableType.QuenchedMetal)
+        if (!currentMetal || currentMetal.Pickable.Type == Pickable.PickableType.QUENCHED_METAL)
             return;
 
         statusTimer -= Time.fixedDeltaTime;
@@ -110,7 +110,7 @@ public class OperationsHUDController : MonoBehaviour
     {
         grindStep.EnableInClassList("is-hidden", !_metal.PartDefinition.isBladed);
 
-        if (_metal.Pickable.Type == Pickable.PickableType.QuenchedMetal)
+        if (_metal.Pickable.Type == Pickable.PickableType.QUENCHED_METAL)
         {
             ChangeOperationClassState(furnaceStep, furnaceStatusIcon, ClassState.COMPLETE);
             ChangeOperationClassState(anvilStep, anvilStatusIcon, ClassState.COMPLETE);
