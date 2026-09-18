@@ -56,11 +56,14 @@ public abstract class MetalType : ScriptableObject
 	[Header("Heat Gauge Information")]
 	public List<HeatGaugeRegion> heatGaugeRegions;
 
+	public virtual void Initialize(HeatableMetal _metal) { }
+	public virtual void Tick(float _deltaTime, float _heat01) { }
+	
 	public abstract bool IsWorkable(float _heat01);
 	public abstract bool IsMelting(float _heat01);
 	public abstract float GetMeltIntensity(float _heat01);
 	public abstract float GetMeltingTempOverride(float _temperature, float _deltaTime);
-	public abstract Color SampleColor(float _heat01, bool _inAnvil = false);
+	public abstract Color SampleColor(float _heat01, bool _avoidPulse = false);
 	public abstract Color GetQuenchColor();
 	public abstract MetalFeel Sample(float _heat01);
 	public abstract List<HeatGaugeRegion> GetHeatGaugeRegions();

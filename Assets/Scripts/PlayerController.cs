@@ -12,8 +12,20 @@ public class PlayerController : MonoBehaviour
 	[SerializeField] float throwUpSpeed = 2.5f;
 	[SerializeField] float dropForward = 0.9f;
 
+	[Header("Slime Sliding")]
+	[SerializeField, Min(0.1f)] float slimeSlideDuration = 3f;
+	[SerializeField, Min(0f)] float slimeAcceleration = 4f;
+	[SerializeField, Min(0f)] float slimeDrag = 0.2f;
+	[SerializeField, Min(0.01f)] float slimeRecoveryDuration = 1f;
+	[SerializeField] PhysicsMaterial slimedPhysicsMat;
+
+	float slimeSlideRemaining;
+	Collider slideCollider;
+	PhysicsMaterial originalPhysicsMaterial;
+
 	Rigidbody rb;
 	Vector3 moveDir;
+	float moveInputStrength;
 	Pickable held;
 	Highlightable currentHighlight;
 	private bool endOfRound = false;
@@ -31,6 +43,10 @@ public class PlayerController : MonoBehaviour
 
 	void FixedUpdate()
 	{
+		slimeSlideRemaining = Mathf.Max(0f, slimeSlideRemaining - Time.fixedDeltaTime);
+		if (slimeSlideRemaining <= 0f)
+			RestoreSlideFriction();
+
 		if (IsMinigameBlocking || endOfRound)
 		{
 			moveDir = Vector3.zero;
@@ -38,7 +54,61 @@ public class PlayerController : MonoBehaviour
 			return;
 		}
 
-		rb.linearVelocity = new Vector3(moveDir.x * moveSpeed, rb.linearVelocity.y, moveDir.z * moveSpeed);
+		Vector3 targetVelocity = moveDir * moveSpeed;
+		
+		if (slimeSlideRemaining > 0f)
+		{
+			Vector3 horizontalVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
+			Vector3 slideVelocity = horizontalVelocity * Mathf.Exp(-slimeDrag * Time.fixedDeltaTime);
+			Vector3 acceleration = moveDir * (moveInputStrength * slimeAcceleration);
+			
+			if (slideVelocity.sqrMagnitude >= moveSpeed * moveSpeed && slideVelocity.sqrMagnitude > 0.0001f)
+			{
+				Vector3 heading = slideVelocity.normalized;
+				acceleration -= heading * Mathf.Max(0f, Vector3.Dot(acceleration, heading));
+			}
+			
+			slideVelocity += acceleration * Time.fixedDeltaTime;
+			slideVelocity = Vector3.ClampMagnitude(slideVelocity, Mathf.Max(moveSpeed, horizontalVelocity.magnitude));
+			float recovery = 1f - Mathf.Clamp01(slimeSlideRemaining / Mathf.Max(0.01f, slimeRecoveryDuration));
+			targetVelocity = Vector3.Lerp(slideVelocity, targetVelocity, recovery);
+		}
+
+		rb.linearVelocity = new Vector3(targetVelocity.x, rb.linearVelocity.y, targetVelocity.z);
+	}
+
+	public void ApplySlimeSlide()
+	{
+		if (!isActiveAndEnabled || IsMinigameBlocking || endOfRound)
+			return;
+
+		if (slimeSlideRemaining <= 0f)
+		{
+			slideCollider = GetComponent<Collider>();
+			if (slideCollider != null)
+			{
+				originalPhysicsMaterial = slideCollider.sharedMaterial;
+				slideCollider.sharedMaterial = slimedPhysicsMat;
+			}
+		}
+		slimeSlideRemaining = slimeSlideDuration;
+	}
+
+	void RestoreSlideFriction()
+	{
+		if (slideCollider != null)
+		{
+			slideCollider.sharedMaterial = originalPhysicsMaterial;
+			slideCollider = null;
+		}
+	}
+
+	void OnDisable()
+	{
+		slimeSlideRemaining = 0f;
+		moveDir = Vector3.zero;
+		moveInputStrength = 0f;
+		RestoreSlideFriction();
 	}
 
 	public void NotifyEnding()
@@ -132,6 +202,12 @@ public class PlayerController : MonoBehaviour
 		camRight.y = 0f;
 		camRight.Normalize();
 		Vector2 inputDir = _value.Get<Vector2>();
+		moveInputStrength = Mathf.Clamp01(inputDir.magnitude);
+		if (inputDir.sqrMagnitude <= 0.0001f)
+		{
+			moveDir = Vector3.zero;
+			return;
+		}
 		moveDir = (camForward * inputDir.y + camRight * inputDir.x).normalized;
 	}
 

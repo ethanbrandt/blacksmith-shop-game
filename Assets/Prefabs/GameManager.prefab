@@ -48,3 +48,4 @@ MonoBehaviour:
   customerScenarios:
   - {fileID: 11400000, guid: 71158027bfbba204885b17a618f20cad, type: 2}
   - {fileID: 11400000, guid: 03a2383e0c54d6443a571f2ffc328fef, type: 2}
+  - {fileID: 11400000, guid: ed4f0017d8250264dbe25ba7c2960cb3, type: 2}

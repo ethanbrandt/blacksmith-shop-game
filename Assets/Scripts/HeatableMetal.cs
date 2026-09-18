@@ -17,14 +17,6 @@ public class HeatableMetal : MonoBehaviour
 	[SerializeField] int startingVertexCount = 24;
 	[SerializeField] Vector2 ovalRadii = new Vector2(1.4f, 0.7f);
 
-	[Header("Overheat Overrides")]
-	[Tooltip("If >= 0, overrides MetalType.overheatGraceDuration.")]
-	[SerializeField] float overheatGraceOverride = -1f;
-	[Tooltip("If >= 0, overrides MetalType.overheatDamagePerSecond.")]
-	[SerializeField] float overheatDamagePerSecondOverride = -1f;
-	[Tooltip("If >= 0, cool rate toward melt temp when removed while overheated. Otherwise uses MetalType.worldAmbientCoolRate.")]
-	[SerializeField] float coolToMeltRateOverride = -1f;
-
 	MetalHeatGauge metalHeatGauge;
 
 	static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
@@ -54,7 +46,7 @@ public class HeatableMetal : MonoBehaviour
 	public Pickable Pickable => pickable;
 	public float Temperature => temperature;
 	public bool IsQuenchTemp => metalType != null && metalType.IsWorkable(Heat01);
-	public bool IsMelting => metalType != null && metalType.IsMelting(Heat01);
+	public bool IsMelting => metalType != null && metalType.IsMelting(Heat01) && pickable.Type == Pickable.PickableType.HeatableMetal;
 	public float Heat01 => metalType != null ? metalType.NormalizeHeat01(temperature) : 0f;
 	public IReadOnlyList<Vector2> ShapeVertices => shapeVertices;
 	public bool HasGrindProgress => hasGrindProgress && groundVertices != null && groundVertices.Count >= PolygonGeometry.MinimumVertexCount;
@@ -121,6 +113,11 @@ public class HeatableMetal : MonoBehaviour
 		TickMelting(Time.fixedDeltaTime);
 	}
 
+	void Update()
+	{
+		metalType.Tick(Time.deltaTime, Heat01);
+	}
+
 	void LateUpdate()
 	{
 		RefreshTint();
@@ -137,6 +134,7 @@ public class HeatableMetal : MonoBehaviour
 			return;
 		}
 		metalType = type;
+		metalType.Initialize(this);
 	}
 
 	public void SetPartDefinition(PartDefinition part)
@@ -278,6 +276,9 @@ public class HeatableMetal : MonoBehaviour
 	bool TickMelting(float _deltaTime)
 	{
 		if (metalType == null || !metalType.meltingEnabled || shapeVertices == null || shapeVertices.Count < PolygonGeometry.MinimumVertexCount)
+			return false;
+
+		if (!IsMelting)
 			return false;
 
 		float intensity = metalType.GetMeltIntensity(Heat01);

@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using Unity.VisualScripting.FullSerializer;
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "SlimyMetalType", menuName = "Forging/MetalType/Slimy", order = 1)]
@@ -25,8 +27,15 @@ public class SlimeMetalType : MetalType
 	[SerializeField] float slimyStrikeMobility;
 	[SerializeField] float slimyStrikeMagnet;
 	[SerializeField] float slimyStrikeTension;
+	[SerializeField] GameObject slimeManagerPrefab;
 	
-	
+	public override void Initialize(HeatableMetal _metal)
+	{
+		var obj = Instantiate(slimeManagerPrefab);
+		var manager = obj.GetComponent<SlimeManager>();
+		manager.Initialize(_metal);
+	}
+
 	public override bool IsWorkable(float _heat01)
 	{
 		return _heat01 > meltHeat;
@@ -50,14 +59,14 @@ public class SlimeMetalType : MetalType
 		return Mathf.MoveTowards(_temperature, 0f, meltCoolRate * _deltaTime);
 	}
 
-	public override Color SampleColor(float _heat01, bool _inAnvil = false)
+	public override Color SampleColor(float _heat01, bool _avoidPulse = false)
 	{
 		if (!applyHeatTint)
 			return metalColor;
 		
 		Color heatedColor = Color.Lerp(metalColor, Color.Lerp(metalColor, heatTintGradient.Evaluate(_heat01), metalColorBlend), _heat01);
 
-		if (showMeltIndicator && IsMelting(_heat01) && !_inAnvil)
+		if (showMeltIndicator && IsMelting(_heat01) && !_avoidPulse)
 		{
 			float pulse = (Mathf.Sin(Time.time * meltPulseSpeed) + 1f) * 0.35f;
 			heatedColor = Color.Lerp(heatedColor, meltPulseColor, pulse * meltPulseStrength);

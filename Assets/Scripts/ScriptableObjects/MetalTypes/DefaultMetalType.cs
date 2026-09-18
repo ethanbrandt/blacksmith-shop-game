@@ -25,7 +25,7 @@ public class DefaultMetalType : MetalType
 	[SerializeField] float overheatPulseSpeed = 6f;
 	[Range(0f, 1f)]
 	[SerializeField] float overheatPulseStrength = 0.75f;
-	
+
 	public override bool IsWorkable(float _heat01)
 	{
 		return _heat01 >= minHeatToForge;
@@ -51,14 +51,14 @@ public class DefaultMetalType : MetalType
 		return Mathf.MoveTowards(_temperature, meltStartHeat * referenceMaxTemp, overheatingCoolRate * _deltaTime);
 	}
 
-	public override Color SampleColor(float _heat01, bool _inAnvil = false)
+	public override Color SampleColor(float _heat01, bool _avoidPulse = false)
 	{
 		if (!applyHeatTint)
 			return metalColor;
 		
 		Color heatedColor = Color.Lerp(metalColor, Color.Lerp(metalColor, heatTintGradient.Evaluate(_heat01), metalColorBlend), _heat01);
 
-		if (showOverheatIndicator && IsMelting(_heat01) && !_inAnvil)
+		if (showOverheatIndicator && IsMelting(_heat01) && !_avoidPulse)
 		{
 			float pulse = (Mathf.Sin(Time.time * overheatPulseSpeed) + 1f) * 0.5f;
 			heatedColor = Color.Lerp(heatedColor, overheatPulseColor, pulse * overheatPulseStrength);

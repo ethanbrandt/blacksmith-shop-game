@@ -191,6 +191,7 @@ MonoBehaviour:
   scenarioNames:
   - HATCHET TEST SCENARIO
   - SUITOR SCENARIO
+  - SLIME SCENARIO
 --- !u!114 &1277966148
 MonoBehaviour:
   m_ObjectHideFlags: 0

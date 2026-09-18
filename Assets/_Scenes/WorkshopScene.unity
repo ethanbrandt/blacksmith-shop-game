@@ -1905,9 +1905,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 16704a6ad7b5e7747b3567c9ad6a061f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShapeMatchEvaluator
-  sampleResolution: 64
-  boundsPadding: 0.35
-  boundaryTolerance: 0.02
   perfectThreshold: 0.975
   excellentThreshold: 0.935
   goodThreshold: 0.85
@@ -5429,7 +5426,7 @@ GameObject:
   - component: {fileID: 1404632307}
   m_Layer: 0
   m_Name: Player
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -5575,6 +5572,11 @@ MonoBehaviour:
   throwSpeed: 8
   throwUpSpeed: 2.5
   dropForward: 0.9
+  slimeSlideDuration: 3
+  slimeAcceleration: 4
+  slimeDrag: 0.2
+  slimeRecoveryDuration: 1
+  slimedPhysicsMat: {fileID: 13400000, guid: 14c304079da313e4d86653766e1d457a, type: 2}
 --- !u!114 &1404632307
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6250,7 +6252,7 @@ GameObject:
   - component: {fileID: 1573146418}
   m_Layer: 0
   m_Name: Plane
-  m_TagString: Untagged
+  m_TagString: Floor
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

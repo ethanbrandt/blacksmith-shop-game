@@ -33,6 +33,8 @@ public class OperationsHUDController : MonoBehaviour
     private Image finishStatusIcon;
 
     private HeatableMetal currentMetal;
+    
+    private float statusTimer = 0f;
 
     private void Awake()
     {
@@ -66,13 +68,10 @@ public class OperationsHUDController : MonoBehaviour
             player.OnPickUp -= OnPickUpEvent;
     }
 
-    private float statusTimer = 0f;
     void FixedUpdate()
     {
         if (!currentMetal || currentMetal.Pickable.Type == Pickable.PickableType.QuenchedMetal)
             return;
-        
-        quenchStatusIcon.sprite = currentMetal.IsQuenchTemp ? null : lockIcon;
 
         statusTimer -= Time.fixedDeltaTime;
         if (currentMetal.IsMelting && statusTimer <= 0f)
@@ -80,6 +79,8 @@ public class OperationsHUDController : MonoBehaviour
 	        statusTimer = 0.5f;
 	        UpdateUI(currentMetal);
         }
+        
+        quenchStatusIcon.sprite = currentMetal.IsQuenchTemp ? null : lockIcon;
     }
 
     private void OnPickUpEvent(Transform _transform)
@@ -122,7 +123,7 @@ public class OperationsHUDController : MonoBehaviour
         else
         {
             ChangeOperationClassState(furnaceStep, furnaceStatusIcon, ClassState.CURRENT);
-            ChangeOperationClassState(anvilStep, furnaceStatusIcon, ClassState.CURRENT);
+            ChangeOperationClassState(anvilStep, anvilStatusIcon, ClassState.CURRENT);
             ChangeOperationClassState(quenchStep, quenchStatusIcon, ClassState.CURRENT);
             ChangeOperationClassState(grindStep, grindStatusIcon, ClassState.FUTURE);
             ChangeOperationClassState(finishStep, finishStatusIcon, ClassState.FUTURE);

@@ -219,3 +219,4 @@ MonoBehaviour:
   slimyStrikeMobility: 1
   slimyStrikeMagnet: 0.05
   slimyStrikeTension: 0.01
+  slimeManagerPrefab: {fileID: 2857743423447440555, guid: 86c43e7718c63a84ba5290a6990825ce, type: 3}
