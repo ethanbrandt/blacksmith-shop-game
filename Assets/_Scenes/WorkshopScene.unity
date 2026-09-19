@@ -2172,10 +2172,11 @@ MonoBehaviour:
   fuelBurnRate: 1
   minFuelToStayLit: 0.5
   minVelToAcceptFuel: 0
+  fuelInsertTempIncrease: 50
   ambientTemperature: 20
   internalTemperature: 20
   maxTemperature: 1000
-  heatUpRate: 80
+  heatUpRate: 100
   coolRate: 20
   targetTempByFuel:
     serializedVersion: 2
