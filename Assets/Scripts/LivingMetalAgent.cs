@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using UnityEditor.UI;
 using UnityEngine;
 using UnityEngine.AI;
 using Random = UnityEngine.Random;
@@ -19,7 +20,8 @@ public struct LivingMetalSprites
 
 public class LivingMetalAgent : MonoBehaviour
 {
-	private const float WAIT_TIME = 2f;
+	private const float WAIT_TIME = 0.75f;
+	private const float TIME_TO_ANGER = 1f;
 	
 	private NavMeshAgent navAgent;
 	private HeatableMetal metal;
@@ -28,10 +30,17 @@ public class LivingMetalAgent : MonoBehaviour
 	private LivingMetalSprites sprites;
 	
 	private float waitTimer = 0f;
+	private float angerTimer = 0f;
 	private Vector2 forgeImageOffset;
 	private Coroutine knockbackRoutine;
 	private bool isKnockedBack;
+	private bool isEscaping;
 	private MetalDeformer2D subscribedDeformer;
+	private Collider col;
+
+	private Vector3 nextTargetDestination = Vector3.zero;
+
+	public bool IsEscaping => isEscaping;
 
 	void Awake()
 	{
@@ -40,12 +49,15 @@ public class LivingMetalAgent : MonoBehaviour
 		
 		metal = GetComponent<HeatableMetal>();
 		rb = GetComponent<Rigidbody>();
+		col = GetComponent<Collider>();
 	}
 
 	void OnEnable()
 	{
 		metal.Pickable.OnStateChanged += OnPickableStateChanged;
 		RefreshStrikeSubscription();
+		waitTimer = WAIT_TIME;
+		angerTimer = TIME_TO_ANGER;
 	}
 
 	private void OnDisable()
@@ -62,18 +74,83 @@ public class LivingMetalAgent : MonoBehaviour
 		RefreshStrikeSubscription();
 		UpdateForgeImage();
 
+		if (metal.Pickable.Type == Pickable.PickableType.HEATABLE_METAL && nextTargetDestination == Vector3.zero)
+		{
+			if (!metal.IsWorkable && metal.Pickable.ContainingStation is not Furnace)
+			{
+				angerTimer -= Time.deltaTime;
+				if (angerTimer <= 0f)
+				{
+					Escape(metal.Pickable.ContainingStation is Anvil);
+
+					nextTargetDestination = FindAnyObjectByType<Furnace>().transform.position - new Vector3(0f, 0f, 0.25f);
+				}
+			}
+			else if (metal.IsMelting && metal.Pickable.ContainingStation is not QuenchVat)
+			{
+				angerTimer -= Time.deltaTime;
+				if (angerTimer <= 0f)
+					Escape(true);
+			}
+		}
+
 		if (metal.Pickable.State != Pickable.PickableState.FREE)
+		{
+			nextTargetDestination = Vector3.zero;
+			return;
+		}
+
+		waitTimer -= Time.deltaTime;
+		if (waitTimer > 0f)
 			return;
 
-		if (!navAgent.isActiveAndEnabled || !navAgent.isOnNavMesh || navAgent.remainingDistance > 0.25f)
+		bool needsRecovery = !navAgent.isActiveAndEnabled || !navAgent.isOnNavMesh;
+		if (needsRecovery && Physics.Raycast(transform.position, Vector3.down, col.bounds.extents.y + 0.1f, ~0, QueryTriggerInteraction.Ignore))
+		{
+			waitTimer = WAIT_TIME;
+
+			navAgent.enabled = false;
+			rb.isKinematic = false;
+			
+			Vector3 randomPos = Random.onUnitCircle;
+			Vector3 launchDir = new Vector3(-Mathf.Abs(randomPos.x), 0.5f, -Mathf.Abs(randomPos.y));
+			rb.AddForce(launchDir * 2f, ForceMode.Impulse);
+		}
+			
+		if (needsRecovery || navAgent.hasPath || navAgent.remainingDistance > 0.25f)
 			return;
 		
-		waitTimer -= Time.deltaTime;
-		if (waitTimer <= 0f && TryGetRandomDestination(3f, out Vector3 destination))
+		if (nextTargetDestination != Vector3.zero )
+		{
+			waitTimer = WAIT_TIME;
+			navAgent.SetDestination(nextTargetDestination);
+			nextTargetDestination = Vector3.zero;
+		}
+		else if (TryGetRandomDestination(15f, out Vector3 destination))
 		{
 			waitTimer = WAIT_TIME;
 			navAgent.SetDestination(destination);
 		}
+	}
+
+	private void Escape(bool _correctStation)
+	{
+		if (metal.Pickable.State == Pickable.PickableState.HELD)
+		{
+			Vector3 randomPos = Random.onUnitCircle;
+			Vector3 dropDir = new Vector3(randomPos.x, 0.8f, randomPos.y);
+			FindAnyObjectByType<PlayerController>().ForceDrop(transform.position, dropDir * 2f);
+		}
+		else if (metal.Pickable.State == Pickable.PickableState.IN_STATION && _correctStation)
+		{
+			ForgeSessionController.Instance.EndSession();
+
+			Vector3 randomPos = Random.onUnitCircle;
+			Vector3 dropDir = new Vector3(-Mathf.Abs(randomPos.x), 1.2f, -Mathf.Abs(randomPos.y));
+			metal.Pickable.ForceReleaseFromStation(transform.position + dropDir, dropDir * 1.5f);
+		}
+		
+		isEscaping = true;
 	}
 
 	private void OnCollisionEnter(Collision collision)
@@ -81,7 +158,31 @@ public class LivingMetalAgent : MonoBehaviour
 		if (collision.gameObject.CompareTag("Floor") && metal.Pickable.State == Pickable.PickableState.FREE)
 		{
 			navAgent.enabled = true;
+			
+			if (navAgent.hasPath)
+				navAgent.ResetPath();
+			
 			rb.isKinematic = true;
+			isEscaping = false;
+		}
+	}
+	
+	private void OnTriggerStay(Collider other)
+	{
+		if (metal.Pickable.State != Pickable.PickableState.FREE || metal.IsWorkable)
+			return;
+
+		if (other.gameObject.TryGetComponent(out Furnace furnace))
+		{
+			if (furnace.HasMetal)
+			{
+				HeatableMetal containedMetal = furnace.ContainedMetal;
+
+				Vector3 dropDir = new Vector3(Random.Range(-0.5f, 0.5f), 0f, -1f);
+				containedMetal.Pickable.ForceReleaseFromStation(containedMetal.transform.position + dropDir, dropDir * 1.8f);
+			}
+
+			furnace.TryUse(metal.Pickable);
 		}
 	}
 
@@ -89,6 +190,10 @@ public class LivingMetalAgent : MonoBehaviour
 	{
 		navAgent.enabled = false;
 		waitTimer = WAIT_TIME;
+		isEscaping = false;
+		
+		if (_state == Pickable.PickableState.HELD || _state == Pickable.PickableState.IN_STATION)
+			angerTimer = TIME_TO_ANGER;
 
 		UpdateForgeImage();
 	}
@@ -201,6 +306,7 @@ public class LivingMetalAgent : MonoBehaviour
 		if (forgeImage != null)
 			Destroy(forgeImage.gameObject);
 	}
+
 
 	public void SetForgeSprites(LivingMetalSprites _sprites)
 	{

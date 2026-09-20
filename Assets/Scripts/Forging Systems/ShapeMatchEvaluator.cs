@@ -58,19 +58,6 @@ public class ShapeMatchEvaluator : MonoBehaviour
 
 	private CachedQuality cachedQuality;
 
-	public ShapeQuality EvaluateQuality(IReadOnlyList<Vector2> _metalVertices, IReadOnlyList<Vector2> _targetVertices)
-	{
-		bool hasMetalOutline = _metalVertices != null && _metalVertices.Count >= PolygonGeometry.MinimumVertexCount;
-		bool hasTargetOutline = _targetVertices != null && _targetVertices.Count >= PolygonGeometry.MinimumVertexCount;
-		if (!hasMetalOutline || !hasTargetOutline)
-			return ShapeQuality.Incomplete;
-
-		if (!IsCached(_metalVertices, _targetVertices))
-			RecomputeCache(_metalVertices, _targetVertices);
-		
-		return cachedQuality.quality;
-	}
-
 	public float EvaluateMatchPercent(IReadOnlyList<Vector2> _metalVertices, IReadOnlyList<Vector2> _targetVertices)
 	{
 		bool hasMetalOutline = _metalVertices != null && _metalVertices.Count >= PolygonGeometry.MinimumVertexCount;

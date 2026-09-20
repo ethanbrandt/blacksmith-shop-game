@@ -267,6 +267,14 @@ public class PlayerController : MonoBehaviour
 		OnPickUp?.Invoke(null);
 	}
 
+	public void ForceDrop(Vector3 _worldPos, Vector3 _velocity)
+	{
+		held.Drop(_worldPos, _velocity);
+		
+		held = null;
+		OnPickUp?.Invoke(null);
+	}
+
 	Vector3 GetFacing()
 	{
 		if (moveDir.sqrMagnitude > 0.01f)

@@ -17,16 +17,16 @@ MonoBehaviour:
   forgeHeatHeuristic: 0
   meltHeatHeuristic: 0
   furnaceHeatTransferRate: 55
-  worldAmbientCoolRate: 12
+  worldAmbientCoolRate: 8
   referenceMaxTemp: 1000
   mobilityByHeat:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 3
       time: 0
-      value: 0.15
+      value: 0.40094605
       inSlope: 0
-      outSlope: 0.85
+      outSlope: 0
       tangentMode: 0
       weightedMode: 0
       inWeight: 0
@@ -35,7 +35,7 @@ MonoBehaviour:
       time: 1
       value: 1
       inSlope: 0.85
-      outSlope: 0
+      outSlope: 0.85
       tangentMode: 0
       weightedMode: 0
       inWeight: 0
@@ -48,9 +48,9 @@ MonoBehaviour:
     m_Curve:
     - serializedVersion: 3
       time: 0
-      value: 0.1
+      value: 0.500342
       inSlope: 0
-      outSlope: 0.9
+      outSlope: 0
       tangentMode: 0
       weightedMode: 0
       inWeight: 0
@@ -59,7 +59,7 @@ MonoBehaviour:
       time: 1
       value: 1
       inSlope: 0.9
-      outSlope: 0
+      outSlope: 0.9
       tangentMode: 0
       weightedMode: 0
       inWeight: 0
@@ -72,21 +72,21 @@ MonoBehaviour:
     m_Curve:
     - serializedVersion: 3
       time: 0
-      value: 1.2
-      inSlope: 0
-      outSlope: -0.35000002
+      value: 1.1973778
+      inSlope: -0.03014404
+      outSlope: -0.03014404
       tangentMode: 0
       weightedMode: 0
       inWeight: 0
-      outWeight: 0
+      outWeight: 0.07872928
     - serializedVersion: 3
       time: 1
-      value: 0.85
-      inSlope: -0.35000002
-      outSlope: 0
+      value: 0.9995972
+      inSlope: -0.4246309
+      outSlope: -0.4246309
       tangentMode: 0
       weightedMode: 0
-      inWeight: 0
+      inWeight: 0.056629837
       outWeight: 0
     m_PreInfinity: 2
     m_PostInfinity: 2
@@ -167,7 +167,7 @@ MonoBehaviour:
   overheatPulseColor: {r: 1, g: 0.95, b: 0.35, a: 1}
   overheatPulseSpeed: 6
   overheatPulseStrength: 0.75
-  moveSpeed: 2
+  moveSpeed: 4
   sprites:
     sSprite: {fileID: -278101151, guid: 3d4def1e514b477459598eeea05ae3ee, type: 3}
     aSprite: {fileID: 277883415, guid: 3d4def1e514b477459598eeea05ae3ee, type: 3}

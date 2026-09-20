@@ -16,6 +16,8 @@ public class QuenchVat : Station
 
 	private QuenchSteamParticle[] steamParticlePool;
 
+	public bool HasMetal => containedMetal != null;
+	public HeatableMetal ContainedMetal => containedMetal;
     public override Highlightable Highlight { get { return highlight; } }
 
     public override bool CanAccept(Pickable _pickable)
@@ -23,7 +25,7 @@ public class QuenchVat : Station
 	    if (!_pickable.TryGetComponent(out HeatableMetal heatableMetal))
 		    return false;
 	    
-        return !containedMetal && _pickable.Type == Pickable.PickableType.HEATABLE_METAL && heatableMetal.IsQuenchTemp;
+        return !containedMetal && _pickable.Type == Pickable.PickableType.HEATABLE_METAL && heatableMetal.IsWorkable;
     }
 
     public override bool TryUse(Pickable _pickable)
@@ -68,7 +70,7 @@ public class QuenchVat : Station
 
 		EnsureSocket();
 
-		bool shouldQuench = metal.IsQuenchTemp;
+		bool shouldQuench = metal.IsWorkable;
 		if (!shouldQuench)
 		{
 			// TODO add clear feedback that the metal is too cold to quench

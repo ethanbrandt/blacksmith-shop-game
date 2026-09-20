@@ -135,7 +135,6 @@ public static class PolygonGeometry
 
 	static bool SegmentsIntersect(Vector2 firstStart, Vector2 firstEnd, Vector2 secondStart, Vector2 secondEnd)
 	{
-		// Most edge pairs are far apart. Avoid detailed tests during strike substeps.
 		if (Mathf.Max(firstStart.x, firstEnd.x) < Mathf.Min(secondStart.x, secondEnd.x) - IntersectionTolerance ||
 			Mathf.Max(secondStart.x, secondEnd.x) < Mathf.Min(firstStart.x, firstEnd.x) - IntersectionTolerance ||
 			Mathf.Max(firstStart.y, firstEnd.y) < Mathf.Min(secondStart.y, secondEnd.y) - IntersectionTolerance ||
@@ -189,7 +188,48 @@ public static class PolygonGeometry
 		return true;
 	}
 
-	/// <summary>Ear clipping with original vertex indices; accepts either winding and collinear perimeter samples.</summary>
+	public static bool TryClosestPointOnOutline(IReadOnlyList<Vector2> outline, Vector2 point, Vector2 outward, out Vector2 closest, out float distance, float minNormalAlignment = 0.25f)
+	{
+		closest = point;
+		distance = float.MaxValue;
+
+		if (outline == null || outline.Count < 3 || outward.sqrMagnitude <= 0.000001f)
+			return false;
+		
+		outward.Normalize();
+		float bestDistanceSq = float.PositiveInfinity;
+		bool found = false;
+
+		for (int i = 0; i < outline.Count; i++)
+		{
+			Vector2 a = outline[i];
+			Vector2 b = outline[(i + 1) % outline.Count];
+			Vector2 edge = b - a;
+			
+			if (edge.sqrMagnitude <= 0.000001f)
+				continue;
+
+			Vector2 edgeOutward = new Vector2(edge.y, -edge.x).normalized * Mathf.Sign(SignedArea(outline));
+			if (Vector2.Dot(outward, edgeOutward) < minNormalAlignment)
+				continue;
+
+			Vector2 candidate = ClosestOnSegment(point, a, b);
+			float distanceSq = (candidate - point).sqrMagnitude;
+
+			if (distanceSq < bestDistanceSq)
+			{
+				bestDistanceSq = distanceSq;
+				closest = candidate;
+				found = true;
+			}
+		}
+
+		if (found)
+			distance = Mathf.Sqrt(bestDistanceSq);
+
+		return found;
+	}
+
 	public static bool Triangulate(IReadOnlyList<Vector2> polygon, List<int> triangles, List<int> remainingIndices)
 	{
 		triangles.Clear();

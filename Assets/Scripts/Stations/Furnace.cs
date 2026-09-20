@@ -72,6 +72,9 @@ public class Furnace : Station
 
 	public override bool CanAccept(Pickable _pickable)
 	{
+		if (_pickable.State == Pickable.PickableState.FREE && _pickable.TryGetComponent(out LivingMetalAgent _) && _pickable.TryGetComponent(out HeatableMetal metal) && metal.IsMelting)
+			return false;
+		
 		if (containedMetal)
 			return _pickable.Type == Pickable.PickableType.FUEL;
 

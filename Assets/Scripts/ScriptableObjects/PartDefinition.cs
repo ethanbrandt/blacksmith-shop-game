@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SocialPlatforms.Impl;
 
 [CreateAssetMenu(fileName = "PartDefinition", menuName = "Forging/PartDefinition", order = 2)]
 public class PartDefinition : ScriptableObject
@@ -24,9 +25,10 @@ public class PartDefinition : ScriptableObject
 	[Tooltip("One flag per outline edge. Edge i runs from outlineLocal[i] to outlineLocal[(i+1) % count].")]
 	public bool[] outlineEdgeNeedsSharpening = System.Array.Empty<bool>();
 
-	[Header("Optional Defaults")]
-	public MetalType defaultMetalType;
-
+	[Header("Scoring")]
+	public ScoreRankBenchmarks forgingScores;
+	public ScoreRankBenchmarks grindingScores;
+	
 	private class CachedOutline
 	{
 		public IReadOnlyList<Vector2> outline;

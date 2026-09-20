@@ -12,7 +12,7 @@ public class SlimeManager : MonoBehaviour
 	private ObjectPool<SlimeParticle> particlePool;
 	private ObjectPool<SlimePuddle> puddlePool;
 	
-	private float particleSpawnTimer = 2f;
+	private float particleSpawnTimer;
 
 	void Awake()
 	{
@@ -52,6 +52,7 @@ public class SlimeManager : MonoBehaviour
 	public void Initialize(HeatableMetal _metal)
 	{
 		slimyMetalInstance = _metal;
+		particleSpawnTimer = minSlimeParticleSpawnTime;
 	}
 
 	void Update()

@@ -94,6 +94,9 @@ public class Anvil : Station
 		if (!pickable.TryGetComponent(out HeatableMetal metal))
 			return false;
 
+		if (pickable.TryGetComponent(out LivingMetalAgent livingMetal) && livingMetal.IsEscaping)
+			return false;
+
 		EnsureSocket();
 		if (!pickable.TryPlaceInStation(this, metalSocket))
 			return false;

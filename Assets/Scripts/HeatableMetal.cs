@@ -45,7 +45,7 @@ public class HeatableMetal : MonoBehaviour
 	public PartDefinition PartDefinition => partDefinition;
 	public Pickable Pickable => pickable;
 	public float Temperature => temperature;
-	public bool IsQuenchTemp => metalType != null && metalType.IsWorkable(Heat01);
+	public bool IsWorkable => metalType != null && metalType.IsWorkable(Heat01);
 	public bool IsMelting => metalType != null && metalType.IsMelting(Heat01) && pickable.Type == Pickable.PickableType.HEATABLE_METAL;
 	public float Heat01 => metalType != null ? metalType.NormalizeHeat01(temperature) : 0f;
 	public IReadOnlyList<Vector2> ShapeVertices => shapeVertices;
@@ -172,7 +172,8 @@ public class HeatableMetal : MonoBehaviour
 		if (shapeMatchEvaluator == null || partDefinition == null || shapeVertices == null)
 			return ShapeQuality.Incomplete;
 
-		return shapeMatchEvaluator.EvaluateQuality(shapeVertices, partDefinition.outlineLocal);
+		float matchPercent = shapeMatchEvaluator.EvaluateMatchPercent(shapeVertices, partDefinition.outlineLocal);
+		return (ShapeQuality)partDefinition.forgingScores.Evaluate(matchPercent);
 	}
 
 	public float GetMatchPercent()
@@ -185,16 +186,51 @@ public class HeatableMetal : MonoBehaviour
 
 	public void Quench()
 	{
+		SmoothOnQuench(0.2f, 0.5f);
+		
 		temperature = ambientTemperature;
 		overheatTimer = 0f;
+		
 		if (visualRenderer == null)
 			return;
+		
 		var quenchColor = metalType.GetQuenchColor();
 		tintBlock ??= new MaterialPropertyBlock();
 		visualRenderer.GetPropertyBlock(tintBlock);
 		tintBlock.SetColor(BaseColorId, quenchColor);
 		tintBlock.SetColor(ColorId, quenchColor);
 		visualRenderer.SetPropertyBlock(tintBlock);
+	}
+
+	private void SmoothOnQuench(float strength, float magnetRadius)
+	{
+		int count = shapeVertices.Count;
+		if (count < PolygonGeometry.MinimumVertexCount)
+			return;
+
+		var smoothed = new List<Vector2>(count);
+		var outline = partDefinition.BuildForgeOutline(Vector2.zero);
+
+		for (int i = 0; i < count; i++)
+		{
+			Vector2 prev = shapeVertices[(i - 1 + count) % count];
+			Vector2 curr = shapeVertices[i];
+			Vector2 next = shapeVertices[(i + 1) % count];
+
+			Vector2 avg = (prev + curr + next) / 3f;
+			smoothed.Add(Vector2.Lerp(curr, avg, strength));
+
+			Vector2 outward = PolygonGeometry.VertexOutward(shapeVertices, i);
+			if (magnetRadius > 0f && PolygonGeometry.TryClosestPointOnOutline(outline, smoothed[i], outward, out Vector2 closest, out float distance))
+			{
+				float proximity = Mathf.Clamp01(1f - distance / magnetRadius);
+				float pull = Mathf.Clamp01(magnetRadius * proximity * proximity);
+
+				smoothed[i] = Vector2.Lerp(smoothed[i], closest, pull);
+			}
+		}
+
+		TryCommitShapeVertices(smoothed);
 	}
 
 	public bool TryCommitShapeVertices(IReadOnlyList<Vector2> _shapeVertices)
@@ -210,6 +246,7 @@ public class HeatableMetal : MonoBehaviour
 		for (int i = 0; i < _shapeVertices.Count; i++)
 			shapeVertices.Add(_shapeVertices[i]);
 		
+		ShapeChanged?.Invoke();
 		return true;
 	}
 

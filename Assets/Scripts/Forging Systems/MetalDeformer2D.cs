@@ -532,7 +532,7 @@ public class MetalDeformer2D : MonoBehaviour
 			if (influenceBuffer[i] <= 0f)
 				continue;
 			
-			if (!TryClosestPointOnOutline(vertices[i], PolygonGeometry.VertexOutward(strikeStart, i), out Vector2 closest, out float outlineDist))
+			if (!PolygonGeometry.TryClosestPointOnOutline(targetOutline, vertices[i], PolygonGeometry.VertexOutward(strikeStart, i), out Vector2 closest, out float outlineDist))
 				continue;
 
 			float reach = Mathf.Min(magnetRadius, impactRadius);
@@ -568,7 +568,7 @@ public class MetalDeformer2D : MonoBehaviour
 		if (targetOutline == null || targetOutline.Length < 2)
 			return float.MaxValue;
 
-		if (!TryClosestPointOnOutline(point, outward, out _, out float dist))
+		if (!PolygonGeometry.TryClosestPointOnOutline(targetOutline, point, outward, out _, out float dist))
 			return float.MaxValue;
 
 		return dist;
@@ -632,32 +632,4 @@ public class MetalDeformer2D : MonoBehaviour
 			c += vertices[i];
 		return c / Mathf.Max(1, vertices.Count);
 	}
-
-	bool TryClosestPointOnOutline(Vector2 point, Vector2 outward, out Vector2 closest, out float distance)
-	{
-		closest = point;
-		distance = float.MaxValue;
-		if (targetOutline == null || targetOutline.Length < 2)
-			return false;
-		float winding = Mathf.Sign(PolygonGeometry.SignedArea(targetOutline));
-		for (int i = 0; i < targetOutline.Length; i++)
-		{
-			Vector2 a = targetOutline[i];
-			Vector2 b = targetOutline[(i + 1) % targetOutline.Length];
-			Vector2 edge = b - a;
-			Vector2 targetOutward = new Vector2(edge.y, -edge.x).normalized * winding;
-			if (Vector2.Dot(outward, targetOutward) < 0.25f)
-				continue;
-			Vector2 c = PolygonGeometry.ClosestOnSegment(point, a, b);
-			float d = Vector2.Distance(point, c);
-			if (d < distance)
-			{
-				distance = d;
-				closest = c;
-			}
-		}
-
-		return distance < float.MaxValue;
-	}
-
 }

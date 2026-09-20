@@ -80,7 +80,7 @@ public class OperationsHUDController : MonoBehaviour
 	        UpdateUI(currentMetal);
         }
         
-        quenchStatusIcon.sprite = currentMetal.IsQuenchTemp ? null : lockIcon;
+        quenchStatusIcon.sprite = currentMetal.IsWorkable ? null : lockIcon;
     }
 
     private void OnPickUpEvent(Transform _transform)

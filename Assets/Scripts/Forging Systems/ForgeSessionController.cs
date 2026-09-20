@@ -533,8 +533,8 @@ public class ForgeSessionController : MonoBehaviour
 	void UpdateQualityStatusElements()
 	{
 		IReadOnlyList<Vector2> localTarget = activeMetal.PartDefinition.BuildForgeOutline(Vector2.zero);
-		ShapeQuality shapeQuality = evaluator.EvaluateQuality(activeMetal.ShapeVertices, localTarget);
-		uint quality = (uint)shapeQuality;
+		float shapeMatchPercent = evaluator.EvaluateMatchPercent(activeMetal.ShapeVertices, localTarget);
+		uint quality = (uint)activeMetal.PartDefinition.forgingScores.Evaluate(shapeMatchPercent);
 		
 		dLight.EnableInClassList("quality-light-on", true);
 		qualityLabel.text = "AWFUL";

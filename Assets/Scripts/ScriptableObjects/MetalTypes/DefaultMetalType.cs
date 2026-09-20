@@ -55,8 +55,9 @@ public class DefaultMetalType : MetalType
 	{
 		if (!applyHeatTint)
 			return metalColor;
-		
-		Color heatedColor = Color.Lerp(metalColor, Color.Lerp(metalColor, heatTintGradient.Evaluate(_heat01), metalColorBlend), _heat01);
+
+		Color heatGradientSample = heatTintGradient.Evaluate(_heat01);
+		Color heatedColor = Color.Lerp(Color.Lerp(metalColor, heatGradientSample, _heat01), heatGradientSample, metalColorBlend);
 
 		if (showOverheatIndicator && IsMelting(_heat01) && !_avoidPulse)
 		{

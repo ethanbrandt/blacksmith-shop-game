@@ -159,9 +159,16 @@ public class Pickable : MonoBehaviour
 		Release(worldPosition, velocity);
 	}
 
+	public void ForceReleaseFromStation(Vector3 worldPosition, Vector3 velocity)
+	{
+		if (state != PickableState.IN_STATION)
+			return;
+		
+		Release(worldPosition, velocity);
+	}
+
 	void Release(Vector3 worldPosition, Vector3 velocity)
 	{
-
 		state = PickableState.FREE;
 		OnStateChanged?.Invoke(PickableState.FREE);
 		

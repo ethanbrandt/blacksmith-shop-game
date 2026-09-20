@@ -1939,9 +1939,9 @@ MonoBehaviour:
   minInfluence: 0.11
   inflateMix: 0.151
   splitEdgeUnderHammer: 1
-  splitIfFartherThan: 0.18
+  splitIfFartherThan: 0.15
   maxVertices: 96
-  surfaceTension: 0.65
+  surfaceTension: 0.5
   tensionIterations: 5
   tensionIncludesAdjacency: 1
   sharpAngleDegrees: 50
