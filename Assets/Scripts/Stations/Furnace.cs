@@ -15,6 +15,7 @@ public class Furnace : Station
 	[SerializeField] float fuelBurnRate = 4f;
 	[SerializeField] float minFuelToStayLit = 0.5f;
 	[SerializeField] float minVelToAcceptFuel = 1f;
+	[SerializeField] float fuelInsertTempIncrease = 30f;
 
 	[Header("Temperature")]
 	[SerializeField] float ambientTemperature = 20f;
@@ -188,6 +189,7 @@ public class Furnace : Station
 		}
 
 		fuel = Mathf.Min(maxFuel, fuel + add);
+		internalTemperature = Mathf.Clamp(internalTemperature + fuelInsertTempIncrease, ambientTemperature, maxTemperature);
 		Destroy(pickable.gameObject);
 		return true;
 	}

@@ -109,10 +109,9 @@ public class DefaultMetalType : MetalType
 
 	float RemapWorldHeatToForgeCurve(float _heat01)
 	{
-		const float workingCurveHeat = 0.55f;
 		if (_heat01 <= minHeatToForge)
-			return minHeatToForge <= 0.0001f ? 0f : workingCurveHeat * (_heat01 / minHeatToForge);
+			return minHeatToForge <= 0.0001f ? 0f : minHeatToForge;
 
-		return Mathf.Lerp(workingCurveHeat, 1f, Mathf.InverseLerp(minHeatToForge , 1f, _heat01));
+		return Mathf.InverseLerp(minHeatToForge , meltStartHeat, _heat01);
 	}
 }
