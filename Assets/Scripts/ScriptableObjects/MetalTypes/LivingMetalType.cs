@@ -135,7 +135,6 @@ public class LivingMetalType : MetalType
 		if (_heat01 <= minHeatToForge)
 			return minHeatToForge <= 0.0001f ? 0f : minHeatToForge;
 
-		Debug.Log(Mathf.InverseLerp(minHeatToForge , meltStartHeat, _heat01));
 		return Mathf.InverseLerp(minHeatToForge , meltStartHeat, _heat01);
 	}
 }

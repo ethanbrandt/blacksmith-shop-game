@@ -11,6 +11,7 @@ public class PlayerController : MonoBehaviour
 	[SerializeField] float throwSpeed = 8f;
 	[SerializeField] float throwUpSpeed = 2.5f;
 	[SerializeField] float dropForward = 0.9f;
+	[SerializeField] Transform actor;
 
 	[Header("Slime Sliding")]
 	[SerializeField, Min(0.1f)] float slimeSlideDuration = 3f;
@@ -75,6 +76,8 @@ public class PlayerController : MonoBehaviour
 		}
 
 		rb.linearVelocity = new Vector3(targetVelocity.x, rb.linearVelocity.y, targetVelocity.z);
+		Vector3 facing = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
+		actor.rotation = Quaternion.RotateTowards(actor.rotation, Quaternion.LookRotation(facing, Vector3.up), 360f * Time.fixedDeltaTime);
 	}
 
 	public void ApplySlimeSlide()
