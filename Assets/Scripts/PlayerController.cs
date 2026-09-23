@@ -13,6 +13,25 @@ public class PlayerController : MonoBehaviour
 	[SerializeField] float dropForward = 0.9f;
 	[SerializeField] Transform actor;
 
+	[Header("Animation")]
+	[SerializeField] Animator animator;
+	[SerializeField, Min(0.1f)] float idleStimDelay = 8f;
+	[SerializeField, Min(0.01f)] float holdingBlendDuration = 0.15f;
+	[SerializeField, Min(0f)] float animationMovementThreshold = 0.1f;
+
+	static readonly int MovingParameter = Animator.StringToHash("Moving");
+	static readonly int HoldingParameter = Animator.StringToHash("Holding");
+	static readonly int IdleStimParameter = Animator.StringToHash("IdleStim");
+	static readonly int ThrowStatePath = Animator.StringToHash("UpperBodyLayer.Throw");
+	static readonly int ThrowState = Animator.StringToHash("Throw");
+	static readonly int IdleState = Animator.StringToHash("Base Layer.Idle");
+	float idleTime;
+	int upperBodyLayer = -1;
+
+	bool IsThrowAnimationPlaying => animator && upperBodyLayer >= 0 &&
+		(animator.GetCurrentAnimatorStateInfo(upperBodyLayer).shortNameHash == ThrowState ||
+		(animator.IsInTransition(upperBodyLayer) && animator.GetNextAnimatorStateInfo(upperBodyLayer).shortNameHash == ThrowState));
+
 	[Header("Slime Sliding")]
 	[SerializeField, Min(0.1f)] float slimeSlideDuration = 3f;
 	[SerializeField, Min(0f)] float slimeAcceleration = 4f;
@@ -40,6 +59,15 @@ public class PlayerController : MonoBehaviour
 	void Start()
 	{
 		rb = GetComponent<Rigidbody>();
+		if (!animator && actor)
+			animator = actor.GetComponentInChildren<Animator>();
+		if (animator)
+		{
+			animator.applyRootMotion = false;
+			upperBodyLayer = animator.GetLayerIndex("UpperBody");
+			if (upperBodyLayer >= 0)
+				animator.SetLayerWeight(upperBodyLayer, held ? 1f : 0f);
+		}
 	}
 
 	void FixedUpdate()
@@ -77,7 +105,8 @@ public class PlayerController : MonoBehaviour
 
 		rb.linearVelocity = new Vector3(targetVelocity.x, rb.linearVelocity.y, targetVelocity.z);
 		Vector3 facing = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
-		actor.rotation = Quaternion.RotateTowards(actor.rotation, Quaternion.LookRotation(facing, Vector3.up), 360f * Time.fixedDeltaTime);
+		if (facing.sqrMagnitude > 0.0001f)
+			actor.rotation = Quaternion.RotateTowards(actor.rotation, Quaternion.LookRotation(facing, Vector3.up), 720f * Time.fixedDeltaTime);
 	}
 
 	public void ApplySlimeSlide()
@@ -111,6 +140,9 @@ public class PlayerController : MonoBehaviour
 		slimeSlideRemaining = 0f;
 		moveDir = Vector3.zero;
 		moveInputStrength = 0f;
+		idleTime = 0f;
+		if (animator)
+			animator.ResetTrigger(IdleStimParameter);
 		RestoreSlideFriction();
 	}
 
@@ -121,10 +153,49 @@ public class PlayerController : MonoBehaviour
 
 	void Update()
 	{
+		UpdateAnimation();
 		if (held)
 			StationHighlight(held);
 		else
 			PickableHighlight();
+	}
+
+	void UpdateAnimation()
+	{
+		if (!animator || !rb)
+			return;
+
+		bool blocked = IsMinigameBlocking || endOfRound;
+		Vector3 velocity = rb.linearVelocity;
+		bool moving = !blocked && velocity.x * velocity.x + velocity.z * velocity.z >
+			animationMovementThreshold * animationMovementThreshold;
+		bool holding = held != null;
+		animator.SetBool(MovingParameter, moving);
+		animator.SetBool(HoldingParameter, holding);
+		if (upperBodyLayer >= 0)
+		{
+			bool transitioning = animator.IsInTransition(upperBodyLayer);
+			bool currentThrow = animator.GetCurrentAnimatorStateInfo(upperBodyLayer).shortNameHash == ThrowState;
+			bool nextThrow = transitioning && animator.GetNextAnimatorStateInfo(upperBodyLayer).shortNameHash == ThrowState;
+			bool showThrow = nextThrow || (currentThrow && !transitioning);
+			float weight = Mathf.MoveTowards(animator.GetLayerWeight(upperBodyLayer), holding || showThrow ? 1f : 0f, Time.deltaTime / Mathf.Max(0.01f, holdingBlendDuration));
+			animator.SetLayerWeight(upperBodyLayer, weight);
+		}
+
+		if (moving || holding || IsThrowAnimationPlaying || blocked || animator.IsInTransition(0) ||
+			animator.GetCurrentAnimatorStateInfo(0).fullPathHash != IdleState)
+		{
+			idleTime = 0f;
+			animator.ResetTrigger(IdleStimParameter);
+			return;
+		}
+
+		idleTime += Time.deltaTime;
+		if (idleTime >= idleStimDelay)
+		{
+			idleTime = 0f;
+			animator.SetTrigger(IdleStimParameter);
+		}
 	}
 
 	private void StationHighlight(Pickable _pickable)
@@ -268,6 +339,15 @@ public class PlayerController : MonoBehaviour
 
 		held = null;
 		OnPickUp?.Invoke(null);
+
+		if (animator && animator.isActiveAndEnabled && upperBodyLayer >= 0 &&
+			animator.HasState(upperBodyLayer, ThrowStatePath))
+		{
+			idleTime = 0f;
+			animator.ResetTrigger(IdleStimParameter);
+			animator.SetLayerWeight(upperBodyLayer, 1f);
+			animator.CrossFadeInFixedTime(ThrowStatePath, 0.05f, upperBodyLayer, 0f);
+		}
 	}
 
 	public void ForceDrop(Vector3 _worldPos, Vector3 _velocity)

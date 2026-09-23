@@ -5635,11 +5635,15 @@ MonoBehaviour:
   moveSpeed: 4
   pickupRange: 2.2
   placeIntoStationRange: 3
-  holdLocalOffset: {x: 0, y: 1, z: 0}
+  holdLocalOffset: {x: 0, y: 2.04, z: 0}
   throwSpeed: 8
   throwUpSpeed: 2.5
   dropForward: 0.9
   actor: {fileID: 1727715899}
+  animator: {fileID: 0}
+  idleStimDelay: 8
+  holdingBlendDuration: 0.15
+  animationMovementThreshold: 0.1
   slimeSlideDuration: 3
   slimeAcceleration: 4
   slimeDrag: 0.2
@@ -6937,7 +6941,7 @@ PrefabInstance:
     - target: {fileID: -1450447723624764206, guid: 88fb64e3ad9be95428c7133528ea3c81, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: e8e271b2a985dc14e90e3f08dc2891fc, type: 2}
+      objectReference: {fileID: 2100000, guid: 4af0b1ab5f5207349b273ea7d9351f04, type: 2}
     - target: {fileID: -804731622281664130, guid: 88fb64e3ad9be95428c7133528ea3c81, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -6953,7 +6957,7 @@ PrefabInstance:
     - target: {fileID: -219533139691244049, guid: 88fb64e3ad9be95428c7133528ea3c81, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: e8e271b2a985dc14e90e3f08dc2891fc, type: 2}
+      objectReference: {fileID: 2100000, guid: 4af0b1ab5f5207349b273ea7d9351f04, type: 2}
     - target: {fileID: 740220410705241247, guid: 88fb64e3ad9be95428c7133528ea3c81, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -6966,13 +6970,21 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[2]'
       value: 
       objectReference: {fileID: 2100000, guid: 57968c499d33d96458af29f5e362b213, type: 2}
+    - target: {fileID: 740220410705241247, guid: 88fb64e3ad9be95428c7133528ea3c81, type: 3}
+      propertyPath: 'm_Materials.Array.data[3]'
+      value: 
+      objectReference: {fileID: 2100000, guid: c65d262c1ed0be44987ef6f7a2eed45b, type: 2}
     - target: {fileID: 880747696692935610, guid: 88fb64e3ad9be95428c7133528ea3c81, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: e8e271b2a985dc14e90e3f08dc2891fc, type: 2}
+      objectReference: {fileID: 2100000, guid: 4af0b1ab5f5207349b273ea7d9351f04, type: 2}
     - target: {fileID: 919132149155446097, guid: 88fb64e3ad9be95428c7133528ea3c81, type: 3}
       propertyPath: m_Name
       value: Player Character
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 88fb64e3ad9be95428c7133528ea3c81, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1129496810705857465, guid: 88fb64e3ad9be95428c7133528ea3c81, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
@@ -6991,9 +7003,21 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 2100000, guid: c65d262c1ed0be44987ef6f7a2eed45b, type: 2}
     - target: {fileID: 5866666021909216657, guid: 88fb64e3ad9be95428c7133528ea3c81, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5866666021909216657, guid: 88fb64e3ad9be95428c7133528ea3c81, type: 3}
       propertyPath: m_Controller
       value: 
       objectReference: {fileID: 9100000, guid: 4ec1feb28249da645bf03c4f44674deb, type: 2}
+    - target: {fileID: 5866666021909216657, guid: 88fb64e3ad9be95428c7133528ea3c81, type: 3}
+      propertyPath: m_CullingMode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5866666021909216657, guid: 88fb64e3ad9be95428c7133528ea3c81, type: 3}
+      propertyPath: m_ApplyRootMotion
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6745302439343835087, guid: 88fb64e3ad9be95428c7133528ea3c81, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
