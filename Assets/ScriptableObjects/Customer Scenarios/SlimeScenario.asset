@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: SlimeScenario
   m_EditorClassIdentifier: Assembly-CSharp::CustomerScenario
   requestedPiece: {fileID: 11400000, guid: eb358ac113a8acb4f8c82a8756539443, type: 2}
-  dialogueScene: {fileID: 11400000, guid: 761c4fc17fef49d4d8cd5ff14ed686e9, type: 2}
+  dialogueScene: {fileID: 11400000, guid: 2a2c8cbff033c864185e82f3ce4c750b, type: 2}
   pieceTitle: Pickaxe
   piecePreviewSprite: {fileID: -1153105854, guid: 92d746f93f473b94e9e54dd9149c2ca2, type: 3}
   customerName: Slime
