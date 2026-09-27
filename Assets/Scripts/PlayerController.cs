@@ -30,7 +30,7 @@ public class PlayerController : MonoBehaviour
 
 	bool IsThrowAnimationPlaying => animator && upperBodyLayer >= 0 &&
 		(animator.GetCurrentAnimatorStateInfo(upperBodyLayer).shortNameHash == ThrowState ||
-		(animator.IsInTransition(upperBodyLayer) && animator.GetNextAnimatorStateInfo(upperBodyLayer).shortNameHash == ThrowState));
+			(animator.IsInTransition(upperBodyLayer) && animator.GetNextAnimatorStateInfo(upperBodyLayer).shortNameHash == ThrowState));
 
 	[Header("Slime Sliding")]
 	[SerializeField, Min(0.1f)] float slimeSlideDuration = 3f;
@@ -49,9 +49,10 @@ public class PlayerController : MonoBehaviour
 	Pickable held;
 	Highlightable currentHighlight;
 	private bool endOfRound = false;
-	
+
 	static bool IsMinigameBlocking => StationSessionCoordinator.IsActive;
 	public Pickable Held => held;
+	public float SlimedPercentLeft => slimeSlideRemaining / slimeSlideDuration;
 
 	public Action<Transform> OnPickUp;
 	public Action<Transform> OnHighlight;
@@ -100,7 +101,7 @@ public class PlayerController : MonoBehaviour
 			slideVelocity += acceleration * Time.fixedDeltaTime;
 			slideVelocity = Vector3.ClampMagnitude(slideVelocity, Mathf.Max(moveSpeed, horizontalVelocity.magnitude));
 			float recovery = 1f - Mathf.Clamp01(slimeSlideRemaining / Mathf.Max(0.01f, slimeRecoveryDuration));
-			targetVelocity = Vector3.Lerp(slideVelocity, targetVelocity, recovery);
+			targetVelocity = Vector3.Lerp(slideVelocity, targetVelocity, Mathf.Max(0f, recovery - 0.25f));
 		}
 
 		rb.linearVelocity = new Vector3(targetVelocity.x, rb.linearVelocity.y, targetVelocity.z);

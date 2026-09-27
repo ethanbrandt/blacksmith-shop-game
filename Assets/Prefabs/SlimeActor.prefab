@@ -82,7 +82,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: 5d7fe81f24adf694e9c83e9e87cf1ad7, type: 3}
+  m_Sprite: {fileID: -1349562127, guid: 3372e33e4178175428713c669f036483, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -104,3 +104,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 360cef92900a8494bb012b3eae455fc5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DialogueSystem.SlimeDialogueActor
+  neutralSprite: {fileID: -1349562127, guid: 3372e33e4178175428713c669f036483, type: 3}
+  happySprite: {fileID: -924714814, guid: 3372e33e4178175428713c669f036483, type: 3}
+  sadSprite: {fileID: -1040572022, guid: 3372e33e4178175428713c669f036483, type: 3}
+  strongSprite: {fileID: -2043341246, guid: 3372e33e4178175428713c669f036483, type: 3}

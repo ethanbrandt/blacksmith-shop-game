@@ -15,6 +15,7 @@ Shader "Hidden/OutlineShader"
             #include "Packages/com.unity.render-pipelines.core/Runtime/Utilities/Blit.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareNormalsTexture.hlsl"
+            #include "LiquidOutlineTextures.hlsl"
 
             // Uniform Parameters
             
@@ -127,7 +128,7 @@ Shader "Hidden/OutlineShader"
                 }
                 
                 invDepthDifference = clamp(invDepthDifference, 0.0, 1.0);
-                invDepthDifference = clamp(smoothstep(0.9, 0.9, invDepthDifference) * 10.0, 0.0, 1.0);
+                invDepthDifference = step(0.9, invDepthDifference);
 
                 // Directional contrast between cardinal opposites.
                 float d0 = 1.0 - dot(vn[4], vn[cardinals[0]]);
@@ -167,7 +168,10 @@ Shader "Hidden/OutlineShader"
                     {
                         crease_weight = 0;
 
-                        bool visibleEdge = zDelta > 0.000001;
+                        // Zero is cleared/unlabelled background, not another object.
+                        // Let the depth test above handle silhouettes rather than
+                        // turning occasional missing ID samples into interior lines.
+                        bool visibleEdge = vid[idx] > 0.0 && vid[4] > 0.0 && zDelta > 0.000001;
                         has_line = visibleEdge || has_line;
                     }
 
@@ -210,9 +214,20 @@ Shader "Hidden/OutlineShader"
                     alpha = (crease_weight > 0.01) * _CreaseAlpha;
                 }
                 
+                // The line can lie outside its source object. Compare the liquid
+                // with the source edge's depth, not the background at this pixel.
+                float edgeDepth = -(has_line || hasHighlightLine ? vp[closest_idx].z : vp[4].z);
+                float4 liquid = SAMPLE_TEXTURE2D_X(_LiquidNormalDepth, sampler_PointClamp, uv);
+                if (liquid.a > 0 && liquid.a < edgeDepth)
+                {
+                    float opacity = SAMPLE_TEXTURE2D_X(_LiquidMetadata, sampler_PointClamp, uv).y;
+                    alpha *= 1.0 - opacity;
+                }
                 return half4(result, alpha);
             }
             ENDHLSL
         }
+        // A shader dependency keeps the liquid edge pass included in player builds.
+        UsePass "Hidden/TransparentOutline/LiquidEdges"
     }
 }

@@ -4,6 +4,11 @@ namespace DialogueSystem
 {
 	public class SlimeDialogueActor : DialogueActor
 	{
+		[SerializeField] Sprite neutralSprite;
+		[SerializeField] Sprite happySprite;
+		[SerializeField] Sprite sadSprite;
+		[SerializeField] Sprite strongSprite;
+		
 		private SpriteRenderer spriteRenderer;
 
 		void Awake()
@@ -15,7 +20,17 @@ namespace DialogueSystem
 		{
 			switch (_poseName)
 			{
-				case "triumph":
+				case "neutral":
+					spriteRenderer.sprite = neutralSprite;
+					break;
+				case "happy":
+					spriteRenderer.sprite = happySprite;
+					break;
+				case "sad":
+					spriteRenderer.sprite = sadSprite;
+					break;
+				case "strong":
+					spriteRenderer.sprite = strongSprite;
 					break;
 				default:
 					Debug.LogWarning($"{_poseName} is not a valid pose for {gameObject.name}");

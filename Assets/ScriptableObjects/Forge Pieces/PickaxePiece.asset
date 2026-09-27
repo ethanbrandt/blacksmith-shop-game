@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 00127e2c1473187408ca6d3462fca74b, type: 3}
   m_Name: PickaxePiece
   m_EditorClassIdentifier: Assembly-CSharp::Scenario
-  partLayout: {fileID: 11400000, guid: 494f98c7136420349862a1bad8e76998, type: 2}
+  partLayout: {fileID: 11400000, guid: 4718954b81256aa4f85d3dbd489c9d78, type: 2}
   scenarioParts:
-  - partDefinition: {fileID: 11400000, guid: dd87e689b98ec10419873f3bb29dbb9f, type: 2}
+  - partDefinition: {fileID: 11400000, guid: 6fc429b5b8f33db45b63b0fe8ccbdf69, type: 2}
     metalType: {fileID: 11400000, guid: e7242f721bb882343b0486b6b6b7d0cd, type: 2}
   - partDefinition: {fileID: 11400000, guid: 282717b25fa4b7245b6761cd7dd741bb, type: 2}
     metalType: {fileID: 11400000, guid: f42027317e35fa645b79330363e510f2, type: 2}

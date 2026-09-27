@@ -15,8 +15,9 @@ Shader "Hidden/ObjectId"
             Tags { "LightMode" = "UniversalForward" }
 
             ZWrite Off
-            ZTest LEqual
-            Offset -1, -1
+            // Only label the surface that actually won the opaque depth test.
+            // A slope-scaled offset lets hidden, overlapping hair/skin label it.
+            ZTest Equal
             Cull Back
 
             HLSLPROGRAM
@@ -47,7 +48,9 @@ Shader "Hidden/ObjectId"
                 Varyings output;
                 UNITY_SETUP_INSTANCE_ID(input);
                 UNITY_TRANSFER_INSTANCE_ID(input, output);
-                output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
+                // Match ToonLit's ForwardLit transform sequence for depth equality.
+                float3 positionWS = TransformObjectToWorld(input.positionOS.xyz);
+                output.positionCS = TransformWorldToHClip(positionWS);
                 return output;
             }
 

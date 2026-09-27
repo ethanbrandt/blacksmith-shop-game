@@ -16,19 +16,43 @@ MonoBehaviour:
   lines:
   - rawLine:
       speaker: Slime
-      pose: 
+      pose: neutral
       scrollSpeed: 0
-      text: helooos hunan, I ams looksing fors a picksaz fors my advetures!
+      text: helooos hunan, me ams looksing fors a picksaz fors my advetures!
     choices: []
   - rawLine:
       speaker: Slime
-      pose: 
-      scrollSpeed: 0
-      text: wan stron likes me
+      pose: sad
+      scrollSpeed: 1
+      text: 'my lass picksaz brokes an me has no foun new ones '
     choices: []
   - rawLine:
       speaker: Slime
-      pose: 
+      pose: sad
       scrollSpeed: 0
-      text: 'takes dis '
+      text: but me has nos much ores...
+    choices: []
+  - rawLine:
+      speaker: Slime
+      pose: neutral
+      scrollSpeed: 0
+      text: so takes part of me!
+    choices: []
+  - rawLine:
+      speaker: Slime
+      pose: strong
+      scrollSpeed: 1
+      text: make its stron likes me
+    choices: []
+  - rawLine:
+      speaker: Slime
+      pose: happy
+      scrollSpeed: 0
+      text: dens me cans go minings again!
+    choices: []
+  - rawLine:
+      speaker: Slime
+      pose: happy
+      scrollSpeed: 0
+      text: YIPPEEE!!!
     choices: []

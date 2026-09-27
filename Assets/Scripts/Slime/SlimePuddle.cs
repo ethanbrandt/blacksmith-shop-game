@@ -20,7 +20,7 @@ public class SlimePuddle : MonoBehaviour
 		manager = GetComponentInParent<SlimeManager>();
 	}
 	
-	private void OnTriggerEnter(Collider other)
+	private void OnTriggerStay(Collider other)
 	{
 		if (!gameObject.activeInHierarchy)
 			return;
