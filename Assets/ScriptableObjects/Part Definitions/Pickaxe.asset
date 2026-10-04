@@ -1,0 +1,60 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7d3c45066358a0242a7f4c2793673225, type: 3}
+  m_Name: Pickaxe
+  m_EditorClassIdentifier: Assembly-CSharp::PartDefinition
+  displayName: Pickaxe Head
+  isBladed: 1
+  unforgedSprite: {fileID: 0}
+  qualitySprites:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  partSocketSprite: {fileID: 0}
+  outlineLocal:
+  - {x: 0, y: 0.1973176}
+  - {x: -0.52115829, y: 0.15225904}
+  - {x: -1.13402451, y: 0.00273415}
+  - {x: -1.54506982, y: -0.23577362}
+  - {x: -1.81410808, y: -0.44027542}
+  - {x: -1.9940269, y: -0.68016718}
+  - {x: -2.16010581, y: -0.92005895}
+  - {x: -2.20162554, y: -0.62942085}
+  - {x: -2.10474617, y: -0.30187632}
+  - {x: -1.81910003, y: 0.11945072}
+  - {x: -1.37286959, y: 0.52002598}
+  - {x: -0.52115829, y: 0.78909108}
+  - {x: 0, y: 0.83414964}
+  - {x: 0.52115829, y: 0.78909108}
+  - {x: 1.37286959, y: 0.52002598}
+  - {x: 1.81910003, y: 0.11945072}
+  - {x: 2.10474617, y: -0.30187632}
+  - {x: 2.20162554, y: -0.62942085}
+  - {x: 2.16010581, y: -0.92005895}
+  - {x: 1.9940269, y: -0.68016718}
+  - {x: 1.81410808, y: -0.44027542}
+  - {x: 1.54506982, y: -0.23577362}
+  - {x: 1.13402451, y: 0.00273415}
+  - {x: 0.52115829, y: 0.15225904}
+  outlineCenterOffset: {x: 0, y: 0}
+  outlineEdgeNeedsSharpening: 000101010101010101010100000101010101010101010100
+  forgingScores:
+    c: 0.725
+    b: 0.85
+    a: 0.935
+    s: 0.975
+  grindingScores:
+    c: 0
+    b: 0
+    a: 0
+    s: 0

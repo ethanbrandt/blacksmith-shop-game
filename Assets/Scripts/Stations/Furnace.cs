@@ -15,6 +15,7 @@ public class Furnace : Station
 	[SerializeField] float fuelBurnRate = 4f;
 	[SerializeField] float minFuelToStayLit = 0.5f;
 	[SerializeField] float minVelToAcceptFuel = 1f;
+	[SerializeField] float fuelInsertTempIncrease = 30f;
 
 	[Header("Temperature")]
 	[SerializeField] float ambientTemperature = 20f;
@@ -72,10 +73,13 @@ public class Furnace : Station
 
 	public override bool CanAccept(Pickable _pickable)
 	{
+		if (_pickable.State == Pickable.PickableState.FREE && _pickable.TryGetComponent(out LivingMetalAgent _) && _pickable.TryGetComponent(out HeatableMetal metal) && metal.IsMelting)
+			return false;
+		
 		if (containedMetal)
-			return _pickable.Type == Pickable.PickableType.Fuel;
+			return _pickable.Type == Pickable.PickableType.FUEL;
 
-		return _pickable.Type != Pickable.PickableType.QuenchedMetal;
+		return _pickable.Type != Pickable.PickableType.QUENCHED_METAL;
 	}
 
 	public override bool TryUse(Pickable _pickable)
@@ -185,6 +189,7 @@ public class Furnace : Station
 		}
 
 		fuel = Mathf.Min(maxFuel, fuel + add);
+		internalTemperature = Mathf.Clamp(internalTemperature + fuelInsertTempIncrease, ambientTemperature, maxTemperature);
 		Destroy(pickable.gameObject);
 		return true;
 	}
@@ -194,7 +199,7 @@ public class Furnace : Station
 		if (containedMetal != null)
 			return false;
 
-		if (pickable.Type == Pickable.PickableType.QuenchedMetal)
+		if (pickable.Type == Pickable.PickableType.QUENCHED_METAL)
 		{
 			LogText.Instance.SetText("CANNOT INSERT QUENCHED METAL INTO FURNACE");
 			return false;
@@ -235,7 +240,13 @@ public class Furnace : Station
 			fuelGauge.gameObject.SetActive(false);
 	}
 
-	void OnTriggerEnter(Collider other) => TryAcceptFromCollider(other);
+	void OnTriggerEnter(Collider other)
+	{
+		if (other == null)
+			return;
+		
+		TryAcceptFromCollider(other);
+	}
 
 	void TryAcceptFromCollider(Collider other)
 	{

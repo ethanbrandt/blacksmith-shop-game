@@ -19,6 +19,21 @@ public static class PolygonGeometry
 		float projectionFraction = Mathf.Clamp01(Vector2.Dot(point - segmentStart, segment) / segment.sqrMagnitude);
 		return segmentStart + segment * projectionFraction;
 	}
+	
+	public static Bounds ComputeBounds(IReadOnlyList<Vector2> _vertices)
+	{
+		Vector2 min = _vertices[0];
+		Vector2 max = _vertices[0];
+		for (int i = 1; i < _vertices.Count; i++)
+		{
+			min = Vector2.Min(min, _vertices[i]);
+			max = Vector2.Max(max, _vertices[i]);
+		}
+
+		var center = (min + max) * 0.5f;
+		var size = max - min;
+		return new Bounds(center, new Vector3(size.x, size.y, 0.1f));
+	}
 
 	public static bool Contains(Vector2 point, IReadOnlyList<Vector2> polygon)
 	{
@@ -63,6 +78,7 @@ public static class PolygonGeometry
 
 	public static bool IsSimple(IReadOnlyList<Vector2> polygon)
 	{
+		float startTime = Time.unscaledTime;
 		if (polygon == null || polygon.Count < MinimumVertexCount)
 			return false;
 
@@ -92,6 +108,9 @@ public static class PolygonGeometry
 					return false;
 			}
 		}
+		
+		if (Time.unscaledTime - startTime > 0.05f)
+			Debug.Log($"IsSimple runtime: {Time.unscaledTime - startTime}");
 
 		return true;
 	}
@@ -116,7 +135,6 @@ public static class PolygonGeometry
 
 	static bool SegmentsIntersect(Vector2 firstStart, Vector2 firstEnd, Vector2 secondStart, Vector2 secondEnd)
 	{
-		// Most edge pairs are far apart. Avoid detailed tests during strike substeps.
 		if (Mathf.Max(firstStart.x, firstEnd.x) < Mathf.Min(secondStart.x, secondEnd.x) - IntersectionTolerance ||
 			Mathf.Max(secondStart.x, secondEnd.x) < Mathf.Min(firstStart.x, firstEnd.x) - IntersectionTolerance ||
 			Mathf.Max(firstStart.y, firstEnd.y) < Mathf.Min(secondStart.y, secondEnd.y) - IntersectionTolerance ||
@@ -137,8 +155,81 @@ public static class PolygonGeometry
 		bool firstTouchesSecond = IsOnSegment(firstStart, secondStart, secondEnd) || IsOnSegment(firstEnd, secondStart, secondEnd);
 		return secondTouchesFirst || firstTouchesSecond;
 	}
+	
+	public static Vector2 VertexOutward(IReadOnlyList<Vector2> polygon, int index)
+	{
+		Vector2 prev = polygon[index] - polygon[(index - 1 + polygon.Count) % polygon.Count];
+		Vector2 next = polygon[(index + 1) % polygon.Count] - polygon[index];
+		Vector2 tangent = prev.normalized + next.normalized;
+		return new Vector2(tangent.y, -tangent.x).normalized * Mathf.Sign(PolygonGeometry.SignedArea(polygon));
+	}
 
-	/// <summary>Ear clipping with original vertex indices; accepts either winding and collinear perimeter samples.</summary>
+	public static void CopyVertices(IReadOnlyList<Vector2> source, List<Vector2> destination)
+	{
+		if (ReferenceEquals(source, destination))
+			return;
+		
+		destination.Clear();
+		destination.AddRange(source);
+	}
+
+	public static bool IsSameVertices(IReadOnlyList<Vector2> a, IReadOnlyList<Vector2> b)
+	{
+		if (a == null || b == null || a.Count != b.Count)
+			return false;
+		
+		if (ReferenceEquals(a, b))
+			return true;
+
+		for (int i = 0; i < a.Count; i++)
+			if (!a[i].Equals(b[i]))
+				return false;
+
+		return true;
+	}
+
+	public static bool TryClosestPointOnOutline(IReadOnlyList<Vector2> outline, Vector2 point, Vector2 outward, out Vector2 closest, out float distance, float minNormalAlignment = 0.25f)
+	{
+		closest = point;
+		distance = float.MaxValue;
+
+		if (outline == null || outline.Count < 3 || outward.sqrMagnitude <= 0.000001f)
+			return false;
+		
+		outward.Normalize();
+		float bestDistanceSq = float.PositiveInfinity;
+		bool found = false;
+
+		for (int i = 0; i < outline.Count; i++)
+		{
+			Vector2 a = outline[i];
+			Vector2 b = outline[(i + 1) % outline.Count];
+			Vector2 edge = b - a;
+			
+			if (edge.sqrMagnitude <= 0.000001f)
+				continue;
+
+			Vector2 edgeOutward = new Vector2(edge.y, -edge.x).normalized * Mathf.Sign(SignedArea(outline));
+			if (Vector2.Dot(outward, edgeOutward) < minNormalAlignment)
+				continue;
+
+			Vector2 candidate = ClosestOnSegment(point, a, b);
+			float distanceSq = (candidate - point).sqrMagnitude;
+
+			if (distanceSq < bestDistanceSq)
+			{
+				bestDistanceSq = distanceSq;
+				closest = candidate;
+				found = true;
+			}
+		}
+
+		if (found)
+			distance = Mathf.Sqrt(bestDistanceSq);
+
+		return found;
+	}
+
 	public static bool Triangulate(IReadOnlyList<Vector2> polygon, List<int> triangles, List<int> remainingIndices)
 	{
 		triangles.Clear();

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>Serializable station progress. Vertices are relative to the forge origin, including the authored outline offset.</summary>
+/*
 [Serializable]
 public class WorkpieceProgress
 {
@@ -20,3 +21,4 @@ public class WorkpieceProgress
 	public SharpnessQuality sharpness;
 	public float grindMatch;
 }
+*/

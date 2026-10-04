@@ -17,6 +17,7 @@ Shader "Hidden/CompositeShader"
             // URP native declaration for textures and samplers.
             TEXTURE2D(_OutlineTexture);
             SAMPLER(sampler_OutlineTexture);
+            TEXTURE2D(_LiquidOutlineTexture);
 
             half4 frag(Varyings input) : SV_Target
             {
@@ -30,6 +31,8 @@ Shader "Hidden/CompositeShader"
 
                 // Replace color with the outline where alpha is greater than zero.
                 float3 result = lerp(color.rgb, outline.rgb, outline.a);
+                half4 liquidOutline = SAMPLE_TEXTURE2D(_LiquidOutlineTexture, sampler_PointClamp, uv);
+                result = lerp(result, liquidOutline.rgb, liquidOutline.a);
                 
                 return half4(result, 1.0);
             }

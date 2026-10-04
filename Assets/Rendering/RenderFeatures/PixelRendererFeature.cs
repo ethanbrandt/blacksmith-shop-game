@@ -1,7 +1,6 @@
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
-using UnityEngine.Rendering.RenderGraphModule.Util;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.Experimental.Rendering;
 
@@ -67,6 +66,7 @@ public class PixelRendererFeature : ScriptableRendererFeature
     private PixelRenderPass _pixelPass;
     private ObjectIdPass _objectIdPass;
     private HighlightRenderPass _highlightPass;
+    private TransparentOutlinePass _transparentOutlinePass;
     private Material _objectIdMaterial;
     private Material _highlightMaterial;
 
@@ -79,6 +79,7 @@ public class PixelRendererFeature : ScriptableRendererFeature
 
         _objectIdPass = new ObjectIdPass(_objectIdMaterial);
         _highlightPass = new HighlightRenderPass(_highlightMaterial);
+        _transparentOutlinePass = new TransparentOutlinePass();
         _pixelPass = new PixelRenderPass(settings)
         {
             renderPassEvent = RenderPassEvent.AfterRenderingPostProcessing
@@ -107,6 +108,7 @@ public class PixelRendererFeature : ScriptableRendererFeature
             renderer.EnqueuePass(_highlightPass);
         }
 
+        renderer.EnqueuePass(_transparentOutlinePass);
         renderer.EnqueuePass(_pixelPass);
     }
 
@@ -288,6 +290,8 @@ public class PixelRendererFeature : ScriptableRendererFeature
             lowResPointDesc.colorFormat = GraphicsFormat.R8G8B8A8_UNorm; 
             lowResPointDesc.name = "_LowResOutline";
             TextureHandle lowResOutline = renderGraph.CreateTexture(lowResPointDesc);
+            lowResPointDesc.name = "_LowResLiquidOutline";
+            TextureHandle liquidOutline = renderGraph.CreateTexture(lowResPointDesc);
 
             // Composite of the low resolution color and outline.
             lowResDesc.name = "_LowResComposite";
@@ -370,6 +374,15 @@ public class PixelRendererFeature : ScriptableRendererFeature
                     passData.material = _settings.outlineMaterial;
 
                     builder.UseTexture(passData.source, AccessFlags.Read);
+                    // Includes camera depth/normals, object IDs, highlights, and liquid data.
+                    builder.UseGlobalTexture(Shader.PropertyToID("_LiquidNormalDepth"));
+                    builder.UseGlobalTexture(Shader.PropertyToID("_LiquidMetadata"));
+                    if (frameData.Contains<ObjectIdResources>())
+                        builder.UseTexture(frameData.Get<ObjectIdResources>().idTexture);
+                    if (frameData.Contains<HighlightMaskResources>())
+                        builder.UseTexture(frameData.Get<HighlightMaskResources>().texture);
+                    if (resourceData.cameraDepthTexture.IsValid()) builder.UseTexture(resourceData.cameraDepthTexture);
+                    if (resourceData.cameraNormalsTexture.IsValid()) builder.UseTexture(resourceData.cameraNormalsTexture);
                     builder.SetRenderAttachment(passData.destination, 0, AccessFlags.Write);
                     
                     // Expose the outline texture globally for the Composite shader.
@@ -384,16 +397,33 @@ public class PixelRendererFeature : ScriptableRendererFeature
                     });
                 }
                 
-                // Pass 3: Composite the outline over the color.
-                var mpb = new MaterialPropertyBlock();
-                var blitParams = new RenderGraphUtils.BlitMaterialParameters(
-                    lowResColor,          
-                    lowResComposite,      
-                    _settings.compositeMaterial,
-                    0                     
-                );
-                
-                renderGraph.AddBlitPass(blitParams, "Composite_Outline");
+                using (var builder = renderGraph.AddRasterRenderPass<PassData>("Liquid_Outline_LowRes", out var passData))
+                {
+                    passData.source = lowResColor;
+                    passData.material = _settings.outlineMaterial;
+                    builder.UseTexture(lowResColor);
+                    builder.UseGlobalTexture(Shader.PropertyToID("_LiquidNormalDepth"));
+                    builder.UseGlobalTexture(Shader.PropertyToID("_LiquidMetadata"));
+                    builder.UseGlobalTexture(Shader.PropertyToID("_LiquidOutlineColor"));
+                    if (resourceData.cameraDepthTexture.IsValid()) builder.UseTexture(resourceData.cameraDepthTexture);
+                    builder.SetRenderAttachment(liquidOutline, 0, AccessFlags.Write);
+                    builder.SetGlobalTextureAfterPass(liquidOutline, Shader.PropertyToID("_LiquidOutlineTexture"));
+                    builder.SetRenderFunc((PassData data, RasterGraphContext context) =>
+                        Blitter.BlitTexture(context.cmd, data.source, new Vector4(1, 1, 0, 0), data.material, 1));
+                }
+
+                // Pass 3: Composite both masks before the existing sharp upscale.
+                using (var builder = renderGraph.AddRasterRenderPass<PassData>("Composite_Outline", out var passData))
+                {
+                    passData.source = lowResColor;
+                    passData.material = _settings.compositeMaterial;
+                    builder.UseTexture(lowResColor);
+                    builder.UseTexture(lowResOutline);
+                    builder.UseTexture(liquidOutline);
+                    builder.SetRenderAttachment(lowResComposite, 0, AccessFlags.Write);
+                    builder.SetRenderFunc((PassData data, RasterGraphContext context) =>
+                        Blitter.BlitTexture(context.cmd, data.source, new Vector4(1, 1, 0, 0), data.material, 0));
+                }
             }
             else
             {

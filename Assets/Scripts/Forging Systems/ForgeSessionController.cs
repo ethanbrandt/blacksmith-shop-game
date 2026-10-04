@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Rendering.Universal;
@@ -28,6 +29,7 @@ public class ForgeSessionController : MonoBehaviour
 	[SerializeField] ShapeMatchEvaluator evaluator;
 	[SerializeField] ForgeMetalView metalView;
 	[SerializeField] ForgeHammerPreview hammerPreview;
+	[SerializeField] ForgeTargetView targetView;
 	[SerializeField] Transform stageRoot;
 	[SerializeField] RenderTexture forgeTexture;
 	[SerializeField] UIDocument document;
@@ -61,9 +63,7 @@ public class ForgeSessionController : MonoBehaviour
 	float chargeStartTime;
 	float closeInputUnblockTime;
 	
-	private VisualElement quenchTempVisualElement;
-	private VisualElement normalTempVisualElement;
-	private VisualElement coldTempVisualElement;
+	private VisualElement heatGaugeBackground;
 	private Slider heatSlider;
 
 	private Label qualityLabel;
@@ -90,6 +90,8 @@ public class ForgeSessionController : MonoBehaviour
 
 	public bool IsOpen { get; private set; }
 	public static bool IsBlockingPlayer => Instance != null && Instance.IsOpen;
+	public HeatableMetal ActiveMetal => activeMetal;
+	public MetalDeformer2D MetalDeformer => deformer;
 
 	public static ForgeSessionController EnsureExists()
 	{
@@ -127,10 +129,7 @@ public class ForgeSessionController : MonoBehaviour
 
 		heatSlider = heatElement.Q<Slider>("HeatSlider");
 		
-		var heatGaugeBackground = heatElement.Q<VisualElement>("HeatGaugeBackground");
-		quenchTempVisualElement = heatGaugeBackground.Q<VisualElement>("QuenchTemp");
-		normalTempVisualElement = heatGaugeBackground.Q<VisualElement>("NormalTemp");
-		coldTempVisualElement = heatGaugeBackground.Q<VisualElement>("ColdTemp");
+		heatGaugeBackground = heatElement.Q<VisualElement>("HeatGaugeBackground");
 
 		var qualityElement = document.rootVisualElement.Q<VisualElement>("QualityElement");
 		
@@ -174,7 +173,8 @@ public class ForgeSessionController : MonoBehaviour
 	}
 
 	void OnDisable() => EndSession();
-	
+
+	private float statusTimer = 0f;
 	void Update()
 	{
 		if (!IsOpen)
@@ -188,8 +188,14 @@ public class ForgeSessionController : MonoBehaviour
 
 		if (deformer != null)
 			deformer.Heat = activeMetal.Heat01;
+
+		statusTimer -= Time.deltaTime;
+		if (statusTimer <= 0f)
+		{
+			statusTimer = 0.25f;
+			UpdateStatus();
+		}
 		
-		UpdateStatus();
 		HandleForgeInput();
 	}
 
@@ -204,22 +210,22 @@ public class ForgeSessionController : MonoBehaviour
 		
 		if (!StationSessionCoordinator.TryAcquire(this))
 			return;
+
+		metal.ShapeChanged += OnMetalShapeChanged;
 		
 		activeAnvil = anvil;
 		activeMetal = metal;
 		forgeOrigin = stageRoot != null ? new Vector2(stageRoot.position.x, stageRoot.position.y) : new Vector2(stageWorldPosition.x, stageWorldPosition.y);
 
-		deformer.ShapeCenter = forgeOrigin;
 		deformer.SetMetalType(metal.MetalType);
 		deformer.Heat = metal.Heat01;
 		
-		if (metal.HasForgeProgress)
-			LoadLocalVertices(metal.ForgedVertices);
-		else
-			deformer.InitializeShape();
-		
-		Vector2[] outline = metal.PartDefinition != null ? metal.PartDefinition.BuildForgeOutline(forgeOrigin) : System.Array.Empty<Vector2>();
-		evaluator.Configure(deformer, outline.Length >= 3 ? outline : null);
+		LoadLocalVertices(metal.ShapeVertices);
+
+		IReadOnlyList<Vector2> targetOutlineList = metal.PartDefinition.BuildForgeOutline(forgeOrigin);
+		Vector2[] targetOutline = targetOutlineList.ToArray();
+		deformer.SetTargetOutline(targetOutline);
+		targetView.Configure(targetOutline);
 		metalView.Configure(deformer);
 		
 		if (hammerPreview != null)
@@ -240,18 +246,54 @@ public class ForgeSessionController : MonoBehaviour
 		closeInputUnblockTime = Time.unscaledTime + CloseInputDelay;
 		IsOpen = true;
 		
+		BuildHeatGaugeRegions(heatGaugeBackground, metal.MetalType);
+		
 		UpdateStatus();
 		UpdateHammerPreview();
 
 		SetHidden(false);
 	}
 
+	private void BuildHeatGaugeRegions(VisualElement _container, MetalType _metalType)
+	{
+		if (_metalType == null || _container == null)
+			return;
+
+		_container.Clear();
+
+		List<HeatGaugeRegion> heatGaugeRegions = _metalType.GetHeatGaugeRegions();
+		for (int i = 0; i < heatGaugeRegions.Count; i++)
+		{
+			float start = Mathf.Clamp01(heatGaugeRegions[i].startHeat);
+			float end = i + 1 < heatGaugeRegions.Count ? Mathf.Clamp01(heatGaugeRegions[i + 1].startHeat) : 1f;
+			
+			if (end <= start)
+				continue;
+
+			var element = new VisualElement
+			{
+				pickingMode = PickingMode.Ignore,
+				style =
+				{
+					position = Position.Absolute,
+					left = 0,
+					right = 0,
+					bottom = new Length(start * 100f, LengthUnit.Percent),
+					height = new Length((end - start) * 100f, LengthUnit.Percent),
+					backgroundColor = heatGaugeRegions[i].regionColor
+				}
+			};
+			
+			_container.Add(element);
+		}
+	}
+
 	public void EndSession()
 	{
 		if (!IsOpen && activeMetal == null)
 			return;
-		
-		SaveActiveMetal();
+
+		activeMetal.ShapeChanged -= OnMetalShapeChanged;
 		
 		activeAnvil = null;
 		activeMetal = null;
@@ -279,26 +321,27 @@ public class ForgeSessionController : MonoBehaviour
 		EndSession();
 	}
 
+	void OnMetalShapeChanged()
+	{
+		LoadLocalVertices(activeMetal.ShapeVertices);
+	}
+
 	void SaveActiveMetal()
 	{
 		bool hasSaveTarget = activeMetal != null && deformer != null;
 		if (!hasSaveTarget)
 			return;
 		
-		bool hasValidShape = deformer.VertexCount >= PolygonGeometry.MinimumVertexCount;
+		bool hasValidShape = deformer.MetalVertices.Count >= PolygonGeometry.MinimumVertexCount;
 		if (!hasValidShape)
 			return;
 		
 		vertexScratch.Clear();
-		deformer.CopyVerticesTo(vertexScratch);
+		PolygonGeometry.CopyVertices(deformer.MetalVertices, vertexScratch);
 		for (int i = 0; i < vertexScratch.Count; i++)
 			vertexScratch[i] -= forgeOrigin;
 		
-		if (evaluator != null)
-			evaluator.Evaluate();
-		
-		ShapeQuality quality = evaluator != null ? evaluator.Quality : ShapeQuality.Incomplete;
-		activeMetal.SaveForgeProgress(vertexScratch, deformer.Heat, quality, evaluator != null ? evaluator.MatchPercent : 0f, activeMetal.PartDefinition);
+		activeMetal.TryCommitShapeVertices(vertexScratch);
 	}
 
 	void LoadLocalVertices(IReadOnlyList<Vector2> local)
@@ -307,7 +350,7 @@ public class ForgeSessionController : MonoBehaviour
 		for (int i = 0; i < local.Count; i++)
 			vertexScratch.Add(local[i] + forgeOrigin);
 		
-		deformer.LoadVertices(vertexScratch, true);
+		deformer.LoadVertices(vertexScratch);
 	}
 
 	void HandleForgeInput()
@@ -394,7 +437,15 @@ public class ForgeSessionController : MonoBehaviour
 		ResolveStrike(out Vector2 impact, out Vector2 direction, out _);
 		float radius = deformer.ImpactRadius(impact, direction, charge01);
 		charging = false;
+		
+		LoadLocalVertices(activeMetal.ShapeVertices);
 		bool accepted = deformer.TryStrike(impact, direction, charge01);
+
+		if (accepted)
+		{
+			SaveActiveMetal();
+			UpdateStatus();
+		}
 		
 		if (hammerPreview != null)
 			hammerPreview.PlayStrikeFlash(impact, direction, radius, accepted, deformer.LastStrikeLimited);
@@ -477,23 +528,21 @@ public class ForgeSessionController : MonoBehaviour
 	void UpdateHeatStatusElements()
 	{
 		heatSlider.value = activeMetal.Heat01;
-		MetalType metalType = activeMetal.MetalType;
-		
-		float quenchPercent = (1f - metalType.minHeatToQuench);
-		float coldPercent = metalType.minHeatToForge;
-		float normalPercent = 1f - (quenchPercent + coldPercent);
-		
-		quenchTempVisualElement.style.height = new Length(quenchPercent * 100f, LengthUnit.Percent);
-		coldTempVisualElement.style.height = new Length(coldPercent * 100f, LengthUnit.Percent);
-		normalTempVisualElement.style.height = new Length(normalPercent * 100f, LengthUnit.Percent);
 	}
 
 	void UpdateQualityStatusElements()
 	{
-		uint quality = (uint)evaluator.Quality;
+		IReadOnlyList<Vector2> localTarget = activeMetal.PartDefinition.BuildForgeOutline(Vector2.zero);
+		float shapeMatchPercent = evaluator.EvaluateMatchPercent(activeMetal.ShapeVertices, localTarget);
+		uint quality = (uint)activeMetal.PartDefinition.forgingScores.Evaluate(shapeMatchPercent);
 		
 		dLight.EnableInClassList("quality-light-on", true);
 		qualityLabel.text = "AWFUL";
+		
+		cLight.EnableInClassList("quality-light-on", false);
+		bLight.EnableInClassList("quality-light-on", false);
+		aLight.EnableInClassList("quality-light-on", false);
+		sLight.EnableInClassList("quality-light-on", false);
 
 		if (quality >= (uint)ShapeQuality.Flawed)
 		{
@@ -525,14 +574,14 @@ public class ForgeSessionController : MonoBehaviour
 		if (forgeCamera == null || deformer == null)
 			return;
 		
-		Bounds bounds = deformer.GetBounds();
-		bool hasTargetVertices = evaluator != null && evaluator.TargetVertices != null;
-		bool hasTargetOutline = hasTargetVertices && evaluator.TargetVertices.Count >= PolygonGeometry.MinimumVertexCount;
+		Bounds bounds = PolygonGeometry.ComputeBounds(deformer.MetalVertices);
+		bool hasTargetVertices = targetView != null && targetView.TargetVertices != null;
+		bool hasTargetOutline = hasTargetVertices && targetView.TargetVertices.Count >= PolygonGeometry.MinimumVertexCount;
 		if (hasTargetOutline)
 		{
-			var targetBounds = new Bounds(evaluator.TargetVertices[0], Vector3.zero);
-			for (int i = 1; i < evaluator.TargetVertices.Count; i++)
-				targetBounds.Encapsulate(evaluator.TargetVertices[i]);
+			var targetBounds = new Bounds(targetView.TargetVertices[0], Vector3.zero);
+			for (int i = 1; i < targetView.TargetVertices.Count; i++)
+				targetBounds.Encapsulate(targetView.TargetVertices[i]);
 			bounds.Encapsulate(targetBounds);
 		}
 
@@ -564,6 +613,11 @@ public class ForgeSessionController : MonoBehaviour
 			metalView = stageRoot.GetComponent<ForgeMetalView>();
 		if (metalView == null)
 			metalView = stageRoot.gameObject.AddComponent<ForgeMetalView>();
+
+		if (targetView == null)
+			targetView = stageRoot.GetComponent<ForgeTargetView>();
+		if (targetView == null)
+			targetView = stageRoot.gameObject.AddComponent<ForgeTargetView>();
 
 		if (evaluator == null)
 			evaluator = stageRoot.GetComponent<ShapeMatchEvaluator>();

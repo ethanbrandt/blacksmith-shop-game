@@ -147,6 +147,9 @@ public class ObjectIdPass : ScriptableRenderPass
         DrawingSettings drawSettings = RenderingUtils.CreateDrawingSettings(shadersToOverride, renderingData, cameraData, lightData, cameraData.defaultOpaqueSortFlags);
         drawSettings.overrideMaterial = _material;
         drawSettings.overrideMaterialPassIndex = 0;
+        // _ObjectId is a per-renderer property, not an instanced shader property.
+        drawSettings.enableInstancing = false;
+        drawSettings.enableDynamicBatching = false;
         drawSettings.SetShaderPassName(1, new ShaderTagId("UniversalForwardOnly"));
         drawSettings.SetShaderPassName(2, new ShaderTagId("SRPDefaultUnlit"));
 
@@ -159,7 +162,7 @@ public class ObjectIdPass : ScriptableRenderPass
 
             builder.UseRendererList(passData.rendererListHandle);
             builder.SetRenderAttachment(idTexture, 0, AccessFlags.Write);
-            builder.SetRenderAttachmentDepth(resourceData.activeDepthTexture, AccessFlags.ReadWrite);
+            builder.SetRenderAttachmentDepth(resourceData.activeDepthTexture, AccessFlags.Read);
             builder.SetGlobalTextureAfterPass(idTexture, ObjectIdResources.TextureId);
             builder.AllowPassCulling(false);
 

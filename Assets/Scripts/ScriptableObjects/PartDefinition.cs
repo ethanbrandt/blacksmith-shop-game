@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SocialPlatforms.Impl;
 
 [CreateAssetMenu(fileName = "PartDefinition", menuName = "Forging/PartDefinition", order = 2)]
 public class PartDefinition : ScriptableObject
@@ -24,9 +25,19 @@ public class PartDefinition : ScriptableObject
 	[Tooltip("One flag per outline edge. Edge i runs from outlineLocal[i] to outlineLocal[(i+1) % count].")]
 	public bool[] outlineEdgeNeedsSharpening = System.Array.Empty<bool>();
 
-	[Header("Optional Defaults")]
-	public MetalType defaultMetalType;
+	[Header("Scoring")]
+	public ScoreRankBenchmarks forgingScores;
+	public ScoreRankBenchmarks grindingScores;
+	
+	private class CachedOutline
+	{
+		public IReadOnlyList<Vector2> outline;
+		public Vector2 origin;
+	}
 
+	private CachedOutline cachedForgeOutline;
+	private CachedOutline cachedWorldOutline;
+	
 	public string DisplayLabel => string.IsNullOrWhiteSpace(displayName) ? name : displayName;
 	public bool HasValidOutline => PolygonGeometry.IsSimple(outlineLocal);
 	public int OutlineEdgeCount => HasValidOutline ? outlineLocal.Length : 0;
@@ -65,21 +76,41 @@ public class PartDefinition : ScriptableObject
 		return unforgedSprite;
 	}
 
-	public Vector2[] BuildForgeOutline(Vector2 forgeOrigin)
+	public IReadOnlyList<Vector2> BuildForgeOutline(Vector2 forgeOrigin)
 	{
-		return BuildWorldOutline(forgeOrigin);
+		if (cachedForgeOutline == null || cachedForgeOutline.origin != forgeOrigin)
+		{
+			cachedForgeOutline = new CachedOutline
+			{
+				origin = forgeOrigin,
+				outline = BuildWorldOutline(forgeOrigin)
+			};
+		}
+
+		return cachedForgeOutline.outline;
 	}
 
-	public Vector2[] BuildWorldOutline(Vector2 anvilCenter)
+	public IReadOnlyList<Vector2> BuildWorldOutline(Vector2 anvilCenter)
 	{
 		if (!HasValidOutline)
 			return System.Array.Empty<Vector2>();
 
 		Vector2 origin = anvilCenter + outlineCenterOffset;
-		var world = new Vector2[outlineLocal.Length];
-		for (int i = 0; i < outlineLocal.Length; i++)
-			world[i] = origin + outlineLocal[i];
-		return world;
+		
+		if (cachedWorldOutline == null || cachedWorldOutline.origin != origin)
+		{
+			var world = new Vector2[outlineLocal.Length];
+			for (int i = 0; i < outlineLocal.Length; i++)
+				world[i] = origin + outlineLocal[i];
+			
+			cachedWorldOutline = new CachedOutline
+			{
+				origin = origin,
+				outline = world
+			};
+		}
+
+		return cachedWorldOutline.outline;
 	}
 
 	public void SetOutlineLocal(IReadOnlyList<Vector2> points)
@@ -100,6 +131,9 @@ public class PartDefinition : ScriptableObject
 			if (oldEdgeFlags != null && i < oldEdgeFlags.Length)
 				outlineEdgeNeedsSharpening[i] = oldEdgeFlags[i];
 		}
+
+		cachedForgeOutline = null;
+		cachedWorldOutline = null;
 	}
 
 	public void EnsureSharpeningFlagsMatchOutline()

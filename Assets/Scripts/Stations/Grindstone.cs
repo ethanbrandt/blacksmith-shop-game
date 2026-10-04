@@ -30,7 +30,7 @@ public class Grindstone : Station
 	public override bool CanAccept(Pickable _pickable)
 	{
 		bool hasEmptySocket = containedMetal == null;
-		bool hasAcceptedItemType = _pickable != null && _pickable.Type == Pickable.PickableType.QuenchedMetal;
+		bool hasAcceptedItemType = _pickable != null && _pickable.Type == Pickable.PickableType.QUENCHED_METAL;
 		if (!hasEmptySocket || !hasAcceptedItemType)
 			return false;
 		var session = GrindSessionController.Instance;
@@ -116,7 +116,7 @@ public class Grindstone : Station
 	bool CanAccept(HeatableMetal metal, Pickable pickable, out string failReason)
 	{
 		failReason = null;
-		if (pickable.Type != Pickable.PickableType.QuenchedMetal)
+		if (pickable.Type != Pickable.PickableType.QUENCHED_METAL)
 		{
 			failReason = "MUST BE QUENCHED TO GRIND";
 			return false;

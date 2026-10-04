@@ -12,29 +12,6 @@ public enum ShapeQuality
 
 public class ShapeMatchEvaluator : MonoBehaviour
 {
-	const int MinimumGhostFillSortingOrder = 10;
-	const float GhostFillDepthOffset = 0.05f;
-
-	[Header("Target")]
-	[SerializeField] Vector2[] targetVertices;
-	[SerializeField] Color targetOutlineColor = new Color(0.75f, 0.9f, 1f, 0.55f);
-	[Tooltip("Drawn above the metal so the guide stays visible where the billet covers the outline.")]
-	[SerializeField] Color targetGhostOutlineColor = new Color(0.7f, 0.9f, 1f, 0.7f);
-	[SerializeField] Color targetGhostFillColor = new Color(0.55f, 0.8f, 1f, 0.12f);
-	[SerializeField] float targetLineWidth = 0.05f;
-	[SerializeField] float ghostLineWidth = 0.04f;
-	[SerializeField] int outlineSortingOrder = 2;
-	[SerializeField] int ghostOutlineSortingOrder = 12;
-	[SerializeField] int ghostFillSortingOrder = 10;
-	[SerializeField] bool showGhostOverMetal = true;
-	[SerializeField] bool showGhostFill = true;
-
-	[Header("Sampling")]
-	[SerializeField] int sampleResolution = 96;
-	[SerializeField] float boundsPadding = 0.35f;
-	[Tooltip("Small silhouette errors within this distance are accepted when measuring coverage and overflow.")]
-	[SerializeField, Min(0f)] float boundaryTolerance = 0.02f;
-
 	[Header("Quality Thresholds (match %)")]
 	[Range(0f, 1f)]
 	[SerializeField] float perfectThreshold = 0.95f;
@@ -71,138 +48,52 @@ public class ShapeMatchEvaluator : MonoBehaviour
 	[Tooltip("If max vertex protrusion exceeds this, Flawed is blocked (Incomplete only).")]
 	[SerializeField] float flawedMaxSpikeDistance = 0.85f;
 
-	[Header("References")]
-	[SerializeField] MetalDeformer2D metal;
-	[SerializeField] LineRenderer targetOutline;
-	[SerializeField] LineRenderer targetGhostOutline;
-	[SerializeField] MeshFilter ghostFillFilter;
-	[SerializeField] MeshRenderer ghostFillRenderer;
-
-	Mesh _ghostFillMesh;
-	Material _ghostFillMaterial;
-	readonly PolygonMeshBuilder ghostBuilder = new PolygonMeshBuilder();
-	
-	void OnDestroy()
+	private class CachedQuality
 	{
-		if (_ghostFillMesh != null)
-			ForgingVisualUtility.DestroyGenerated(_ghostFillMesh);
+		public IReadOnlyList<Vector2> metalVertices;
+		public IReadOnlyList<Vector2> targetVertices;
+		public ShapeQuality quality;
+		public float matchPercent;
 	}
 
-	public float CoveragePercent { get; private set; }
-	public float OverflowPercent { get; private set; }
-	public float SpikePenaltyPercent { get; private set; }
-	public float MaxVertexProtrusion { get; private set; }
-	public float MatchPercent { get; private set; }
-	public ShapeQuality Quality { get; private set; } = ShapeQuality.Incomplete;
-	public IReadOnlyList<Vector2> TargetVertices => targetVertices;
+	private CachedQuality cachedQuality;
 
-	public void Configure(MetalDeformer2D deformer, Vector2[] target)
+	public float EvaluateMatchPercent(IReadOnlyList<Vector2> _metalVertices, IReadOnlyList<Vector2> _targetVertices)
 	{
-		if (metal != null)
-			metal.VerticesChanged -= Evaluate;
-
-		metal = deformer;
-		targetVertices = target;
-		if (metal != null)
-			metal.SetTargetOutline(target);
-
-		EnsureOutline();
-		EnsureGhostOutline();
-		EnsureGhostFill();
-		RebuildTargetVisuals();
-
-		if (metal != null)
-		{
-			metal.VerticesChanged -= Evaluate;
-			metal.VerticesChanged += Evaluate;
-		}
-
-		Evaluate();
-	}
-
-	void OnEnable()
-	{
-		if (metal != null)
-			metal.VerticesChanged += Evaluate;
-	}
-
-	void OnDisable()
-	{
-		if (metal != null)
-			metal.VerticesChanged -= Evaluate;
-	}
-
-	public void Evaluate()
-	{
-		bool hasMetalOutline = metal != null && metal.VertexCount >= PolygonGeometry.MinimumVertexCount;
-		bool hasTargetOutline = targetVertices != null && targetVertices.Length >= PolygonGeometry.MinimumVertexCount;
+		bool hasMetalOutline = _metalVertices != null && _metalVertices.Count >= PolygonGeometry.MinimumVertexCount;
+		bool hasTargetOutline = _targetVertices != null && _targetVertices.Count >= PolygonGeometry.MinimumVertexCount;
 		if (!hasMetalOutline || !hasTargetOutline)
-		{
-			CoveragePercent = 0f;
-			OverflowPercent = 0f;
-			SpikePenaltyPercent = 1f;
-			MaxVertexProtrusion = 0f;
-			MatchPercent = 0f;
-			Quality = ShapeQuality.Incomplete;
-			return;
-		}
+			return 0f;
 
-		Bounds targetBounds = GetTargetBounds();
-		Bounds combined = targetBounds;
-		combined.Encapsulate(metal.GetBounds());
-		combined.Expand(boundsPadding);
+		if (!IsCached(_metalVertices, _targetVertices))
+			RecomputeCache(_metalVertices, _targetVertices);
+		
+		return cachedQuality.matchPercent;
+	}
 
-		int totalTargetSamples = 0;
-		int coveredTargetSamples = 0;
-		int totalMetalSamples = 0;
-		int overflowMetalSamples = 0;
+	bool IsCached(IReadOnlyList<Vector2> _metalVertices, IReadOnlyList<Vector2> _targetVertices)
+	{
+		if (cachedQuality == null)
+			return false;
+		
+		if (cachedQuality.metalVertices.Count != _metalVertices.Count || cachedQuality.targetVertices.Count != _targetVertices.Count)
+			return false;
+		
+		if (!PolygonGeometry.IsSameVertices(_metalVertices, cachedQuality.metalVertices))
+			return false;
 
-		// Anchor the sampling grid to the target. Moving a metal extremity must
-		// not shift every sample or reduce precision elsewhere on a thin part.
-		float spacing = Mathf.Max(0.001f, Mathf.Max(targetBounds.size.x, targetBounds.size.y) / Mathf.Max(8, sampleResolution));
-		Vector2 origin = targetBounds.min;
-		int minX = Mathf.FloorToInt((combined.min.x - origin.x) / spacing);
-		int minY = Mathf.FloorToInt((combined.min.y - origin.y) / spacing);
-		int maxX = Mathf.CeilToInt((combined.max.x - origin.x) / spacing);
-		int maxY = Mathf.CeilToInt((combined.max.y - origin.y) / spacing);
+		if (!PolygonGeometry.IsSameVertices(_targetVertices, cachedQuality.targetVertices))
+			return false;
+		
+		return true;
+	}
 
-		for (int y = minY; y < maxY; y++)
-		{
-			float py = origin.y + (y + 0.5f) * spacing;
-			for (int x = minX; x < maxX; x++)
-			{
-				float px = origin.x + (x + 0.5f) * spacing;
-				var p = new Vector2(px, py);
+	void RecomputeCache(IReadOnlyList<Vector2> _metalVertices, IReadOnlyList<Vector2> _targetVertices)
+	{
+		float maxVertexProtrusion = ComputeMaxVertexProtrusion(_metalVertices, _targetVertices);
+		float spikeScore = ComputeSpikeScore(maxVertexProtrusion);
 
-				bool inTarget = PointInPolygon(p, targetVertices);
-				bool inMetal = metal.ContainsPoint(p);
-
-				if (inTarget)
-				{
-					totalTargetSamples++;
-					if (inMetal || DistanceToPolygonBoundary(p, metal.Vertices) <= boundaryTolerance)
-						coveredTargetSamples++;
-				}
-
-				if (inMetal)
-				{
-					totalMetalSamples++;
-					if (!inTarget && DistanceToPolygonBoundary(p, targetVertices) > boundaryTolerance)
-						overflowMetalSamples++;
-				}
-			}
-		}
-
-		CoveragePercent = totalTargetSamples > 0 ? coveredTargetSamples / (float)totalTargetSamples : 0f;
-
-		OverflowPercent = totalMetalSamples > 0 ? overflowMetalSamples / (float)totalMetalSamples : 0f;
-
-		MaxVertexProtrusion = ComputeMaxVertexProtrusion();
-		float spikeScore = ComputeSpikeScore(MaxVertexProtrusion);
-		SpikePenaltyPercent = 1f - spikeScore;
-
-		float coverageScore = CoveragePercent;
-		float overflowScore = 1f - OverflowPercent;
+		ShapeMatchScores scores = ClipperShapeMatch.CalculateCoverageAndOverflow(_metalVertices, _targetVertices);
 
 		float wC = Mathf.Max(0f, coverageWeight);
 		float wO = Mathf.Max(0f, overflowPenaltyWeight);
@@ -214,22 +105,30 @@ public class ShapeMatchEvaluator : MonoBehaviour
 			wSum = 3f;
 		}
 
-		MatchPercent = Mathf.Clamp01((coverageScore * wC + overflowScore * wO + spikeScore * wS) / wSum);
+		float matchPercent = Mathf.Clamp01((scores.coverage * wC + scores.overflow * wO + spikeScore * wS) / wSum);
 
-		Quality = ResolveQuality(MatchPercent, MaxVertexProtrusion);
+		if (scores.coverage == 0f && scores.overflow == 0f)
+			matchPercent = 0f;
+
+		cachedQuality = new CachedQuality
+		{
+			metalVertices = new List<Vector2>(_metalVertices),
+			targetVertices = new List<Vector2>(_targetVertices),
+			quality = ResolveQuality(matchPercent, maxVertexProtrusion),
+			matchPercent = matchPercent
+		};
 	}
-
-	float ComputeMaxVertexProtrusion()
+	
+	float ComputeMaxVertexProtrusion(IReadOnlyList<Vector2> _metalVertices, IReadOnlyList<Vector2> _targetVertices)
 	{
 		float maxDist = 0f;
-		IReadOnlyList<Vector2> verts = metal.Vertices;
-		for (int i = 0; i < verts.Count; i++)
+		for (int i = 0; i < _metalVertices.Count; i++)
 		{
-			Vector2 p = verts[i];
-			if (PointInPolygon(p, targetVertices))
+			Vector2 p = _metalVertices[i];
+			if (PolygonGeometry.Contains(p, _targetVertices))
 				continue;
 
-			float dist = DistanceToPolygonBoundary(p, targetVertices);
+			float dist = DistanceToPolygonBoundary(p, _targetVertices);
 			if (dist > maxDist)
 				maxDist = dist;
 		}
@@ -283,186 +182,8 @@ public class ShapeMatchEvaluator : MonoBehaviour
 		return best;
 	}
 
-	void EnsureOutline()
+	private void OnValidate()
 	{
-		if (targetOutline != null)
-			return;
-
-		var go = new GameObject("TargetOutline");
-		go.transform.SetParent(transform, false);
-		go.layer = gameObject.layer;
-		targetOutline = go.AddComponent<LineRenderer>();
-		ConfigureOutlineLine(targetOutline, targetOutlineColor, targetLineWidth, outlineSortingOrder, -0.05f);
-	}
-
-	void EnsureGhostOutline()
-	{
-		if (targetGhostOutline != null)
-			return;
-
-		var go = new GameObject("TargetGhostOutline");
-		go.transform.SetParent(transform, false);
-		go.layer = gameObject.layer;
-		targetGhostOutline = go.AddComponent<LineRenderer>();
-		ConfigureOutlineLine(targetGhostOutline, targetGhostOutlineColor, ghostLineWidth, ghostOutlineSortingOrder, -0.9f);
-	}
-
-	void EnsureGhostFill()
-	{
-		if (ghostFillFilter == null)
-		{
-			Transform existing = transform.Find("TargetGhostFill");
-			if (existing != null)
-			{
-				ghostFillFilter = existing.GetComponent<MeshFilter>();
-				ghostFillRenderer = existing.GetComponent<MeshRenderer>();
-			}
-		}
-
-		if (ghostFillFilter == null)
-		{
-			var go = new GameObject("TargetGhostFill");
-			go.transform.SetParent(transform, false);
-			go.layer = gameObject.layer;
-			ghostFillFilter = go.AddComponent<MeshFilter>();
-			ghostFillRenderer = go.AddComponent<MeshRenderer>();
-		}
-
-		if (_ghostFillMesh == null)
-		{
-			_ghostFillMesh = new Mesh
-			{
-				name = "TargetGhostFill"
-			};
-			_ghostFillMesh.MarkDynamic();
-		}
-
-		ghostFillFilter.sharedMesh = _ghostFillMesh;
-		_ghostFillMaterial = ForgingVisualUtility.GetSharedVertexColorMaterial();
-		if (ghostFillRenderer != null)
-		{
-			ghostFillRenderer.sharedMaterial = _ghostFillMaterial;
-			ghostFillRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-			ghostFillRenderer.receiveShadows = false;
-			ghostFillRenderer.sortingOrder = Mathf.Max(MinimumGhostFillSortingOrder, ghostFillSortingOrder);
-		}
-	}
-
-	static void ConfigureOutlineLine(LineRenderer line, Color color, float width, int sortingOrder, float z)
-	{
-		line.useWorldSpace = true;
-		line.loop = true;
-		line.widthMultiplier = width;
-		ForgingVisualUtility.ApplyLineRendererDefaults(line, color, width, sortingOrder);
-		line.startColor = color;
-		line.endColor = color;
-		line.sortingOrder = sortingOrder;
-		line.numCornerVertices = 4;
-		line.numCapVertices = 4;
-		line.positionCount = 0;
-	}
-
-	void RebuildTargetVisuals()
-	{
-		EnsureOutline();
-		EnsureGhostOutline();
-		EnsureGhostFill();
-
-		if (targetVertices == null || targetVertices.Length < 2)
-		{
-			targetOutline.positionCount = 0;
-			targetGhostOutline.positionCount = 0;
-			if (_ghostFillMesh != null)
-			{
-				_ghostFillMesh.Clear();
-			}
-
-			return;
-		}
-
-		ApplyLine(targetOutline, targetOutlineColor, targetLineWidth, outlineSortingOrder, 0.15f);
-		if (showGhostOverMetal)
-		{
-			targetGhostOutline.enabled = true;
-			ApplyLine(targetGhostOutline, targetGhostOutlineColor, ghostLineWidth, ghostOutlineSortingOrder, -0.85f);
-		}
-		else
-			targetGhostOutline.enabled = false;
-
-		RebuildGhostFill();
-	}
-
-	void ApplyLine(LineRenderer line, Color color, float width, int sortingOrder, float z)
-	{
-		line.sharedMaterial = ForgingVisualUtility.GetSpritesDefaultMaterial();
-		line.positionCount = targetVertices.Length;
-		for (int i = 0; i < targetVertices.Length; i++)
-		{
-			Vector2 v = targetVertices[i];
-			line.SetPosition(i, new Vector3(v.x, v.y, z));
-		}
-
-		line.startColor = color;
-		line.endColor = color;
-		line.widthMultiplier = width;
-		line.sortingOrder = sortingOrder;
-	}
-
-	void RebuildGhostFill()
-	{
-		bool hasGhostMesh = ghostFillFilter != null && _ghostFillMesh != null;
-		bool hasVisibleGhostMesh = showGhostFill && hasGhostMesh;
-		bool hasTargetOutline = hasVisibleGhostMesh && targetVertices.Length >= PolygonGeometry.MinimumVertexCount;
-		if (!hasVisibleGhostMesh || !hasTargetOutline)
-		{
-			if (_ghostFillMesh != null)
-				_ghostFillMesh.Clear();
-
-			if (ghostFillRenderer != null)
-				ghostFillRenderer.enabled = false;
-
-			return;
-		}
-
-		ghostFillRenderer.enabled = true;
-		ForgingVisualUtility.SetTint(ghostFillRenderer, targetGhostFillColor);
-		ghostFillRenderer.sortingOrder = Mathf.Max(MinimumGhostFillSortingOrder, ghostFillSortingOrder);
-		ghostBuilder.Build(_ghostFillMesh, targetVertices, ghostFillFilter.transform.position.z - GhostFillDepthOffset, Color.white, ghostFillFilter.transform);
-	}
-
-	void RebuildTargetOutline()
-	{
-		RebuildTargetVisuals();
-	}
-
-	Bounds GetTargetBounds()
-	{
-		Vector2 min = targetVertices[0];
-		Vector2 max = targetVertices[0];
-		for (int i = 1; i < targetVertices.Length; i++)
-		{
-			min = Vector2.Min(min, targetVertices[i]);
-			max = Vector2.Max(max, targetVertices[i]);
-		}
-
-		var center = (min + max) * 0.5f;
-		var size = max - min;
-		return new Bounds(center, new Vector3(size.x, size.y, 0.1f));
-	}
-
-	public static bool PointInPolygon(Vector2 point, Vector2[] polygon) => PolygonGeometry.Contains(point, polygon);
-
-	void OnDrawGizmosSelected()
-	{
-		if (targetVertices == null || targetVertices.Length < 2)
-			return;
-
-		Gizmos.color = targetOutlineColor;
-		for (int i = 0; i < targetVertices.Length; i++)
-		{
-			Vector3 a = targetVertices[i];
-			Vector3 b = targetVertices[(i + 1) % targetVertices.Length];
-			Gizmos.DrawLine(a, b);
-		}
+		cachedQuality = null;
 	}
 }

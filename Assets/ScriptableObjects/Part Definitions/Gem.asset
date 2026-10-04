@@ -30,4 +30,13 @@ MonoBehaviour:
   - {x: -1.2586002, y: 0.3066277}
   outlineCenterOffset: {x: 0, y: 0}
   outlineEdgeNeedsSharpening: 000000000000
-  defaultMetalType: {fileID: 0}
+  forgingScores:
+    c: 0.725
+    b: 0.85
+    a: 0.935
+    s: 0.975
+  grindingScores:
+    c: 0
+    b: 0
+    a: 0
+    s: 0

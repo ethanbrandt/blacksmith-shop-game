@@ -24,12 +24,17 @@ public class FinishPartTable : Station
 
     public override bool CanAccept(Pickable _pickable)
     {
-    	return _pickable.Type == Pickable.PickableType.QuenchedMetal;
+    	return _pickable.Type == Pickable.PickableType.QUENCHED_METAL;
     }
 
     public override bool TryUse(Pickable _pickable)
     {
-        return TryAcceptPickable(_pickable);
+	    bool accepted = TryAcceptPickable(_pickable);
+	    
+	    if (IsFinished())
+		    Finish();
+	    
+        return accepted;
     }
 
     void Awake()
@@ -48,7 +53,7 @@ public class FinishPartTable : Station
 		if (pickable == null || pickable.InStation)
 			return false;
 		
-		if (pickable.Type != Pickable.PickableType.QuenchedMetal)
+		if (pickable.Type != Pickable.PickableType.QUENCHED_METAL)
 		{
 			LogText.Instance.SetText("MUST BE QUENCHED TO BE PUT ON TABLE");
 			return false;
