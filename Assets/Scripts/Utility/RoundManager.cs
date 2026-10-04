@@ -63,6 +63,6 @@ public class RoundManager : MonoBehaviour
             uiHandler = GetComponent<RoundUIHandler>();
 
         float elapsedSeconds = startTime >= 0f ? Time.time - startTime : 0f;
-        uiHandler.ShowFinalScores(finishedParts, partDefinitions, partLayout, elapsedSeconds);
+        //uiHandler.ShowFinalScores(finishedParts, partDefinitions, partLayout, elapsedSeconds);
     }
 }

@@ -150,6 +150,17 @@ public class PlayerController : MonoBehaviour
 	public void NotifyEnding()
 	{
 		endOfRound = true;
+
+		if (!animator)
+			return;
+
+		animator.ResetTrigger(IdleStimParameter);
+		
+		if (upperBodyLayer >= 0)
+			animator.SetLayerWeight(upperBodyLayer, 0f);
+		
+		animator.CrossFadeInFixedTime("Base Layer.Present", 0.25f, 0, 0f);
+		actor.rotation = Quaternion.Euler(0, 145f, 0);
 	}
 
 	void Update()
@@ -163,7 +174,7 @@ public class PlayerController : MonoBehaviour
 
 	void UpdateAnimation()
 	{
-		if (!animator || !rb)
+		if (!animator || !rb || endOfRound)
 			return;
 
 		bool blocked = IsMinigameBlocking || endOfRound;
