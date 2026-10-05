@@ -26,6 +26,24 @@ public class Anvil : Station
 		}
 	}
 
+	public override bool CanInteract(Pickable _heldItem)
+	{
+		return _heldItem != null && CanAccept(_heldItem);
+	}
+
+	public override InteractionResult TryInteract(Pickable _heldItem)
+	{
+		if (_heldItem == null || !CanInteract(_heldItem))
+			return InteractionResult.FAILED;
+
+		return TryUse(_heldItem) ? InteractionResult.ITEM_TRANSFERRED : InteractionResult.FAILED;
+	}
+
+	public override float DistanceSquared(Vector3 _worldPoint)
+	{
+		return DistanceFromStationSquared(_worldPoint);
+	}
+
 	public override bool CanAccept(Pickable _pickable)
 	{
 		bool hasEmptySocket = containedMetal == null;

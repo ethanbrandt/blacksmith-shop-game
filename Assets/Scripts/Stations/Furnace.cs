@@ -77,7 +77,7 @@ public class Furnace : Station
 			return false;
 		
 		if (containedMetal)
-			return _pickable.Type == Pickable.PickableType.FUEL;
+			return false;
 
 		return _pickable.Type != Pickable.PickableType.QUENCHED_METAL;
 	}
@@ -112,9 +112,6 @@ public class Furnace : Station
 		if (pickable == null || pickable.InStation)
 			return false;
 
-		if (pickable.TryGetComponent(out FuelItem fuelItem))
-			return TryConsumeFuel(pickable, fuelItem);
-
 		if (pickable.TryGetComponent(out HeatableMetal metal))
 			return TryInsertMetal(pickable, metal);
 
@@ -131,6 +128,24 @@ public class Furnace : Station
 	{
 		Vector3 socketPos = metalSocket != null ? metalSocket.position : transform.position;
 		return (_worldPoint - socketPos).sqrMagnitude;
+	}
+	
+	public override bool CanInteract(Pickable _heldItem)
+	{
+		return _heldItem != null && CanAccept(_heldItem);
+	}
+
+	public override InteractionResult TryInteract(Pickable _heldItem)
+	{
+		if (_heldItem == null || !CanInteract(_heldItem))
+			return InteractionResult.FAILED;
+
+		return TryUse(_heldItem) ? InteractionResult.ITEM_TRANSFERRED : InteractionResult.FAILED;
+	}
+
+	public override float DistanceSquared(Vector3 _worldPoint)
+	{
+		return DistanceFromStationSquared(_worldPoint);
 	}
 
 	void TickFuelAndAir(float dt)
@@ -174,23 +189,27 @@ public class Furnace : Station
 		internalTemperature = Mathf.MoveTowards(internalTemperature, target, rate * dt);
 	}
 
-	bool TryConsumeFuel(Pickable pickable, FuelItem fuelItem)
+	public bool TryInsertFuel(int _burnValue)
 	{
 		if (fuel >= maxFuel - 0.0001f)
 			return false;
 
 		float room = maxFuel - fuel;
-		float add = fuelItem.BurnValue;
+		float add = _burnValue;
 		if (add > room)
-		{
-			if (!fuelItem.ConsumeEvenIfPartial)
-				return false;
 			add = room;
-		}
 
 		fuel = Mathf.Min(maxFuel, fuel + add);
 		internalTemperature = Mathf.Clamp(internalTemperature + fuelInsertTempIncrease, ambientTemperature, maxTemperature);
-		Destroy(pickable.gameObject);
+		return true;
+	}
+
+	public bool TryPumpBellows()
+	{
+		if (!containedMetal)
+			return false;
+		if (TemperatureNormalized > 0.1f)
+			containedMetal.PumpBellows(TemperatureNormalized);
 		return true;
 	}
 

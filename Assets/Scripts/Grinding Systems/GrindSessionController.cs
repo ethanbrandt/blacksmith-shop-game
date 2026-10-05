@@ -328,7 +328,8 @@ public class GrindSessionController : MonoBehaviour
 		if (evaluator != null)
 			evaluator.Evaluate();
 		SharpnessQuality quality = evaluator != null ? evaluator.Quality : SharpnessQuality.Blunt;
-		activeMetal.SaveGrindProgress(vertexScratch, grindScratch, quality, evaluator != null ? evaluator.MatchPercent : 0f);
+		activeMetal.SaveGrindProgress(vertexScratch, grindScratch, quality,
+			evaluator != null ? evaluator.MatchPercent : 0f, blade.IdealGrindAmount);
 	}
 
 	void HandleGrindInput(float deltaTime)

@@ -133,7 +133,7 @@ public static class PolygonGeometry
 		return positiveThenNegative || negativeThenPositive;
 	}
 
-	static bool SegmentsIntersect(Vector2 firstStart, Vector2 firstEnd, Vector2 secondStart, Vector2 secondEnd)
+	public static bool SegmentsIntersect(Vector2 firstStart, Vector2 firstEnd, Vector2 secondStart, Vector2 secondEnd)
 	{
 		if (Mathf.Max(firstStart.x, firstEnd.x) < Mathf.Min(secondStart.x, secondEnd.x) - IntersectionTolerance ||
 			Mathf.Max(secondStart.x, secondEnd.x) < Mathf.Min(firstStart.x, firstEnd.x) - IntersectionTolerance ||

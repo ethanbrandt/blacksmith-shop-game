@@ -37,9 +37,11 @@ public class HeatableMetal : MonoBehaviour
 	ShapeMatchEvaluator shapeMatchEvaluator;
 	MetalType metalType = null;
 	PartDefinition partDefinition = null;
+	private ExtrudePolygonMeshBuilder builder = new ExtrudePolygonMeshBuilder();
 	
 	float overheatTimer;
 	float grindMatchPercent;
+	float grindForSharpEdge = 1f;
 
 	public MetalType MetalType => metalType;
 	public PartDefinition PartDefinition => partDefinition;
@@ -52,10 +54,12 @@ public class HeatableMetal : MonoBehaviour
 	public bool HasGrindProgress => hasGrindProgress && groundVertices != null && groundVertices.Count >= PolygonGeometry.MinimumVertexCount;
 	public IReadOnlyList<Vector2> GroundVertices => groundVertices;
 	public IReadOnlyList<float> GrindAmounts => grindAmounts;
+	public float GrindForSharpEdge => grindForSharpEdge;
 	public SharpnessQuality SharpnessQuality => sharpnessQuality;
 	public float GrindMatchPercent => grindMatchPercent;
 
 	public Action ShapeChanged;
+	public Action GrindChanged;
 
 	void Awake()
 	{
@@ -98,7 +102,6 @@ public class HeatableMetal : MonoBehaviour
 
 	void Start()
 	{
-		ApplyQualityVisual();
 		RefreshTint();
 		if (metalHeatGauge != null)
 			metalHeatGauge.SetFollowMetal(this);
@@ -146,7 +149,6 @@ public class HeatableMetal : MonoBehaviour
 		}
 		
 		partDefinition = part;
-		ApplyQualityVisual();
 	}
 
 	public void SetTemperature(float value)
@@ -250,11 +252,12 @@ public class HeatableMetal : MonoBehaviour
 		return true;
 	}
 
-	public void SaveGrindProgress(IReadOnlyList<Vector2> baselineVertices, IReadOnlyList<float> amounts, SharpnessQuality sharpness, float matchPercent)
+	public void SaveGrindProgress(IReadOnlyList<Vector2> baselineVertices, IReadOnlyList<float> amounts, SharpnessQuality sharpness,
+		float matchPercent, float idealGrindAmount = 1f)
 	{
 		bool hasValidShape = PolygonGeometry.IsSimple(baselineVertices);
 		bool hasValidAmounts = hasValidShape && ValidAmounts(amounts, baselineVertices.Count);
-		bool hasValidProgress = hasValidAmounts && IsFinite(matchPercent);
+		bool hasValidProgress = hasValidAmounts && IsFinite(matchPercent) && IsFinite(idealGrindAmount) && idealGrindAmount > 0f;
 		if (!hasValidProgress)
 			return;
 		if (ReferenceEquals(baselineVertices, groundVertices))
@@ -275,6 +278,13 @@ public class HeatableMetal : MonoBehaviour
 		hasGrindProgress = true;
 		sharpnessQuality = sharpness;
 		grindMatchPercent = Mathf.Clamp01(matchPercent);
+		grindForSharpEdge = idealGrindAmount;
+		GrindChanged?.Invoke();
+	}
+
+	public void PumpBellows(float _pumpStrength)
+	{
+		SetHeat01(Heat01 + (0.075f * _pumpStrength));
 	}
 
 	void TickTemperature(float deltaTime, float? furnaceTemperature = null)
@@ -289,11 +299,6 @@ public class HeatableMetal : MonoBehaviour
 		}
 		else
 			TickOutsideFurnace(deltaTime);
-	}
-
-	void ApplyQualityVisual()
-	{
-		// TODO Add quality visuals
 	}
 
 	void TickOutsideFurnace(float deltaTime)

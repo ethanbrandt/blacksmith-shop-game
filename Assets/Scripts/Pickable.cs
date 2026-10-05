@@ -8,8 +8,7 @@ public class Pickable : MonoBehaviour
 	public enum PickableType
 	{
 		HEATABLE_METAL,
-		QUENCHED_METAL,
-		FUEL
+		QUENCHED_METAL
 	}
 
 	public enum PickableState
@@ -56,8 +55,6 @@ public class Pickable : MonoBehaviour
 	{
 		if (TryGetComponent(out HeatableMetal heatableMetal))
 			pickableType = PickableType.HEATABLE_METAL;
-		else if (TryGetComponent(out FuelItem fuelItem))
-			pickableType = PickableType.FUEL;
 
 		rb = GetComponent<Rigidbody>();
 		if (itemCollider == null)

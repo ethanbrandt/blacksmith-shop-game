@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Random = UnityEngine.Random;
 
 public class PlayerController : MonoBehaviour
 {
@@ -28,9 +29,7 @@ public class PlayerController : MonoBehaviour
 	float idleTime;
 	int upperBodyLayer = -1;
 
-	bool IsThrowAnimationPlaying => animator && upperBodyLayer >= 0 &&
-		(animator.GetCurrentAnimatorStateInfo(upperBodyLayer).shortNameHash == ThrowState ||
-			(animator.IsInTransition(upperBodyLayer) && animator.GetNextAnimatorStateInfo(upperBodyLayer).shortNameHash == ThrowState));
+	bool IsThrowAnimationPlaying => animator && upperBodyLayer >= 0 && (animator.GetCurrentAnimatorStateInfo(upperBodyLayer).shortNameHash == ThrowState || (animator.IsInTransition(upperBodyLayer) && animator.GetNextAnimatorStateInfo(upperBodyLayer).shortNameHash == ThrowState));
 
 	[Header("Slime Sliding")]
 	[SerializeField, Min(0.1f)] float slimeSlideDuration = 3f;
@@ -47,6 +46,7 @@ public class PlayerController : MonoBehaviour
 	Vector3 moveDir;
 	float moveInputStrength;
 	Pickable held;
+	Component currentTarget;
 	Highlightable currentHighlight;
 	private bool endOfRound = false;
 
@@ -145,11 +145,13 @@ public class PlayerController : MonoBehaviour
 		if (animator)
 			animator.ResetTrigger(IdleStimParameter);
 		RestoreSlideFriction();
+		RemoveCurrentHighlight();
 	}
 
 	public void NotifyEnding()
 	{
 		endOfRound = true;
+		RemoveCurrentHighlight();
 
 		if (!animator)
 			return;
@@ -166,10 +168,7 @@ public class PlayerController : MonoBehaviour
 	void Update()
 	{
 		UpdateAnimation();
-		if (held)
-			StationHighlight(held);
-		else
-			PickableHighlight();
+		UpdateInteractionTarget();
 	}
 
 	void UpdateAnimation()
@@ -179,8 +178,7 @@ public class PlayerController : MonoBehaviour
 
 		bool blocked = IsMinigameBlocking || endOfRound;
 		Vector3 velocity = rb.linearVelocity;
-		bool moving = !blocked && velocity.x * velocity.x + velocity.z * velocity.z >
-			animationMovementThreshold * animationMovementThreshold;
+		bool moving = !blocked && velocity.x * velocity.x + velocity.z * velocity.z > animationMovementThreshold * animationMovementThreshold;
 		bool holding = held != null;
 		animator.SetBool(MovingParameter, moving);
 		animator.SetBool(HoldingParameter, holding);
@@ -194,8 +192,7 @@ public class PlayerController : MonoBehaviour
 			animator.SetLayerWeight(upperBodyLayer, weight);
 		}
 
-		if (moving || holding || IsThrowAnimationPlaying || blocked || animator.IsInTransition(0) ||
-			animator.GetCurrentAnimatorStateInfo(0).fullPathHash != IdleState)
+		if (moving || holding || IsThrowAnimationPlaying || blocked || animator.IsInTransition(0) || animator.GetCurrentAnimatorStateInfo(0).fullPathHash != IdleState)
 		{
 			idleTime = 0f;
 			animator.ResetTrigger(IdleStimParameter);
@@ -210,67 +207,35 @@ public class PlayerController : MonoBehaviour
 		}
 	}
 
-	private void StationHighlight(Pickable _pickable)
+	void UpdateInteractionTarget()
 	{
-		Station closestStation = FindClosestStation();
-		if (!closestStation)
-		{
-			RemoveCurrentHighlight();
-			return;
-		}
-
-		if (!closestStation.CanAccept(_pickable))
-		{
-			RemoveCurrentHighlight();
-			return;
-		}
-
-		Highlightable nextHighlight = closestStation.Highlight;
-		if (!nextHighlight)
+		Component nextTarget = ResolveInteractionTarget(out Highlightable nextHighlight);
+		if (ReferenceEquals(currentTarget, nextTarget) && ReferenceEquals(currentHighlight, nextHighlight))
 			return;
 
-		if (currentHighlight != nextHighlight)
-		{
-			RemoveCurrentHighlight();
+		RemoveCurrentHighlight();
+		currentTarget = nextTarget;
+		if (nextHighlight)
 			AddHighlight(nextHighlight);
-		}
-	}
-
-	private void PickableHighlight()
-	{
-		Pickable closestPickup = FindClosestPickable();
-		if (!closestPickup)
-		{
-			RemoveCurrentHighlight();
-			return;
-		}
-
-		if (!closestPickup.TryGetComponent(out Highlightable nextHighlight))
-			return;
-
-		if (currentHighlight != nextHighlight)
-		{
-			RemoveCurrentHighlight();
-			AddHighlight(nextHighlight);
-		}
 	}
 
 	void RemoveCurrentHighlight()
 	{
-		if (!currentHighlight)
-			return;
-
-		currentHighlight.SetHighlighted(false);
+		bool hadHighlight = !ReferenceEquals(currentHighlight, null);
+		if (currentHighlight)
+			currentHighlight.SetHighlighted(false);
+		currentTarget = null;
 		currentHighlight = null;
 
-		OnHighlight?.Invoke(null);
+		if (hadHighlight)
+			OnHighlight?.Invoke(null);
 	}
 
 	void AddHighlight(Highlightable _highlightable)
 	{
 		_highlightable.SetHighlighted(true);
 		currentHighlight = _highlightable;
-		OnHighlight?.Invoke(_highlightable.transform);
+		OnHighlight?.Invoke(currentTarget.transform);
 	}
 
 	void OnMove(InputValue _value)
@@ -302,45 +267,55 @@ public class PlayerController : MonoBehaviour
 		if (IsMinigameBlocking || endOfRound)
 			return;
 
-		if (held != null)
+		if (!ReferenceEquals(currentTarget, null))
 		{
-			Station station = FindClosestStation();
-
-			OnPickUp?.Invoke(null);
-
-			if (station != null && station.TryUse(held))
+			if (!TryGetTargetInfo(currentTarget, out _, out _))
 			{
-				held = null;
+				RemoveCurrentHighlight();
 				return;
 			}
 
-			Vector3 facing = GetFacing();
-			Vector3 dropPos = transform.position + facing * dropForward + Vector3.up * 0.35f;
-			held.Drop(dropPos, rb.linearVelocity + facing * 1.5f);
-			held = null;
+			if (currentTarget is Interactable interactable)
+			{
+				InteractionResult result = interactable.TryInteract(held);
+				if (result == InteractionResult.ITEM_TRANSFERRED)
+				{
+					held = null;
+					OnPickUp?.Invoke(null);
+				}
+			}
+			else if (currentTarget is Pickable pickable)
+			{
+				pickable.PickUp(transform, holdLocalOffset);
+				if (pickable.IsHeld)
+				{
+					held = pickable;
+					OnPickUp?.Invoke(pickable.transform);
+				}
+			}
+
+			UpdateInteractionTarget();
 			return;
 		}
 
-		Pickable nearest = FindClosestPickable();
-		if (nearest != null)
-		{
-			nearest.PickUp(transform, holdLocalOffset);
+		if (held == null)
+			return;
 
-			if (nearest.IsHeld)
-			{
-				held = nearest;
-				OnPickUp?.Invoke(nearest.transform);
-			}
-
-			if (nearest.TryGetComponent(out Highlightable highlightable) && highlightable == currentHighlight)
-				RemoveCurrentHighlight();
-		}
+		Vector3 facing = GetFacing();
+		Vector3 dropPos = transform.position + facing * dropForward + Vector3.up * 0.35f;
+		held.Drop(dropPos, rb.linearVelocity + facing * 1.5f);
+		held = null;
+		OnPickUp?.Invoke(null);
+		UpdateInteractionTarget();
 	}
 
 	void OnAttack()
 	{
 		if (IsMinigameBlocking || endOfRound)
 			return;
+
+		if (FindClosestStation() is Furnace furnace)
+			furnace.TryInsertFuel(25);
 
 		if (held == null)
 			return;
@@ -351,9 +326,9 @@ public class PlayerController : MonoBehaviour
 
 		held = null;
 		OnPickUp?.Invoke(null);
+		UpdateInteractionTarget();
 
-		if (animator && animator.isActiveAndEnabled && upperBodyLayer >= 0 &&
-			animator.HasState(upperBodyLayer, ThrowStatePath))
+		if (animator && animator.isActiveAndEnabled && upperBodyLayer >= 0 && animator.HasState(upperBodyLayer, ThrowStatePath))
 		{
 			idleTime = 0f;
 			animator.ResetTrigger(IdleStimParameter);
@@ -368,6 +343,7 @@ public class PlayerController : MonoBehaviour
 		
 		held = null;
 		OnPickUp?.Invoke(null);
+		UpdateInteractionTarget();
 	}
 
 	Vector3 GetFacing()
@@ -375,35 +351,79 @@ public class PlayerController : MonoBehaviour
 		if (moveDir.sqrMagnitude > 0.01f)
 			return moveDir;
 
-		Vector3 camForward = Camera.main.transform.forward;
-		camForward.y = 0f;
-		if (camForward.sqrMagnitude > 0.01f)
-			return camForward.normalized;
+		Vector3 actorForward = actor.transform.forward;
+		actorForward.y = 0f;
+		if (actorForward.sqrMagnitude > 0.01f)
+			return actorForward.normalized;
 
 		return Vector3.forward;
 	}
 
-	Pickable FindClosestPickable()
+	Component ResolveInteractionTarget(out Highlightable highlight)
 	{
-		Pickable closest = null;
-		float best = pickupRange * pickupRange;
-		var pickables = FindObjectsByType<Pickable>(FindObjectsSortMode.None);
-		Vector3 origin = transform.position;
-		for (int i = 0; i < pickables.Length; i++)
+		highlight = null;
+		if (IsMinigameBlocking || endOfRound)
+			return null;
+
+		Component closest = null;
+		float best = float.PositiveInfinity;
+		var interactables = FindObjectsByType<Interactable>(FindObjectsSortMode.None);
+		foreach (var interactable in interactables)
 		{
-			Pickable pickable = pickables[i];
-			if (pickable == null || !pickable.CanBePickedUp)
+			if (!TryGetTargetInfo(interactable, out Highlightable candidateHighlight, out float distSq) || distSq >= best)
 				continue;
 
-			float distSq = (pickable.transform.position - origin).sqrMagnitude;
-			if (distSq > best)
+			best = distSq;
+			closest = interactable;
+			highlight = candidateHighlight;
+		}
+
+		if (held != null)
+			return closest;
+
+		var pickables = FindObjectsByType<Pickable>(FindObjectsSortMode.None);
+		foreach (var pickable in pickables)
+		{
+			if (!TryGetTargetInfo(pickable, out Highlightable candidateHighlight, out float distSq) || distSq >= best)
 				continue;
 
 			best = distSq;
 			closest = pickable;
+			highlight = candidateHighlight;
 		}
 
 		return closest;
+	}
+
+	bool TryGetTargetInfo(Component target, out Highlightable highlight, out float distanceSq)
+	{
+		highlight = null;
+		distanceSq = float.PositiveInfinity;
+		if (!target || IsMinigameBlocking || endOfRound)
+			return false;
+
+		float rangeSq;
+		if (target is Interactable interactable)
+		{
+			if (!interactable.isActiveAndEnabled || !interactable.CanInteract(held))
+				return false;
+
+			highlight = interactable.Highlight;
+			distanceSq = interactable.DistanceSquared(transform.position);
+			rangeSq = placeIntoStationRange * placeIntoStationRange;
+		}
+		else if (target is Pickable pickable)
+		{
+			if (held != null || !pickable.isActiveAndEnabled || !pickable.CanBePickedUp || !pickable.TryGetComponent(out highlight))
+				return false;
+
+			distanceSq = (pickable.transform.position - transform.position).sqrMagnitude;
+			rangeSq = pickupRange * pickupRange;
+		}
+		else
+			return false;
+
+		return highlight && distanceSq <= rangeSq;
 	}
 
 	Station FindClosestStation()
