@@ -23,7 +23,7 @@ public class GrindSessionController : MonoBehaviour
 	const float BackgroundPlateFacingAngle = 180f;
 	const float BackgroundPlateSize = 8f;
 	const float GrindSubdivisionLength = 0.18f;
-	const int MaximumGrindVertices = 72;
+	const int MaximumGrindVertices = 48;
 	const float BladeSpawnOffsetY = -1.35f;
 	const float BladeSpawnRotation = -20f;
 	const float MinimumPressureDepth = 0.05f;

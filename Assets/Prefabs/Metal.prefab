@@ -572,9 +572,10 @@ MonoBehaviour:
   thickness: 0.5
   scale: 0.4
   thinningStrength: 0.603
-  bevelWidth: 7.89
+  bevelWidth: 3
+  maximumBevelAngle: 30
   minEdgeThicknessRatio: 0.05
-  bevelSegments: 4
+  bevelSegments: 1
 --- !u!1 &5612311910877340082
 GameObject:
   m_ObjectHideFlags: 0
