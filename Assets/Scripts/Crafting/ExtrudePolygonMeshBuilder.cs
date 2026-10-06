@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -22,6 +23,56 @@ public sealed class ExtrudePolygonMeshBuilder
 	const float MaximumProfileSlope = 1.5f;
 	const float MinimumNormalStepFraction = 0.00001f;
 
+	static readonly ProfilerMarker TryBuildGroundMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.TryBuildGround");
+	static readonly ProfilerMarker TryPrepareGroundGeometryMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.TryPrepareGroundGeometry");
+	static readonly ProfilerMarker TryLoadGroundOutlineMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.TryLoadGroundOutline");
+	static readonly ProfilerMarker BuildOutlineMetricsMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.BuildOutlineMetrics");
+	static readonly ProfilerMarker InitializeSurfacePointsMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.InitializeSurfacePoints");
+	static readonly ProfilerMarker CalculateGridSpacingMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.CalculateGridSpacing");
+	static readonly ProfilerMarker MeasureBoundaryDistanceMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.MeasureBoundaryDistance");
+	static readonly ProfilerMarker BuildGroundCapsMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.BuildGroundCaps");
+	static readonly ProfilerMarker CalculateSurfaceNormalMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.CalculateSurfaceNormal");
+	static readonly ProfilerMarker RestoreBoundaryVerticesMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.RestoreBoundaryVertices");
+	static readonly ProfilerMarker SeedSurfaceInteriorMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.SeedSurfaceInterior");
+	static readonly ProfilerMarker RefineSurfaceMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.RefineSurface");
+	static readonly ProfilerMarker RefineEdgeMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.RefineEdge");
+	static readonly ProfilerMarker AddSurfacePointMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.AddSurfacePoint");
+	static readonly ProfilerMarker SplitOneEdgeMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.SplitOneEdge");
+	static readonly ProfilerMarker SplitTwoEdgesMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.SplitTwoEdges");
+	static readonly ProfilerMarker AddSurfaceTriangleMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.AddSurfaceTriangle");
+	static readonly ProfilerMarker BuildBoundaryFieldEdgesMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.BuildBoundaryFieldEdges");
+	static readonly ProfilerMarker BuildSmoothGrindSamplesMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.BuildSmoothGrindSamples");
+	static readonly ProfilerMarker SampleSmoothGrindMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.SampleSmoothGrind");
+	static readonly ProfilerMarker BuildGroundEdgesMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.BuildGroundEdges");
+	static readonly ProfilerMarker TrySelectCoreMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.TrySelectCore");
+	static readonly ProfilerMarker MeasureSignificantGroundDistanceMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.MeasureSignificantGroundDistance");
+	static readonly ProfilerMarker MeasureMaximumTaperWidthMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.MeasureMaximumTaperWidth");
+	static readonly ProfilerMarker EvaluateGroundInfluenceMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.EvaluateGroundInfluence");
+	static readonly ProfilerMarker EvaluateHalfThicknessMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.EvaluateHalfThickness");
+	static readonly ProfilerMarker BuildGroundWallsMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.BuildGroundWalls");
+	static readonly ProfilerMarker CalculateWallNormalMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.CalculateWallNormal");
+	static readonly ProfilerMarker AddMirroredTriangleMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.AddMirroredTriangle");
+	static readonly ProfilerMarker ClearMeshBuffersMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.ClearMeshBuffers");
+	static readonly ProfilerMarker ApplyMeshMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.ApplyMesh");
+	static readonly ProfilerMarker AddVertexMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.AddVertex");
+	static readonly ProfilerMarker AddTriangleMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.AddTriangle");
+	static readonly ProfilerMarker TriangulateGroundOutlineMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.TriangulateGroundOutline");
+	static readonly ProfilerMarker InitializeSurfaceHeightsMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.InitializeSurfaceHeights");
+	static readonly ProfilerMarker RefineGridSurfaceMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.RefineGridSurface");
+	static readonly ProfilerMarker RefineCurveSurfaceMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.RefineCurveSurface");
+	static readonly ProfilerMarker RefineSurfacePassMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.RefineSurfacePass");
+	static readonly ProfilerMarker ClearMeshMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.ClearMesh");
+	static readonly ProfilerMarker UploadVerticesMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.UploadVertices");
+	static readonly ProfilerMarker UploadNormalsMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.UploadNormals");
+	static readonly ProfilerMarker UploadUvsMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.UploadUvs");
+	static readonly ProfilerMarker UploadColorsMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.UploadColors");
+	static readonly ProfilerMarker UploadTrianglesAndBoundsMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.UploadTrianglesAndBounds");
+	static readonly ProfilerMarker PrepareGroundInfluencesMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.PrepareGroundInfluences");
+	static readonly ProfilerMarker BuildGrindInterpolationsMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.BuildGrindInterpolations");
+	static readonly ProfilerMarker CalculateThicknessGradientMarker = new ProfilerMarker("ExtrudePolygonMeshBuilder.CalculateThicknessGradient");
+
+	public static bool DetailedProfilingEnabled { get; set; }
+
 	readonly struct GroundEdge
 	{
 		public Vector2 Start { get; }
@@ -30,8 +81,12 @@ public sealed class ExtrudePolygonMeshBuilder
 		public float StartGrind { get; }
 		public float EndGrind { get; }
 		public float ArcPosition { get; }
+		public float InverseSquaredLength { get; }
+		public float MaximumGrind { get; }
+		public float MaximumInfluenceDistance { get; }
+		public float MaximumSquaredInfluenceDistance { get; }
 
-		public GroundEdge(Vector2 start, Vector2 vector, float length, float startGrind, float endGrind, float arcPosition)
+		public GroundEdge(Vector2 start, Vector2 vector, float length, float startGrind, float endGrind, float arcPosition, float maximumInfluenceDistance = float.PositiveInfinity, float maximumGrind = 1f)
 		{
 			Start = start;
 			Vector = vector;
@@ -39,7 +94,42 @@ public sealed class ExtrudePolygonMeshBuilder
 			StartGrind = startGrind;
 			EndGrind = endGrind;
 			ArcPosition = arcPosition;
+			InverseSquaredLength = 1f / (length * length);
+			MaximumGrind = maximumGrind;
+			MaximumInfluenceDistance = maximumInfluenceDistance;
+			MaximumSquaredInfluenceDistance = maximumInfluenceDistance * maximumInfluenceDistance;
 		}
+	}
+
+	readonly struct GrindInterpolation
+	{
+		public float ConstantTerm { get; }
+		public float LinearCoefficient { get; }
+		public float QuadraticCoefficient { get; }
+		public float CubicCoefficient { get; }
+		public float MaximumValue { get; }
+
+		public GrindInterpolation(float previous, float current, float next, float following)
+		{
+			ConstantTerm = 2f * current;
+			LinearCoefficient = next - previous;
+			QuadraticCoefficient = 2f * previous - 5f * current + 4f * next - following;
+			CubicCoefficient = 3f * current - previous - 3f * next + following;
+			float firstControl = current + LinearCoefficient / 6f;
+			float secondControl = current + LinearCoefficient / 3f + QuadraticCoefficient / 6f;
+			float endpointMaximum = Mathf.Max(current, next);
+			float controlMaximum = Mathf.Max(firstControl, secondControl);
+			MaximumValue = Mathf.Clamp01(Mathf.Max(endpointMaximum, controlMaximum) + GeometryTolerance);
+		}
+
+		public float Evaluate(float fraction)
+		{
+			float linearTerm = LinearCoefficient * fraction;
+			float quadraticTerm = QuadraticCoefficient * fraction * fraction;
+			float cubicTerm = CubicCoefficient * fraction * fraction * fraction;
+			return 0.5f * (ConstantTerm + linearTerm + quadraticTerm + cubicTerm);
+		}
+
 	}
 
 	readonly List<Vector3> vertices = new List<Vector3>();
@@ -56,6 +146,7 @@ public sealed class ExtrudePolygonMeshBuilder
 	readonly List<float> boundaryDistances = new List<float>();
 	readonly List<float> grindSamples = new List<float>();
 	readonly List<float> smoothedGrindSamples = new List<float>();
+	readonly List<GrindInterpolation> grindInterpolations = new List<GrindInterpolation>();
 
 	readonly List<int> fieldEdgeStarts = new List<int>();
 	readonly List<Vector2> fieldEdgeVectors = new List<Vector2>();
@@ -71,6 +162,7 @@ public sealed class ExtrudePolygonMeshBuilder
 	readonly List<int> wallIndices = new List<int>();
 	readonly List<bool> usedBoundaryVertices = new List<bool>();
 	readonly Dictionary<long, int> midpointLookup = new Dictionary<long, int>();
+	readonly Dictionary<Vector2, float> thicknessLookup = new Dictionary<Vector2, float>();
 
 	float perimeter;
 	float effectiveBevelWidth;
@@ -79,6 +171,8 @@ public sealed class ExtrudePolygonMeshBuilder
 	float minimumHalfThickness;
 	float maximumBevelSlope;
 	float normalSampleWidth;
+	float bevelWidthPerGrind;
+	float grindSamplePositionScale;
 	Vector2 coreCenter;
 	float coreRadius;
 	int surfaceVertexLimit;
@@ -110,6 +204,7 @@ public sealed class ExtrudePolygonMeshBuilder
 
 	public bool TryBuildGround(Mesh mesh, IReadOnlyList<Vector2> polygon, IReadOnlyList<float> grindAmounts, float thickness, Color color, float scale = 1f, float bevelWidth = 0.12f, float minEdgeThicknessRatio = 0.05f, int bevelSegments = 4, float grindForSharpEdge = 1f, float maximumBevelAngle = 30f)
 	{
+		using var profileScope = TryBuildGroundMarker.Auto();
 		if (mesh == null)
 			return false;
 
@@ -188,6 +283,7 @@ public sealed class ExtrudePolygonMeshBuilder
 
 	bool TryPrepareGroundGeometry(IReadOnlyList<Vector2> polygon, IReadOnlyList<float> grindAmounts, float thickness, Color color, float scale, float bevelWidth, float minEdgeThicknessRatio, int bevelSegments, float grindForSharpEdge, float maximumBevelAngle)
 	{
+		using var profileScope = TryPrepareGroundGeometryMarker.Auto();
 		bool hasOutlineData = polygon != null && grindAmounts != null;
 		if (!hasOutlineData)
 			return false;
@@ -210,7 +306,11 @@ public sealed class ExtrudePolygonMeshBuilder
 		if (!loaded)
 			return false;
 
-		bool triangulated = PolygonGeometry.Triangulate(outline, capTriangles, remainingIndices);
+		bool triangulated;
+		using (TriangulateGroundOutlineMarker.Auto())
+		{
+			triangulated = PolygonGeometry.Triangulate(outline, capTriangles, remainingIndices);
+		}
 		if (!triangulated)
 			return false;
 
@@ -240,14 +340,19 @@ public sealed class ExtrudePolygonMeshBuilder
 			return false;
 		float heightDrop = bodyHalfThickness - minimumHalfThickness;
 		float angleWidth = MaximumProfileSlope * heightDrop / maximumBevelSlope;
+		bevelWidthPerGrind = angleWidth;
 		requestedBevelWidth = bevelWidth;
 		effectiveBevelWidth = Mathf.Max(bevelWidth, angleWidth);
 		normalSampleWidth = MeasureMaximumTaperWidth();
 		float blendRadius = Mathf.Min(normalSampleWidth * 0.25f, coreRadius * 3f);
 		BuildSmoothGrindSamples(blendRadius);
+		PrepareGroundInfluences();
 
-		for (int i = 0; i < surfacePoints.Count; i++)
-			surfaceHeights[i] = EvaluateHalfThickness(surfacePoints[i]);
+		using (InitializeSurfaceHeightsMarker.Auto())
+		{
+			for (int i = 0; i < surfacePoints.Count; i++)
+				surfaceHeights[i] = EvaluateHalfThickness(surfacePoints[i]);
+		}
 
 		int squaredResolution = curveResolution * curveResolution;
 		float toleranceDivisor = squaredResolution * 2f;
@@ -262,6 +367,7 @@ public sealed class ExtrudePolygonMeshBuilder
 
 	bool TryLoadGroundOutline(IReadOnlyList<Vector2> polygon, IReadOnlyList<float> grindAmounts, float scale, float grindForSharpEdge)
 	{
+		using var profileScope = TryLoadGroundOutlineMarker.Auto();
 		outline.Clear();
 		grindProgress.Clear();
 		edgeLengths.Clear();
@@ -283,6 +389,7 @@ public sealed class ExtrudePolygonMeshBuilder
 
 	void BuildOutlineMetrics()
 	{
+		using var profileScope = BuildOutlineMetricsMarker.Auto();
 		perimeter = 0f;
 		for (int i = 0; i < outline.Count; i++)
 		{
@@ -296,6 +403,7 @@ public sealed class ExtrudePolygonMeshBuilder
 
 	void InitializeSurfacePoints()
 	{
+		using var profileScope = InitializeSurfacePointsMarker.Auto();
 		surfacePoints.Clear();
 		surfaceHeights.Clear();
 		boundaryNext.Clear();
@@ -310,6 +418,7 @@ public sealed class ExtrudePolygonMeshBuilder
 
 	float CalculateGridSpacing(float bevelWidth, int bevelSegments, float boundsSpan)
 	{
+		using var profileScope = CalculateGridSpacingMarker.Auto();
 		float polygonArea = Mathf.Abs(PolygonGeometry.SignedArea(outline));
 		float radiusEstimate = polygonArea / perimeter;
 		float availableBevelWidth = Mathf.Min(bevelWidth, radiusEstimate);
@@ -321,6 +430,7 @@ public sealed class ExtrudePolygonMeshBuilder
 
 	float MeasureBoundaryDistance(Vector2 point)
 	{
+		using var profileScope = MeasureBoundaryDistanceMarker.Auto();
 		float nearestSquaredDistance = float.PositiveInfinity;
 		for (int i = 0; i < fieldEdgeStarts.Count; i++)
 		{
@@ -335,6 +445,7 @@ public sealed class ExtrudePolygonMeshBuilder
 
 	void BuildGroundCaps(Color color, float boundsSpan)
 	{
+		using var profileScope = BuildGroundCapsMarker.Auto();
 		int surfaceCount = surfacePoints.Count;
 		float bevelNormalStep = normalSampleWidth / NormalSamplesAcrossBevel;
 		float minimumNormalStep = boundsSpan * MinimumNormalStepFraction;
@@ -368,21 +479,15 @@ public sealed class ExtrudePolygonMeshBuilder
 
 	Vector3 CalculateSurfaceNormal(Vector2 point, float normalStep)
 	{
-		Vector2 horizontalOffset = Vector2.right * normalStep;
-		Vector2 verticalOffset = Vector2.up * normalStep;
-		float rightHeight = EvaluateHalfThickness(point + horizontalOffset);
-		float leftHeight = EvaluateHalfThickness(point - horizontalOffset);
-		float upperHeight = EvaluateHalfThickness(point + verticalOffset);
-		float lowerHeight = EvaluateHalfThickness(point - verticalOffset);
-		float sampleDistance = normalStep * 2f;
-		float horizontalGradient = (rightHeight - leftHeight) / sampleDistance;
-		float verticalGradient = (upperHeight - lowerHeight) / sampleDistance;
-		Vector3 normal = new Vector3(-horizontalGradient, 1f, -verticalGradient);
+		using var profileScope = CalculateSurfaceNormalMarker.Auto();
+		Vector2 gradient = CalculateThicknessGradient(point, normalStep);
+		Vector3 normal = new Vector3(-gradient.x, 1f, -gradient.y);
 		return normal.normalized;
 	}
 
 	bool RestoreBoundaryVertices()
 	{
+		using var profileScope = RestoreBoundaryVerticesMarker.Auto();
 		usedBoundaryVertices.Clear();
 		for (int i = 0; i < outline.Count; i++)
 			usedBoundaryVertices.Add(false);
@@ -436,6 +541,7 @@ public sealed class ExtrudePolygonMeshBuilder
 
 	void SeedSurfaceInterior()
 	{
+		using var profileScope = SeedSurfaceInteriorMarker.Auto();
 		int originalIndexCount = capTriangles.Count;
 		for (int i = 0; i < originalIndexCount; i += 3)
 		{
@@ -454,8 +560,12 @@ public sealed class ExtrudePolygonMeshBuilder
 
 	void RefineSurface(float spacing, float heightTolerance, bool refineCurve, int vertexLimit)
 	{
+		using var profileScope = RefineSurfaceMarker.Auto();
+		ProfilerMarker refinementMarker = refineCurve ? RefineCurveSurfaceMarker : RefineGridSurfaceMarker;
+		using var refinementScope = refinementMarker.Auto();
 		for (int pass = 0; pass < MaximumRefinementPasses; pass++)
 		{
+			using var passScope = RefineSurfacePassMarker.Auto();
 			midpointLookup.Clear();
 			refinementTriangles.Clear();
 			int originalPointCount = surfacePoints.Count;
@@ -515,11 +625,17 @@ public sealed class ExtrudePolygonMeshBuilder
 
 	int RefineEdge(int firstVertex, int secondVertex, float spacing, float tolerance, bool refineCurve, int vertexLimit)
 	{
+		using var profileScope = RefineEdgeMarker.Auto();
 		int lowerIndex = Mathf.Min(firstVertex, secondVertex);
 		int upperIndex = Mathf.Max(firstVertex, secondVertex);
 		long edgeKey = ((long)lowerIndex << 32) | (uint)upperIndex;
 		if (midpointLookup.TryGetValue(edgeKey, out int midpoint))
 			return midpoint;
+		if (surfacePoints.Count >= vertexLimit)
+		{
+			midpointLookup[edgeKey] = -1;
+			return -1;
+		}
 
 		Vector2 startPoint = surfacePoints[firstVertex];
 		Vector2 endPoint = surfacePoints[secondVertex];
@@ -586,6 +702,7 @@ public sealed class ExtrudePolygonMeshBuilder
 
 	int AddSurfacePoint(Vector2 point, float height)
 	{
+		using var profileScope = AddSurfacePointMarker.Auto();
 		int index = surfacePoints.Count;
 		surfacePoints.Add(point);
 		surfaceHeights.Add(height);
@@ -595,12 +712,14 @@ public sealed class ExtrudePolygonMeshBuilder
 
 	void SplitOneEdge(int startVertex, int endVertex, int oppositeVertex, int midpoint)
 	{
+		using var profileScope = SplitOneEdgeMarker.Auto();
 		AddSurfaceTriangle(refinementTriangles, startVertex, midpoint, oppositeVertex);
 		AddSurfaceTriangle(refinementTriangles, midpoint, endVertex, oppositeVertex);
 	}
 
 	void SplitTwoEdges(int firstVertex, int sharedVertex, int lastVertex, int firstMidpoint, int secondMidpoint)
 	{
+		using var profileScope = SplitTwoEdgesMarker.Auto();
 		AddSurfaceTriangle(refinementTriangles, sharedVertex, secondMidpoint, firstMidpoint);
 		AddSurfaceTriangle(refinementTriangles, firstVertex, firstMidpoint, lastVertex);
 		AddSurfaceTriangle(refinementTriangles, firstMidpoint, secondMidpoint, lastVertex);
@@ -608,6 +727,7 @@ public sealed class ExtrudePolygonMeshBuilder
 
 	static void AddSurfaceTriangle(List<int> target, int firstVertex, int secondVertex, int thirdVertex)
 	{
+		using var profileScope = AddSurfaceTriangleMarker.Auto();
 		target.Add(firstVertex);
 		target.Add(secondVertex);
 		target.Add(thirdVertex);
@@ -615,6 +735,7 @@ public sealed class ExtrudePolygonMeshBuilder
 
 	void BuildBoundaryFieldEdges()
 	{
+		using var profileScope = BuildBoundaryFieldEdgesMarker.Auto();
 		fieldEdgeStarts.Clear();
 		fieldEdgeVectors.Clear();
 
@@ -653,6 +774,7 @@ public sealed class ExtrudePolygonMeshBuilder
 
 	void BuildSmoothGrindSamples(float radius)
 	{
+		using var profileScope = BuildSmoothGrindSamplesMarker.Auto();
 		float minimumRadius = GeometryTolerance * 4f;
 		radius = Mathf.Max(radius, minimumRadius);
 		float requestedSpacing = radius * 0.25f;
@@ -708,37 +830,49 @@ public sealed class ExtrudePolygonMeshBuilder
 			float smoothedGrind = weightedGrindSum / weightSum;
 			smoothedGrindSamples.Add(smoothedGrind);
 		}
+		BuildGrindInterpolations();
+	}
+
+	void BuildGrindInterpolations()
+	{
+		using var profileScope = BuildGrindInterpolationsMarker.Auto();
+		grindInterpolations.Clear();
+		int sampleCount = smoothedGrindSamples.Count;
+		grindSamplePositionScale = sampleCount / perimeter;
+		for (int i = 0; i < sampleCount; i++)
+		{
+			int previousIndex = (i + sampleCount - 1) % sampleCount;
+			int nextIndex = (i + 1) % sampleCount;
+			int followingIndex = (i + 2) % sampleCount;
+			float previous = smoothedGrindSamples[previousIndex];
+			float current = smoothedGrindSamples[i];
+			float next = smoothedGrindSamples[nextIndex];
+			float following = smoothedGrindSamples[followingIndex];
+			GrindInterpolation interpolation = new GrindInterpolation(previous, current, next, following);
+			grindInterpolations.Add(interpolation);
+		}
+	}
+
+	GrindInterpolation FindGrindInterpolation(float arcPosition, out float fraction)
+	{
+		float samplePosition = arcPosition * grindSamplePositionScale;
+		int sampleIndex = Mathf.FloorToInt(samplePosition);
+		fraction = samplePosition - sampleIndex;
+		sampleIndex %= grindInterpolations.Count;
+		return grindInterpolations[sampleIndex];
 	}
 
 	float SampleSmoothGrind(float arcPosition)
 	{
-		int sampleCount = smoothedGrindSamples.Count;
-		float samplePosition = arcPosition / perimeter * sampleCount;
-		int sampleIndex = Mathf.FloorToInt(samplePosition);
-		float fraction = samplePosition - sampleIndex;
-		sampleIndex %= sampleCount;
-
-		int previousIndex = (sampleIndex + sampleCount - 1) % sampleCount;
-		int nextIndex = (sampleIndex + 1) % sampleCount;
-		int followingIndex = (sampleIndex + 2) % sampleCount;
-		float previous = smoothedGrindSamples[previousIndex];
-		float current = smoothedGrindSamples[sampleIndex];
-		float next = smoothedGrindSamples[nextIndex];
-		float following = smoothedGrindSamples[followingIndex];
-
-		float constantTerm = 2f * current;
-		float linearCoefficient = next - previous;
-		float quadraticCoefficient = 2f * previous - 5f * current + 4f * next - following;
-		float cubicCoefficient = 3f * current - previous - 3f * next + following;
-		float linearTerm = linearCoefficient * fraction;
-		float quadraticTerm = quadraticCoefficient * fraction * fraction;
-		float cubicTerm = cubicCoefficient * fraction * fraction * fraction;
-		float interpolatedGrind = 0.5f * (constantTerm + linearTerm + quadraticTerm + cubicTerm);
+		using var profileScope = DetailedProfilingEnabled ? SampleSmoothGrindMarker.Auto() : default;
+		GrindInterpolation interpolation = FindGrindInterpolation(arcPosition, out float fraction);
+		float interpolatedGrind = interpolation.Evaluate(fraction);
 		return Mathf.Clamp01(interpolatedGrind);
 	}
 
 	void BuildGroundEdges()
 	{
+		using var profileScope = BuildGroundEdgesMarker.Auto();
 		groundEdges.Clear();
 		significantGroundStarts.Clear();
 		significantGroundEnds.Clear();
@@ -781,6 +915,7 @@ public sealed class ExtrudePolygonMeshBuilder
 
 	bool TrySelectCore()
 	{
+		using var profileScope = TrySelectCoreMarker.Auto();
 		surfaceClearances.Clear();
 		float maximumClearance = 0f;
 		for (int i = 0; i < surfacePoints.Count; i++)
@@ -818,6 +953,7 @@ public sealed class ExtrudePolygonMeshBuilder
 
 	float MeasureSignificantGroundDistance(Vector2 point)
 	{
+		using var profileScope = MeasureSignificantGroundDistanceMarker.Auto();
 		if (significantGroundStarts.Count == 0)
 			return MeasureBoundaryDistance(point);
 
@@ -831,8 +967,51 @@ public sealed class ExtrudePolygonMeshBuilder
 		return Mathf.Sqrt(nearestSquaredDistance);
 	}
 
+	void PrepareGroundInfluences()
+	{
+		using var profileScope = PrepareGroundInfluencesMarker.Auto();
+		thicknessLookup.Clear();
+		for (int i = 0; i < groundEdges.Count; i++)
+		{
+			GroundEdge edge = groundEdges[i];
+			float maximumGrind = MeasureMaximumEdgeGrind(edge);
+			Vector2 endPoint = edge.Start + edge.Vector;
+			float startRun = Vector2.Distance(edge.Start, coreCenter) - coreRadius;
+			float endRun = Vector2.Distance(endPoint, coreCenter) - coreRadius;
+			float maximumRun = Mathf.Max(startRun, endRun);
+			float desiredWidth = Mathf.Max(requestedBevelWidth, bevelWidthPerGrind * maximumGrind);
+			float maximumWidth = Mathf.Max(0f, Mathf.Min(desiredWidth, maximumRun));
+			float conservativeWidth = maximumWidth + GeometryTolerance;
+			GroundEdge preparedEdge = new GroundEdge(edge.Start, edge.Vector, edge.Length, edge.StartGrind, edge.EndGrind, edge.ArcPosition, conservativeWidth, maximumGrind);
+			groundEdges[i] = preparedEdge;
+		}
+	}
+
+	float MeasureMaximumEdgeGrind(GroundEdge edge)
+	{
+		float maximumGrind = Mathf.Max(edge.StartGrind, edge.EndGrind);
+		float startPosition = edge.ArcPosition * grindSamplePositionScale;
+		float endPosition = (edge.ArcPosition + edge.Length) * grindSamplePositionScale;
+		int firstSample = Mathf.FloorToInt(startPosition);
+		int lastSample = Mathf.FloorToInt(endPosition);
+		for (int i = firstSample; i <= lastSample; i++)
+		{
+			int sampleIndex = i % grindInterpolations.Count;
+			maximumGrind = Mathf.Max(maximumGrind, grindInterpolations[sampleIndex].MaximumValue);
+		}
+		return maximumGrind;
+	}
+
+	float CalculateInfluenceUpperBound(float distance, GroundEdge edge)
+	{
+		float taperFraction = distance / edge.MaximumInfluenceDistance;
+		float thicknessRecovery = Mathf.SmoothStep(0f, 1f, taperFraction);
+		return edge.MaximumGrind * (1f - thicknessRecovery);
+	}
+
 	float MeasureMaximumTaperWidth()
 	{
+		using var profileScope = MeasureMaximumTaperWidthMarker.Auto();
 		float maximumWidth = 0f;
 		for (int i = 0; i < groundEdges.Count; i++)
 		{
@@ -848,25 +1027,35 @@ public sealed class ExtrudePolygonMeshBuilder
 		return Mathf.Max(maximumWidth, minimumWidth);
 	}
 
-	float EvaluateGroundInfluence(Vector2 point, GroundEdge edge)
+	float EvaluateGroundInfluence(Vector2 point, GroundEdge edge, float minimumInfluence = 0f)
 	{
+		using var profileScope = DetailedProfilingEnabled ? EvaluateGroundInfluenceMarker.Auto() : default;
 		Vector2 offset = point - edge.Start;
-		float squaredLength = edge.Length * edge.Length;
-		float projectedFraction = Vector2.Dot(offset, edge.Vector) / squaredLength;
+		float projectedFraction = Vector2.Dot(offset, edge.Vector) * edge.InverseSquaredLength;
 		float edgeFraction = Mathf.Clamp01(projectedFraction);
 		Vector2 sourcePoint = edge.Start + edge.Vector * edgeFraction;
-		float sourceDistance = Vector2.Distance(point, sourcePoint);
+		float squaredSourceDistance = (point - sourcePoint).sqrMagnitude;
+		if (squaredSourceDistance >= edge.MaximumSquaredInfluenceDistance)
+			return 0f;
+		float sourceDistance = Mathf.Sqrt(squaredSourceDistance);
+		if (minimumInfluence > 0f)
+		{
+			float upperBound = CalculateInfluenceUpperBound(sourceDistance, edge);
+			if (upperBound + GeometryTolerance <= minimumInfluence)
+				return 0f;
+		}
+
 		float arcPosition = edge.ArcPosition + edgeFraction * edge.Length;
 		float rawGrind = Mathf.Lerp(edge.StartGrind, edge.EndGrind, edgeFraction);
-		float blendedGrind = SampleSmoothGrind(arcPosition);
+		float blendedGrind = rawGrind >= 1f ? 1f : SampleSmoothGrind(arcPosition);
 		float sourceGrind = Mathf.Max(rawGrind, blendedGrind);
 
-		float heightDrop = (bodyHalfThickness - minimumHalfThickness) * sourceGrind;
-		float requiredWidth = MaximumProfileSlope * heightDrop / maximumBevelSlope;
+		float requiredWidth = bevelWidthPerGrind * sourceGrind;
 		float desiredWidth = Mathf.Max(requestedBevelWidth, requiredWidth);
 		float availableRun = Vector2.Distance(sourcePoint, coreCenter) - coreRadius;
 		float taperWidth = Mathf.Min(desiredWidth, availableRun);
-		if (taperWidth <= GeometryTolerance || sourceDistance >= taperWidth)
+		float squaredTaperWidth = taperWidth * taperWidth;
+		if (taperWidth <= GeometryTolerance || squaredSourceDistance >= squaredTaperWidth)
 			return 0f;
 
 		float taperFraction = sourceDistance / taperWidth;
@@ -874,23 +1063,100 @@ public sealed class ExtrudePolygonMeshBuilder
 		return sourceGrind * (1f - thicknessRecovery);
 	}
 
+	Vector2 CalculateThicknessGradient(Vector2 point, float normalStep)
+	{
+		using var profileScope = CalculateThicknessGradientMarker.Auto();
+		Vector2 horizontalOffset = Vector2.right * normalStep;
+		Vector2 verticalOffset = Vector2.up * normalStep;
+		Vector2 rightPoint = point + horizontalOffset;
+		Vector2 leftPoint = point - horizontalOffset;
+		Vector2 upperPoint = point + verticalOffset;
+		Vector2 lowerPoint = point - verticalOffset;
+		float squaredCoreRadius = coreRadius * coreRadius;
+		bool rightInCore = (rightPoint - coreCenter).sqrMagnitude <= squaredCoreRadius;
+		bool leftInCore = (leftPoint - coreCenter).sqrMagnitude <= squaredCoreRadius;
+		bool upperInCore = (upperPoint - coreCenter).sqrMagnitude <= squaredCoreRadius;
+		bool lowerInCore = (lowerPoint - coreCenter).sqrMagnitude <= squaredCoreRadius;
+		if (rightInCore && leftInCore && upperInCore && lowerInCore)
+			return Vector2.zero;
+
+		float rightInfluence = rightInCore ? 1f : 0f;
+		float leftInfluence = leftInCore ? 1f : 0f;
+		float upperInfluence = upperInCore ? 1f : 0f;
+		float lowerInfluence = lowerInCore ? 1f : 0f;
+		for (int i = 0; i < groundEdges.Count; i++)
+		{
+			GroundEdge edge = groundEdges[i];
+			float horizontalMinimum = Mathf.Min(rightInfluence, leftInfluence);
+			float verticalMinimum = Mathf.Min(upperInfluence, lowerInfluence);
+			float minimumInfluence = Mathf.Min(horizontalMinimum, verticalMinimum);
+			if (edge.MaximumGrind <= minimumInfluence)
+				continue;
+
+			Vector2 offset = point - edge.Start;
+			float projectedFraction = Vector2.Dot(offset, edge.Vector) * edge.InverseSquaredLength;
+			Vector2 sourcePoint = edge.Start + edge.Vector * Mathf.Clamp01(projectedFraction);
+			float squaredDistance = (point - sourcePoint).sqrMagnitude;
+			float maximumSampleDistance = edge.MaximumInfluenceDistance + normalStep;
+			if (squaredDistance >= maximumSampleDistance * maximumSampleDistance)
+				continue;
+
+			float minimumSampleDistance = Mathf.Max(0f, Mathf.Sqrt(squaredDistance) - normalStep);
+			float upperBound = CalculateInfluenceUpperBound(minimumSampleDistance, edge);
+			if (upperBound + GeometryTolerance <= minimumInfluence)
+				continue;
+
+			if (!rightInCore)
+				rightInfluence = Mathf.Max(rightInfluence, EvaluateGroundInfluence(rightPoint, edge, rightInfluence));
+			if (!leftInCore)
+				leftInfluence = Mathf.Max(leftInfluence, EvaluateGroundInfluence(leftPoint, edge, leftInfluence));
+			if (!upperInCore)
+				upperInfluence = Mathf.Max(upperInfluence, EvaluateGroundInfluence(upperPoint, edge, upperInfluence));
+			if (!lowerInCore)
+				lowerInfluence = Mathf.Max(lowerInfluence, EvaluateGroundInfluence(lowerPoint, edge, lowerInfluence));
+		}
+
+		float rightHeight = rightInCore ? bodyHalfThickness : Mathf.Lerp(bodyHalfThickness, minimumHalfThickness, rightInfluence);
+		float leftHeight = leftInCore ? bodyHalfThickness : Mathf.Lerp(bodyHalfThickness, minimumHalfThickness, leftInfluence);
+		float upperHeight = upperInCore ? bodyHalfThickness : Mathf.Lerp(bodyHalfThickness, minimumHalfThickness, upperInfluence);
+		float lowerHeight = lowerInCore ? bodyHalfThickness : Mathf.Lerp(bodyHalfThickness, minimumHalfThickness, lowerInfluence);
+		float sampleDistance = normalStep * 2f;
+		float horizontalGradient = (rightHeight - leftHeight) / sampleDistance;
+		float verticalGradient = (upperHeight - lowerHeight) / sampleDistance;
+		return new Vector2(horizontalGradient, verticalGradient);
+	}
+
 	float EvaluateHalfThickness(Vector2 point)
 	{
+		using var profileScope = EvaluateHalfThicknessMarker.Auto();
 		bool isInCore = (point - coreCenter).sqrMagnitude <= coreRadius * coreRadius;
 		if (isInCore || groundEdges.Count == 0)
 			return bodyHalfThickness;
+		if (thicknessLookup.TryGetValue(point, out float cachedThickness))
+			return cachedThickness;
 
 		float strongestInfluence = 0f;
 		for (int i = 0; i < groundEdges.Count; i++)
 		{
-			float influence = EvaluateGroundInfluence(point, groundEdges[i]);
+			GroundEdge edge = groundEdges[i];
+			if (edge.MaximumGrind <= strongestInfluence)
+				continue;
+			float influence = EvaluateGroundInfluence(point, edge, strongestInfluence);
 			strongestInfluence = Mathf.Max(strongestInfluence, influence);
+			if (strongestInfluence >= 1f)
+			{
+				thicknessLookup[point] = minimumHalfThickness;
+				return minimumHalfThickness;
+			}
 		}
-		return Mathf.Lerp(bodyHalfThickness, minimumHalfThickness, strongestInfluence);
+		float halfThickness = Mathf.Lerp(bodyHalfThickness, minimumHalfThickness, strongestInfluence);
+		thicknessLookup[point] = halfThickness;
+		return halfThickness;
 	}
 
 	void BuildGroundWalls(Color color)
 	{
+		using var profileScope = BuildGroundWallsMarker.Auto();
 		wallIndices.Clear();
 		int boundaryVertex = 0;
 		do
@@ -945,6 +1211,7 @@ public sealed class ExtrudePolygonMeshBuilder
 
 	Vector3 CalculateWallNormal(Vector2 previous, Vector2 point, Vector2 next, float winding)
 	{
+		using var profileScope = CalculateWallNormalMarker.Auto();
 		float incomingLength = Vector2.Distance(point, previous);
 		float outgoingLength = Vector2.Distance(next, point);
 		Vector2 incoming = (point - previous) / incomingLength;
@@ -961,6 +1228,7 @@ public sealed class ExtrudePolygonMeshBuilder
 
 	void AddMirroredTriangle(int firstVertex, int secondVertex, int thirdVertex, int bottomOffset)
 	{
+		using var profileScope = AddMirroredTriangleMarker.Auto();
 		int bottomFirst = firstVertex + bottomOffset;
 		int bottomSecond = secondVertex + bottomOffset;
 		int bottomThird = thirdVertex + bottomOffset;
@@ -970,6 +1238,7 @@ public sealed class ExtrudePolygonMeshBuilder
 
 	void ClearMeshBuffers()
 	{
+		using var profileScope = ClearMeshBuffersMarker.Auto();
 		vertices.Clear();
 		normals.Clear();
 		uvs.Clear();
@@ -979,19 +1248,39 @@ public sealed class ExtrudePolygonMeshBuilder
 
 	void ApplyMesh(Mesh mesh)
 	{
+		using var profileScope = ApplyMeshMarker.Auto();
 		bool needsLargeIndices = vertices.Count > ushort.MaxValue;
-		mesh.Clear();
-		mesh.indexFormat = needsLargeIndices ? IndexFormat.UInt32 : IndexFormat.UInt16;
-		mesh.subMeshCount = 1;
-		mesh.SetVertices(vertices);
-		mesh.SetNormals(normals);
-		mesh.SetUVs(0, uvs);
-		mesh.SetColors(colors);
-		mesh.SetTriangles(triangles, 0, calculateBounds: true);
+		using (ClearMeshMarker.Auto())
+		{
+			mesh.Clear();
+			mesh.indexFormat = needsLargeIndices ? IndexFormat.UInt32 : IndexFormat.UInt16;
+			mesh.subMeshCount = 1;
+		}
+		using (UploadVerticesMarker.Auto())
+		{
+			mesh.SetVertices(vertices);
+		}
+		using (UploadNormalsMarker.Auto())
+		{
+			mesh.SetNormals(normals);
+		}
+		using (UploadUvsMarker.Auto())
+		{
+			mesh.SetUVs(0, uvs);
+		}
+		using (UploadColorsMarker.Auto())
+		{
+			mesh.SetColors(colors);
+		}
+		using (UploadTrianglesAndBoundsMarker.Auto())
+		{
+			mesh.SetTriangles(triangles, 0, calculateBounds: true);
+		}
 	}
 
 	void AddVertex(Vector3 position, Vector3 normal, Vector2 uv, Color color)
 	{
+		using var profileScope = AddVertexMarker.Auto();
 		vertices.Add(position);
 		normals.Add(normal);
 		uvs.Add(uv);
@@ -1000,6 +1289,7 @@ public sealed class ExtrudePolygonMeshBuilder
 
 	void AddTriangle(int firstVertex, int secondVertex, int thirdVertex)
 	{
+		using var profileScope = AddTriangleMarker.Auto();
 		triangles.Add(firstVertex);
 		triangles.Add(secondVertex);
 		triangles.Add(thirdVertex);

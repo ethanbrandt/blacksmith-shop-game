@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Clipper2Lib;
 using UnityEngine;
 
 public class MetalDeformer2D : MonoBehaviour
@@ -180,7 +181,8 @@ public class MetalDeformer2D : MonoBehaviour
 		
 		_direction = _direction.normalized;
 		_charge01 = Mathf.Clamp01(_charge01);
-		strikeMagnetMultiplier = feel.magnet;
+		strikeMagnetMultiplier = _charge01 < 0.15f ? 0f : feel.magnet * Mathf.Clamp01(_charge01 * 2f);
+
 		strikeTensionMultiplier = feel.tension;
 		impactRadius = ImpactRadius(_impactPoint, _direction, _charge01);
 		
@@ -535,6 +537,10 @@ public class MetalDeformer2D : MonoBehaviour
 			if (!PolygonGeometry.TryClosestPointOnOutline(targetOutline, vertices[i], PolygonGeometry.VertexOutward(strikeStart, i), out Vector2 closest, out float outlineDist))
 				continue;
 
+			Vector2 toOutline = closest - vertices[i];
+			if (Vector2.Dot(direction, toOutline) <= 0f && toOutline.magnitude >= outlineProtectDistance / 3f)
+				continue;
+
 			float reach = Mathf.Min(magnetRadius, impactRadius);
 			if (outlineDist > reach || reach <= 0f)
 				continue;
@@ -550,7 +556,8 @@ public class MetalDeformer2D : MonoBehaviour
 			if (outlineDist < outlineProtectDistance)
 			{
 				float lockAmount = 1f - outlineDist / Mathf.Max(0.0001f, outlineProtectDistance);
-				pull = Mathf.Max(pull, magnetStrength * hitWeight * strikeMagnetMultiplier * Mathf.Lerp(1f, 1.35f, lockAmount));
+				float tempStrikeMult = strikeMagnetMultiplier > 0.01f ? strikeMagnetMultiplier : 0.5f;
+				pull = Mathf.Max(pull, magnetStrength * hitWeight * tempStrikeMult * Mathf.Lerp(1f, 1.5f, lockAmount));
 			}
 
 			if (pull <= 0.001f)

@@ -78,7 +78,6 @@ public static class PolygonGeometry
 
 	public static bool IsSimple(IReadOnlyList<Vector2> polygon)
 	{
-		float startTime = Time.unscaledTime;
 		if (polygon == null || polygon.Count < MinimumVertexCount)
 			return false;
 
@@ -108,9 +107,6 @@ public static class PolygonGeometry
 					return false;
 			}
 		}
-		
-		if (Time.unscaledTime - startTime > 0.05f)
-			Debug.Log($"IsSimple runtime: {Time.unscaledTime - startTime}");
 
 		return true;
 	}
