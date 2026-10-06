@@ -12,6 +12,7 @@ public class PlayerController : MonoBehaviour
 	[SerializeField] float throwSpeed = 8f;
 	[SerializeField] float throwUpSpeed = 2.5f;
 	[SerializeField] float dropForward = 0.9f;
+	[SerializeField] float fuelTossCoolDown = 0.4f;
 	[SerializeField] Transform actor;
 
 	[Header("Animation")]
@@ -25,9 +26,12 @@ public class PlayerController : MonoBehaviour
 	static readonly int IdleStimParameter = Animator.StringToHash("IdleStim");
 	static readonly int ThrowStatePath = Animator.StringToHash("UpperBodyLayer.Throw");
 	static readonly int ThrowState = Animator.StringToHash("Throw");
+	static readonly int TossFuelStatePath = Animator.StringToHash("UpperBodyLayer.Fuel_Toss");
+	static readonly int TossFuelState = Animator.StringToHash("Fuel_Toss");
 	static readonly int IdleState = Animator.StringToHash("Base Layer.Idle");
 	float idleTime;
 	int upperBodyLayer = -1;
+	float canFuelTime;
 
 	bool IsThrowAnimationPlaying => animator && upperBodyLayer >= 0 && (animator.GetCurrentAnimatorStateInfo(upperBodyLayer).shortNameHash == ThrowState || (animator.IsInTransition(upperBodyLayer) && animator.GetNextAnimatorStateInfo(upperBodyLayer).shortNameHash == ThrowState));
 
@@ -188,7 +192,9 @@ public class PlayerController : MonoBehaviour
 			bool currentThrow = animator.GetCurrentAnimatorStateInfo(upperBodyLayer).shortNameHash == ThrowState;
 			bool nextThrow = transitioning && animator.GetNextAnimatorStateInfo(upperBodyLayer).shortNameHash == ThrowState;
 			bool showThrow = nextThrow || (currentThrow && !transitioning);
-			float weight = Mathf.MoveTowards(animator.GetLayerWeight(upperBodyLayer), holding || showThrow ? 1f : 0f, Time.deltaTime / Mathf.Max(0.01f, holdingBlendDuration));
+			bool nextFuelToss = transitioning && animator.GetNextAnimatorStateInfo(upperBodyLayer).shortNameHash == TossFuelState;
+			bool showFuelToss = nextFuelToss || (!transitioning && animator.GetCurrentAnimatorStateInfo(upperBodyLayer).shortNameHash == TossFuelState);
+			float weight = Mathf.MoveTowards(animator.GetLayerWeight(upperBodyLayer), holding || showThrow || showFuelToss ? 1f : 0f, Time.deltaTime / Mathf.Max(0.01f, holdingBlendDuration));
 			animator.SetLayerWeight(upperBodyLayer, weight);
 		}
 
@@ -315,7 +321,18 @@ public class PlayerController : MonoBehaviour
 			return;
 
 		if (FindClosestStation() is Furnace furnace)
+		{
 			furnace.TryInsertFuel(25);
+			
+			if (Time.time >= canFuelTime && animator && animator.isActiveAndEnabled && upperBodyLayer >= 0 && animator.HasState(upperBodyLayer, ThrowStatePath))
+			{
+				canFuelTime = Time.time + fuelTossCoolDown;
+				idleTime = 0f;
+				animator.ResetTrigger(IdleStimParameter);
+				animator.SetLayerWeight(upperBodyLayer, 1f);
+				animator.CrossFadeInFixedTime(TossFuelStatePath, 0f, upperBodyLayer, 0f);
+			}
+		}
 
 		if (held == null)
 			return;

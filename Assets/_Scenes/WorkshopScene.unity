@@ -3583,6 +3583,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 0eb45eb0bb768d440b1041a4f513d423, type: 3}
       insertIndex: -1
       addedObject: {fileID: 885326760}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 0eb45eb0bb768d440b1041a4f513d423, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 885326764}
   m_SourcePrefab: {fileID: 100100000, guid: 0eb45eb0bb768d440b1041a4f513d423, type: 3}
 --- !u!1 &885326759 stripped
 GameObject:
@@ -3638,6 +3641,27 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Highlightable
   highlight: 0
+--- !u!65 &885326764
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 885326759}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 0.8260173, z: 1.7533519}
+  m_Center: {x: -1.7525366e-15, y: 0.46801296, z: -0.37667608}
 --- !u!1 &922858903
 GameObject:
   m_ObjectHideFlags: 0
@@ -5916,6 +5940,7 @@ MonoBehaviour:
   throwSpeed: 8
   throwUpSpeed: 2.5
   dropForward: 0.9
+  fuelTossCoolDown: 0.35
   actor: {fileID: 1727715899}
   animator: {fileID: 0}
   idleStimDelay: 8
