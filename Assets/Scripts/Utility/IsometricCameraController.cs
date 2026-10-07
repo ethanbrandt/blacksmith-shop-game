@@ -116,6 +116,11 @@ public class IsometricCameraController : MonoBehaviour
         }
     }
 
+    public void SetZoom(float _zoom)
+    {
+	    _targetZoom = Mathf.Clamp(_zoom, minZoom, maxZoom);
+    }
+
     private void HandleFollowTarget()
     {
         if (target != null)

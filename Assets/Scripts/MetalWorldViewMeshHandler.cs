@@ -2,7 +2,6 @@ using UnityEngine;
 
 public class MetalWorldViewMeshHandler : MonoBehaviour
 {
-	[SerializeField] float thickness = 0.2f;
 	[SerializeField] float scale = 0.35f;
 	[SerializeField, Range(0f, 1f)] float thinningStrength = 1f;
 	[Header("Grinding")]
@@ -84,13 +83,16 @@ public class MetalWorldViewMeshHandler : MonoBehaviour
 			return;
 		Vector3 size = PolygonGeometry.ComputeBounds(polygon).size;
 		float area = Mathf.Max(size.x * size.y, 0.01f);
+		float thickness = metal.PartDefinition.thickness;
 		float actualThickness = thickness * Mathf.Pow(initialBoundsArea / area, thinningStrength);
 		float bodyThickness = Mathf.Clamp(actualThickness, Mathf.Min(0.1f, thickness), thickness);
+
+		bool built; 
+		if (metal.HasGrindProgress)
+			built = builder.TryBuildGround(runtimeMesh, polygon, metal.GrindAmounts, bodyThickness, Color.white, scale, bevelWidth, minEdgeThicknessRatio, bevelSegments, metal.GrindForSharpEdge, maximumBevelAngle);
+		else
+			built = builder.TryBuild(runtimeMesh, polygon, bodyThickness, Color.white, scale);
 		
-		bool built = metal.HasGrindProgress
-			? builder.TryBuildGround(runtimeMesh, polygon, metal.GrindAmounts, bodyThickness, Color.white,
-				scale, bevelWidth, minEdgeThicknessRatio, bevelSegments, metal.GrindForSharpEdge, maximumBevelAngle)
-			: builder.TryBuild(runtimeMesh, polygon, bodyThickness, Color.white, scale);
 		if (built)
 		{
 			meshFilter.sharedMesh = runtimeMesh;

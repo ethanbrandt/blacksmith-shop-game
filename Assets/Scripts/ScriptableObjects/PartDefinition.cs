@@ -10,12 +10,9 @@ public class PartDefinition : ScriptableObject
 	[Tooltip("Bladed parts can use the grindstone after quench.")]
 	public bool isBladed;
 
-	[Header("World Sprites")]
-	[Tooltip("Shown when Incomplete / not forged to a quality tier.")]
-	public Sprite unforgedSprite;
-	[Tooltip("Index 0=Flawed, 1=Good, 2=Excellent, 3=Perfect")]
-	public Sprite[] qualitySprites = new Sprite[4];
+	[Header("World View")]
 	public Sprite partSocketSprite;
+	public float thickness;
 
 	[Header("Forge Outline")]
 	[Tooltip("Outline vertices in local part space (relative to outline origin).")]
@@ -62,18 +59,6 @@ public class PartDefinition : ScriptableObject
 	public bool OutlineEdgeNeedsSharpening(int edgeIndex)
 	{
 		return outlineEdgeNeedsSharpening != null && edgeIndex >= 0 && edgeIndex < outlineEdgeNeedsSharpening.Length && outlineEdgeNeedsSharpening[edgeIndex];
-	}
-
-	public Sprite GetSpriteForQuality(ShapeQuality quality)
-	{
-		if (quality == ShapeQuality.Incomplete)
-			return unforgedSprite;
-
-		int index = (int)quality - 1;
-		if (qualitySprites != null && index >= 0 && index < qualitySprites.Length && qualitySprites[index] != null)
-			return qualitySprites[index];
-
-		return unforgedSprite;
 	}
 
 	public IReadOnlyList<Vector2> BuildForgeOutline(Vector2 forgeOrigin)
@@ -165,34 +150,6 @@ public class PartDefinition : ScriptableObject
 		{
 			message = "Display name is empty.";
 			return false;
-		}
-
-		if (unforgedSprite == null)
-		{
-			message = "Unforged sprite is missing.";
-			return false;
-		}
-
-		if (qualitySprites == null || qualitySprites.Length < 4)
-		{
-			message = "Quality sprites need 4 slots (Flawed, Good, Excellent, Perfect).";
-			return false;
-		}
-
-		string[] labels =
-		{
-			"Flawed",
-			"Good",
-			"Excellent",
-			"Perfect"
-		};
-		for (int i = 0; i < 4; i++)
-		{
-			if (qualitySprites[i] == null)
-			{
-				message = $"Quality sprite missing: {labels[i]}.";
-				return false;
-			}
 		}
 
 		if (!HasValidOutline)

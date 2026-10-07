@@ -14,13 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ForgingPrototype.PartDefinition
   displayName: Band
   isBladed: 0
-  unforgedSprite: {fileID: 0}
-  qualitySprites:
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
   partSocketSprite: {fileID: 21300000, guid: 6bf5838bb4e43f245bf79f9276765f73, type: 3}
+  thickness: 0.1
   outlineLocal:
   - {x: 0, y: 0.7658864}
   - {x: -0.5, y: 0.705793}

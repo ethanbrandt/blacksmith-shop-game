@@ -7,9 +7,6 @@ public class Highlightable : MonoBehaviour
     private Renderer[] renderers;
     private MaterialPropertyBlock propertyBlock;
 
-    public bool highlight;
-    private bool highlighted;
-    
     void Awake()
     {
         renderers = GetComponentsInChildren<Renderer>(true);
@@ -18,7 +15,6 @@ public class Highlightable : MonoBehaviour
 
     public void SetHighlighted(bool _highlighted)
     {
-        highlighted = _highlighted;
         foreach (var renderer in renderers)
         {
             renderer.GetPropertyBlock(propertyBlock);

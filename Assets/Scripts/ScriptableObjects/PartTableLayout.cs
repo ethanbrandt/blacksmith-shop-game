@@ -8,6 +8,13 @@ public struct PartTableSlot
 	public Vector2 positionOffset;
 }
 
+[Serializable]
+public struct PartToolSlot
+{
+	public Vector3 positionOffset;
+	public Vector3 rotationOffset;
+}
+
 public enum FinalRank
 {
 	D,
@@ -83,6 +90,7 @@ public struct ScoreRankBenchmarks
 public class PartTableLayout : ScriptableObject
 {
 	[SerializeField] PartTableSlot[] partTableSlots;
+	[SerializeField] PartToolSlot[] partToolSlots;
 
 	[Header("Final Rank Benchmarks")]
 	[Tooltip("Maximum completion time in seconds for each rank. Lower is better.")]
@@ -95,6 +103,11 @@ public class PartTableLayout : ScriptableObject
 	public PartTableSlot[] GetPartTableSlots()
 	{
 		return partTableSlots;
+	}
+
+	public PartToolSlot[] GetPartToolSlots()
+	{
+		return partToolSlots;
 	}
 
 	public FinalRank EvaluateRank(float elapsedSeconds, float forgingAverage, float grindingAverage, bool hasGrindingScore)

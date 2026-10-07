@@ -8,6 +8,9 @@ public class RoundManager : MonoBehaviour
     [SerializeField] Transform[] metalSpawnPoints;
     [SerializeField] GameObject metalPrefab;
     [SerializeField] PlayerController player;
+    [SerializeField] RoundEndVignetteController vignetteController;
+    [SerializeField] FinishedToolShowcase finishedToolShowcase;
+    [SerializeField] IsometricCameraController camController;
     
     public float TimeElapsed => Time.time - startTime;
     
@@ -35,6 +38,8 @@ public class RoundManager : MonoBehaviour
         if (startTime > 0)
             return;
         
+        vignetteController.ResetVignette();
+        
         startTime = Time.time;
         
         partTable.InitializePartLayout(_selectedForgePiece.PartLayout);
@@ -61,7 +66,12 @@ public class RoundManager : MonoBehaviour
 	    
         if (uiHandler == null)
             uiHandler = GetComponent<RoundUIHandler>();
-
+	    
+        vignetteController.BeginEnding();
+        
+        finishedToolShowcase.BeginToolShowcase(finishedParts, partLayout);
+        camController.target = finishedToolShowcase.transform;
+        
         float elapsedSeconds = startTime >= 0f ? Time.time - startTime : 0f;
         //uiHandler.ShowFinalScores(finishedParts, partDefinitions, partLayout, elapsedSeconds);
     }

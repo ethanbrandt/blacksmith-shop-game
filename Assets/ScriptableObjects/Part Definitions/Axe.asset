@@ -14,13 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PartDefinition
   displayName: Axe Head
   isBladed: 1
-  unforgedSprite: {fileID: 0}
-  qualitySprites:
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
   partSocketSprite: {fileID: 21300000, guid: 1e6492be9a8d0c04da6d1e4694684312, type: 3}
+  thickness: 0.2
   outlineLocal:
   - {x: -0.04249916, y: 1.1356243}
   - {x: -0.2582541, y: 1.5566095}

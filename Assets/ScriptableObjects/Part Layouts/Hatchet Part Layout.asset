@@ -17,6 +17,11 @@ MonoBehaviour:
     positionOffset: {x: 0.25, y: 1}
   - part: {fileID: 11400000, guid: 282717b25fa4b7245b6761cd7dd741bb, type: 2}
     positionOffset: {x: -0.25, y: -1}
+  partToolSlots:
+  - positionOffset: {x: 0.15, y: 0.32, z: 0}
+    rotationOffset: {x: -90, y: 0, z: 0}
+  - positionOffset: {x: 0, y: 0, z: 0}
+    rotationOffset: {x: 0, y: 90, z: 90}
   timeRankSeconds:
     c: 420
     b: 310
