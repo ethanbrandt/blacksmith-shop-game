@@ -2360,14 +2360,13 @@ MonoBehaviour:
   tensionIncludesAdjacency: 1
   sharpAngleDegrees: 50
   sharpCornerExtraSmooth: 1
+  minimumRetainedPush: 0.8
   outlineMagnetEnabled: 1
   magnetRadius: 4
   magnetStrength: 0.4
   magnetFalloff: 1.4
   magnetHitFalloffMultiplier: 2
   outlineProtectDistance: 0.15
-  splitTensionBoost: 0.1
-  splitExtraTensionIterations: 4
   inwardDotThreshold: 0.2
   creaseRadiusMultiplier: 1
   creaseStrengthScale: 0.5

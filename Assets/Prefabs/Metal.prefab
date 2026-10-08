@@ -496,7 +496,7 @@ Rigidbody:
   m_IsKinematic: 0
   m_Interpolate: 0
   m_Constraints: 0
-  m_CollisionDetection: 0
+  m_CollisionDetection: 3
 --- !u!114 &3369445296547185112
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -540,7 +540,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d1d82c71d045da04aa1965e2e0e6bc44, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Highlightable
-  highlight: 0
 --- !u!208 &-8797868720599204556
 NavMeshObstacle:
   m_ObjectHideFlags: 0
@@ -569,7 +568,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 418e6189145b15247b889ff2f99f5ae6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MetalWorldViewMeshHandler
-  thickness: 0.5
   scale: 0.4
   thinningStrength: 0.603
   bevelWidth: 3
