@@ -33,7 +33,7 @@ public class RoundManager : MonoBehaviour
 
     void OnDisable()
     {
-	    GameManager.Instance.UnregisterRoundManager();
+	    GameManager.Instance?.UnregisterRoundManager();
     }
 
     public void BeginRound(ForgePiece _selectedForgePiece)

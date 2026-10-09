@@ -47,6 +47,10 @@
                     <ui:Label text="Grinding:" name="GrindingScore" class="score-heading"/>
                     <ui:VisualElement name="GrindingPartScores" class="part-score-list"/>
                 </ui:ScrollView>
+                <ui:VisualElement name="DeliverPrompt" class="deliver-prompt is-hidden" picking-mode="Ignore">
+                    <ui:Image name="DeliverButtonImage" source="project://database/Assets/Art/Button%20Icons/A.png?fileID=21300000&amp;guid=5f1ef0923f2ba9d4ca9040ef1053f195&amp;type=3#A" tint-color="rgb(90, 176, 85)" class="deliver-prompt-icon"/>
+                    <ui:Label text="DELIVER TO CUSTOMER" class="deliver-prompt-label"/>
+                </ui:VisualElement>
             </ui:VisualElement>
         </ui:VisualElement>
     </ui:VisualElement>

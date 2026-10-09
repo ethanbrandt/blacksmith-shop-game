@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3d592494cdf349147855bd5ce686c568, type: 3}
+  m_Name: Slime_D_Completion
+  m_EditorClassIdentifier: Assembly-CSharp::DialogueSystem.DialogueScene
+  actorPrefab: {fileID: 0}
+  lines:
+  - rawLine:
+      speaker: Slime
+      pose: neutral
+      scrollSpeed: 1
+      text: hunan...<pause=0.35> ams dis my picksaz?
+    choices: []
+  - rawLine:
+      speaker: Slime
+      pose: sad
+      scrollSpeed: 0
+      text: me gaves you part of me... an you makes it <wobble>this</wobble>?
+    choices: []
+  - rawLine:
+      speaker: Slime
+      pose: sad
+      scrollSpeed: 1
+      text: <wave amplitude=1>me thinks rocks wins dis ones...</wave>
+    choices: []
+  - rawLine:
+      speaker: Slime
+      pose: sad
+      scrollSpeed: 0
+      text: me goes homes now. nos minings. jus frowns.
+    choices: []

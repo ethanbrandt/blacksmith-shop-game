@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3d592494cdf349147855bd5ce686c568, type: 3}
+  m_Name: Slime_S_Completion
+  m_EditorClassIdentifier: Assembly-CSharp::DialogueSystem.DialogueScene
+  actorPrefab: {fileID: 0}
+  lines:
+  - rawLine:
+      speaker: Slime
+      pose: neutral
+      scrollSpeed: 1
+      text: hunan...<pause=0.25> you makes dis out of me?
+    choices: []
+  - rawLine:
+      speaker: Slime
+      pose: strong
+      scrollSpeed: 2
+      text: <wave amplitude=2>ME AMS LEGENDARIES!!!</wave>
+    choices: []
+  - rawLine:
+      speaker: Slime
+      pose: strong
+      scrollSpeed: 0
+      text: nos rocks cans stops me now! me mines whole mountains!
+    choices: []
+  - rawLine:
+      speaker: Slime
+      pose: happy
+      scrollSpeed: 0
+      text: dis never break!
+    choices: []
+  - rawLine:
+      speaker: Slime
+      pose: happy
+      scrollSpeed: 2
+      text: <wave amplitude=2 speed=8>YIPPEEE!!!</wave>
+    choices: []

@@ -14,6 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CustomerScenario
   requestedPiece: {fileID: 11400000, guid: 83c095ff1563921498aa88c3ef164b58, type: 2}
   dialogueScene: {fileID: 11400000, guid: 761c4fc17fef49d4d8cd5ff14ed686e9, type: 2}
+  dRankCompletionDialogue: {fileID: 11400000, guid: b2d2665694cc450f846d4d53980457fd, type: 2}
+  cRankCompletionDialogue: {fileID: 11400000, guid: 1c348c28e77a435b95c04cb213888751, type: 2}
+  bRankCompletionDialogue: {fileID: 11400000, guid: d8112b65692e44bea0d02811f94ffc8c, type: 2}
+  aRankCompletionDialogue: {fileID: 11400000, guid: a7ada9ac9b074b6c8235584d75005333, type: 2}
+  sRankCompletionDialogue: {fileID: 11400000, guid: 0d54d10be3914ecf9e42c8dfd8f2e8fd, type: 2}
+  defaultCompletionDialogue: {fileID: 0}
   pieceTitle: Sword
   piecePreviewSprite: {fileID: -1153105854, guid: 92d746f93f473b94e9e54dd9149c2ca2, type: 3}
   customerName: Living Metal

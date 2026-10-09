@@ -75,7 +75,7 @@ public class ScenarioOverviewController : MonoBehaviour
 
 	void OnDisable()
 	{
-		GameManager.Instance.UnregisterScenarioOverviewController();
+		GameManager.Instance?.UnregisterScenarioOverviewController();
 		partInfoElements.Clear();
 
 		continueRadialProgress = null;
@@ -92,7 +92,7 @@ public class ScenarioOverviewController : MonoBehaviour
 
 	void Update()
 	{
-		if (confirmTimer < 0)
+		if (GameManager.IsTransitioning || confirmTimer < 0)
 			return;
 		
 		if (submit.IsPressed())
@@ -112,6 +112,15 @@ public class ScenarioOverviewController : MonoBehaviour
 			
 		if (continueRadialProgress != null)
 			continueRadialProgress.Progress = Mathf.InverseLerp(0f, holdTimeToConfirm, confirmTimer);
+	}
+
+	public void HideScenarioOverview()
+	{
+		confirmTimer = -1f;
+		if (continueRadialProgress != null)
+			continueRadialProgress.Progress = 0f;
+		if (document != null)
+			document.rootVisualElement.AddToClassList("is-hidden");
 	}
 
 	public void ShowScenarioOverview(CustomerScenario _scenario)

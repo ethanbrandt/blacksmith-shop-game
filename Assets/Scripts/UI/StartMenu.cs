@@ -52,14 +52,15 @@ public class StartMenu : MonoBehaviour
 
 	void Update()
 	{
+		if (GameManager.IsTransitioning)
+			return;
 		if (submit.IsPressed())
 		{
 			holdTimer += Time.unscaledDeltaTime;
 
 			if (holdTimer >= HOLD_TIME_TO_START)
 			{
-				GameManager.Instance.SetScenarioIndex(scenarioIndex);
-				SceneManager.LoadScene("_Scenes/ShopFrontScene", LoadSceneMode.Single);
+				GameManager.Instance.StartScenario(scenarioIndex);
 			}
 		}
 		else
@@ -71,6 +72,8 @@ public class StartMenu : MonoBehaviour
 
 	void OnNavigate(InputAction.CallbackContext _context)
 	{
+		if (GameManager.IsTransitioning)
+			return;
 		Vector2 inputDir = _context.ReadValue<Vector2>();
 
 		float tempLast = lastXInput;

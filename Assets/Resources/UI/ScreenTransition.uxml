@@ -1,0 +1,5 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <ui:VisualElement name="TransitionOverlay" picking-mode="Position" style="position: absolute; top: 0; right: 0; bottom: 0; left: 0; background-color: rgb(0, 0, 0); opacity: 0; display: none; align-items: center; justify-content: center;">
+        <ui:Label name="TransitionCaption" text="Later that day" picking-mode="Ignore" style="color: rgb(255, 247, 223); font-size: 40px; -unity-text-align: middle-center; -unity-font-definition: url(&quot;project://database/Assets/TextMesh%20Pro/Fonts/LiberationSans.ttf?fileID=12800000&amp;guid=e3265ab4bf004d28a9537516768c1c75&amp;type=3#LiberationSans&quot;);"/>
+    </ui:VisualElement>
+</ui:UXML>

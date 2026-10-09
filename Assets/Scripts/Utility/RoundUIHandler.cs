@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UIElements;
+using UnityEngine.InputSystem;
 
 public class RoundUIHandler : MonoBehaviour
 {
@@ -29,6 +30,10 @@ public class RoundUIHandler : MonoBehaviour
     VisualElement qualityMarker;
     VisualElement rankDisplay;
     VisualElement breakdown;
+    VisualElement deliverPrompt;
+    InputAction deliverySubmit;
+    bool canDeliver;
+    bool waitForDeliveryRelease;
     Label qualityPercent;
     Label rankLetter;
     Label timeLabel;
@@ -41,6 +46,21 @@ public class RoundUIHandler : MonoBehaviour
     readonly Label[] rankLabels = new Label[5];
     readonly Label[] thresholdLabels = new Label[5];
     bool endScreen;
+
+    void Awake()
+    {
+        deliverySubmit = new InputAction("DeliverPiece", InputActionType.Button, "<Gamepad>/buttonSouth");
+    }
+
+    void OnEnable()
+    {
+        deliverySubmit.Enable();
+    }
+
+    void OnDestroy()
+    {
+        deliverySubmit?.Dispose();
+    }
 
     void Start()
     {
@@ -55,17 +75,32 @@ public class RoundUIHandler : MonoBehaviour
     {
         if (!endScreen && roundManager != null && timeElapsedText != null)
             timeElapsedText.text = roundManager.TimeElapsed.ToString("F2");
+
+        if (GameManager.IsTransitioning || !canDeliver)
+            return;
+        if (waitForDeliveryRelease)
+        {
+            if (!deliverySubmit.IsPressed())
+                waitForDeliveryRelease = false;
+            return;
+        }
+        if (deliverySubmit.WasPressedThisFrame())
+            DeliverToCustomer();
     }
 
     void OnDisable()
     {
         StopReveal();
+        canDeliver = false;
+        deliverySubmit.Disable();
     }
 
     public void ResetFinalScores()
     {
         StopReveal();
         endScreen = false;
+        canDeliver = false;
+        waitForDeliveryRelease = false;
         if (finalScoreDocument != null)
             finalScoreDocument.gameObject.SetActive(false);
     }
@@ -155,10 +190,13 @@ public class RoundUIHandler : MonoBehaviour
 
         float finalScore = partLayout.EvaluateScore(elapsedSeconds, forgingAverage, grindingAverage, hasGrinding);
         FinalRank finalRank = partLayout.EvaluateRank(elapsedSeconds, forgingAverage, grindingAverage, hasGrinding);
+        GameManager.Instance?.RecordRoundResult(finalRank);
 
         ConfigureGauge();
         scoreScreen.EnableInClassList("is-complete", false);
         breakdown.AddToClassList("is-hidden");
+        canDeliver = false;
+        deliverPrompt.AddToClassList("is-hidden");
         SetDisplayedScore(0f);
         SetRankTransform(1f, 0f);
         SetRankAppearance(FinalRank.D, false);
@@ -172,6 +210,7 @@ public class RoundUIHandler : MonoBehaviour
         qualityMarker = root.Q("QualityMarker");
         rankDisplay = root.Q("RankDisplay");
         breakdown = root.Q("ScoreBreakdown");
+        deliverPrompt = root.Q("DeliverPrompt");
         qualityPercent = root.Q<Label>("QualityPercent");
         rankLetter = root.Q<Label>("RankLetter");
         timeLabel = root.Q<Label>("TimeTaken");
@@ -182,7 +221,7 @@ public class RoundUIHandler : MonoBehaviour
         grindingList = root.Q("GrindingPartScores");
         bool valid = scoreScreen != null && unrevealedBar != null && qualityMarker != null
             && rankDisplay != null && breakdown != null && qualityPercent != null
-            && rankLetter != null
+            && rankLetter != null && deliverPrompt != null
             && timeLabel != null && forgingLabel != null && grindingLabel != null
             && forgingList != null && grindingList != null;
         for (int i = 0; i < rankBands.Length; i++)
@@ -265,7 +304,20 @@ public class RoundUIHandler : MonoBehaviour
         SetRankAppearance(finalRank);
         breakdown.RemoveFromClassList("is-hidden");
         scoreScreen.AddToClassList("is-complete");
+        canDeliver = GameManager.Instance != null && GameManager.Instance.HasCompletedResult;
+        // A held through the reveal must be released before accepting the handoff press.
+        waitForDeliveryRelease = deliverySubmit.IsPressed();
+        deliverPrompt.EnableInClassList("is-hidden", !canDeliver);
         revealRoutine = null;
+    }
+
+    void DeliverToCustomer()
+    {
+        if (GameManager.IsTransitioning || !canDeliver || GameManager.Instance == null)
+            return;
+        canDeliver = false;
+        deliverPrompt.AddToClassList("is-hidden");
+        GameManager.Instance.EndWorkshopScene();
     }
 
     float PauseForRank(FinalRank rank)

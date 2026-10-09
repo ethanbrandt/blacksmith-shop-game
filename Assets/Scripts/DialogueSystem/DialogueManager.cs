@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -27,6 +26,9 @@ namespace DialogueSystem
 		private ParsedLine currentParsedLine;
 		private DialogueLine currentDialogueLine;
 		private DialogueActor currentActor;
+		private GameObject currentActorObject;
+		bool hasPreparedDialogue;
+		public bool HasPreparedDialogue => hasPreparedDialogue;
 		private DialogueState state;
 
 		private readonly List<Action> choiceCallbacks = new List<Action>();
@@ -85,7 +87,7 @@ namespace DialogueSystem
 
 		void OnDisable()
 		{
-			GameManager.Instance.UnregisterDialogueManager();
+			GameManager.Instance?.UnregisterDialogueManager();
 			
 			if (dialogueBoxLabel != null)
 			{
@@ -97,6 +99,7 @@ namespace DialogueSystem
 			speakerNameLabel = null;
 
 			submitButtonImage = null;
+			ClearCurrentActor();
 
 			if (choiceButtons != null)
 				for (int i = 0; i < choiceCallbacks.Count; i++)
@@ -109,11 +112,13 @@ namespace DialogueSystem
 		void Start()
 		{
 			choicesElement.EnableInClassList("is-hidden", true);
-			SetDialogueScene(GameManager.Instance.GetCurrentScenario().Scene);
+			GameManager.Instance.StartCurrentDialogue();
 		}
 
 		void Update()
 		{
+			if (GameManager.IsTransitioning)
+				return;
 			dialogueBoxLabel?.MarkDirtyRepaint();
 
 			if (totalGlyphCount < 0)
@@ -127,7 +132,7 @@ namespace DialogueSystem
 			{
 				if (state == DialogueState.SCROLLING)
 				{
-					if (currentDialogueLine.choices.Count > 0)
+					if (currentDialogueLine.choices != null && currentDialogueLine.choices.Count > 0)
 					{
 						state = DialogueState.PICKING_CHOICE;
 						
@@ -145,7 +150,7 @@ namespace DialogueSystem
 							else
 							{
 								button.EnableInClassList("is-hidden", false);
-								button.text = currentDialogueLine.choices[i].optionText;
+								button.text = GameManager.Instance.ResolveDialogueText(currentDialogueLine.choices[i].optionText);
 							}
 							
 						}
@@ -180,6 +185,8 @@ namespace DialogueSystem
 
 		private void OnSubmit()
 		{
+			if (GameManager.IsTransitioning)
+				return;
 			if (totalGlyphCount < 0)
 				return;
 
@@ -198,7 +205,7 @@ namespace DialogueSystem
 
 		private void OnChoiceSelected(int _choiceIndex)
 		{
-			if (state != DialogueState.PICKING_CHOICE || _choiceIndex < 0 || _choiceIndex >= currentDialogueLine.choices.Count)
+			if (GameManager.IsTransitioning || state != DialogueState.PICKING_CHOICE || currentDialogueLine.choices == null || _choiceIndex < 0 || _choiceIndex >= currentDialogueLine.choices.Count)
 				return;
 
 			Choice choice = currentDialogueLine.choices[_choiceIndex];
@@ -209,7 +216,9 @@ namespace DialogueSystem
 
 		public void StartNextLine()
 		{
-			if (lineIndex == currentScene.lines.Count - 1)
+			if (GameManager.IsTransitioning)
+				return;
+			if (currentScene == null || currentScene.lines == null || lineIndex >= currentScene.lines.Count - 1)
 			{
 				EndDialogue();
 				return;
@@ -226,24 +235,73 @@ namespace DialogueSystem
 			
 			print("END OF DIALOGUE");
 			state = DialogueState.END_OF_DIALOGUE;
+			totalGlyphCount = -1;
+			currentParsedLine = default;
+			choicesElement?.AddToClassList("is-hidden");
+			document.rootVisualElement.AddToClassList("is-hidden");
 			GameManager.Instance.EndOfDialogue();
 		}
 
-		public void SetDialogueScene(DialogueScene _dialogueScene)
+		public void SetDialogueScene(DialogueScene _dialogueScene, GameObject fallbackActorPrefab = null, bool deferPlayback = false)
 		{
-			if (_dialogueScene.lines.Count == 0 || _dialogueScene.actorPrefab == null)
+			ClearCurrentActor();
+			hasPreparedDialogue = deferPlayback;
+			currentScene = _dialogueScene;
+			currentParsedLine = default;
+			currentDialogueLine = default;
+			state = DialogueState.STARTING;
+			lineIndex = 0;
+			totalGlyphCount = -1;
+			visibleGlyphCount = 0;
+			nextScrollTimer = 0f;
+			dialogueBoxLabel.text = string.Empty;
+			speakerNameLabel.text = string.Empty;
+			choicesElement.AddToClassList("is-hidden");
+			submitButtonImage?.AddToClassList("is-hidden");
+			document.rootVisualElement.EnableInClassList("is-hidden", deferPlayback);
+
+			// Unassigned or empty scenes finish immediately, so optional reactions never block progression.
+			if (_dialogueScene == null || _dialogueScene.lines == null || _dialogueScene.lines.Count == 0)
 			{
-				EndDialogue();
-				
-				Debug.LogWarning("Invalid DialogueScene: Missing lines or actor");
+				if (!deferPlayback)
+					EndDialogue();
 				return;
 			}
 
-			lineIndex = 0;
-			currentScene = _dialogueScene;
-			GameObject actorObject = Instantiate(_dialogueScene.actorPrefab);
-			currentActor = actorObject.GetComponent<DialogueActor>();
-			SetLine(currentScene.lines[lineIndex]);
+			GameObject actorPrefab = _dialogueScene.actorPrefab != null ? _dialogueScene.actorPrefab : fallbackActorPrefab;
+			if (actorPrefab != null)
+			{
+				currentActorObject = Instantiate(actorPrefab);
+				currentActor = currentActorObject.GetComponent<DialogueActor>();
+			}
+			if (deferPlayback)
+			{
+				string pose = currentScene.lines[0].rawLine.pose;
+				if (currentActor != null && !string.IsNullOrEmpty(pose))
+					currentActor.SetPose(pose);
+			}
+			else
+				SetLine(currentScene.lines[lineIndex]);
+		}
+
+		public void BeginPreparedDialogue()
+		{
+			if (!hasPreparedDialogue)
+				return;
+			hasPreparedDialogue = false;
+			document.rootVisualElement.RemoveFromClassList("is-hidden");
+			if (currentScene == null || currentScene.lines == null || currentScene.lines.Count == 0)
+				EndDialogue();
+			else
+				SetLine(currentScene.lines[0]);
+		}
+
+		void ClearCurrentActor()
+		{
+			if (currentActorObject != null)
+				Destroy(currentActorObject);
+			currentActorObject = null;
+			currentActor = null;
 		}
 
 		private void SetLine(DialogueLine _line)
@@ -254,7 +312,7 @@ namespace DialogueSystem
 
 		private void SetRawLine(RawLine _line)
 		{
-			currentParsedLine = dialogueParser.ParseDialogueLine(_line.text);
+			currentParsedLine = dialogueParser.ParseDialogueLine(GameManager.Instance.ResolveDialogueText(_line.text));
 
 			if (string.IsNullOrEmpty(currentParsedLine.displayText))
 			{
@@ -262,13 +320,10 @@ namespace DialogueSystem
 				return;
 			}
 			
-			if (string.IsNullOrEmpty(currentParsedLine.displayText))
-				StartNextLine();
-			
 			dialogueBoxLabel.text = currentParsedLine.displayText;
 			
 			if (!string.IsNullOrEmpty(_line.speaker))
-				speakerNameLabel.text = _line.speaker;
+				speakerNameLabel.text = GameManager.Instance.ResolveDialogueText(_line.speaker);
 
 			submitButtonImage?.EnableInClassList("is-hidden", true);
 

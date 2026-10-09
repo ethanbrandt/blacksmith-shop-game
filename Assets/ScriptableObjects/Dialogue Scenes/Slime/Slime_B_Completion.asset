@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3d592494cdf349147855bd5ce686c568, type: 3}
+  m_Name: Slime_B_Completion
+  m_EditorClassIdentifier: Assembly-CSharp::DialogueSystem.DialogueScene
+  actorPrefab: {fileID: 0}
+  lines:
+  - rawLine:
+      speaker: Slime
+      pose: happy
+      scrollSpeed: 0
+      text: oohs! dis ams a goods picksaz!
+    choices: []
+  - rawLine:
+      speaker: Slime
+      pose: strong
+      scrollSpeed: 0
+      text: me hits rocks. rocks gives ores. me gets snacks!
+    choices: []
+  - rawLine:
+      speaker: Slime
+      pose: happy
+      scrollSpeed: 0
+      text: part of me ams usefuls now. other part ams excited.
+    choices: []
+  - rawLine:
+      speaker: Slime
+      pose: happy
+      scrollSpeed: 2
+      text: tanks hunan! advetures times!
+    choices: []

@@ -13,7 +13,13 @@ MonoBehaviour:
   m_Name: SuitorScenario
   m_EditorClassIdentifier: Assembly-CSharp::CustomerScenario
   requestedPiece: {fileID: 11400000, guid: 620f6d380e2878a4c9ee846b859be639, type: 2}
-  dialogueScene: {fileID: 11400000, guid: 3a033affb6cdb5c46adcefdcfa1e52bd, type: 2}
+  dialogueScene: {fileID: 11400000, guid: 1de80248bc7d6cd4cab1726d063800f9, type: 2}
+  dRankCompletionDialogue: {fileID: 11400000, guid: b5a6418baac2a3a4c992114ad56f7d30, type: 2}
+  cRankCompletionDialogue: {fileID: 11400000, guid: bf04578c17c305748a38bef9d6db674f, type: 2}
+  bRankCompletionDialogue: {fileID: 11400000, guid: ef6d023fca6f21d4482a4d939b19b292, type: 2}
+  aRankCompletionDialogue: {fileID: 11400000, guid: 11ad1aadcead63f409a4868ad7cd456c, type: 2}
+  sRankCompletionDialogue: {fileID: 11400000, guid: 8aada7593d8fa2e4fb87bd82261edb5b, type: 2}
+  defaultCompletionDialogue: {fileID: 0}
   pieceTitle: RING
   piecePreviewSprite: {fileID: 1080000870, guid: 92d746f93f473b94e9e54dd9149c2ca2, type: 3}
   customerName: Suitor

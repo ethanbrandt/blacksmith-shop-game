@@ -1,140 +1,293 @@
 using System;
 using DialogueSystem;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
-	[Tooltip("ONLY FOR DEBUG PURPOSES")]
-	[SerializeField] CustomerScenario testScenario;
-	[SerializeField] CustomerScenario[] customerScenarios;
-	
-	public static GameManager Instance;
+    [Tooltip("ONLY FOR DEBUG PURPOSES")]
+    [SerializeField] CustomerScenario testScenario;
+    [SerializeField] CustomerScenario[] customerScenarios;
 
-	private int currentScenarioIndex;
+    [Header("Scene Transitions")]
+    [SerializeField, Min(0f)] float sceneFadeSeconds = 0.45f;
+    [SerializeField, Min(0f)] float laterThatDaySeconds = 2.5f;
 
-	private DialogueManager dialogueManager;
-	private ScenarioOverviewController scenarioOverviewController;
-	private RoundManager roundManager;
+    public static bool IsTransitioning => ScreenTransitionController.IsTransitioning;
 
-	void Awake()
-	{
-		if (Instance != null)
-		{
-			Destroy(this.gameObject);
-			return;
-		}
+    public static GameManager Instance;
 
-		Instance = this;
-		DontDestroyOnLoad(this.gameObject);
+    enum ScenarioPhase { Introduction, Workshop, CustomerReaction, ReturningToMenu }
+    ScenarioPhase phase;
+    int currentScenarioIndex;
+    CustomerScenario completedScenario;
+    FinalRank completedRank;
+    DialogueManager dialogueManager;
+    ScenarioOverviewController scenarioOverviewController;
+    RoundManager roundManager;
 
-		currentScenarioIndex = 0;
-	}
+    public bool HasCompletedResult => completedScenario != null;
+    public FinalRank CompletedRank => completedRank;
+    public bool IsCustomerReaction => phase == ScenarioPhase.CustomerReaction;
 
-	public void RegisterRoundManager(RoundManager _roundManager)
-	{
-		if (roundManager != null)
-		{
-			Debug.LogError("Attempted to register RoundManager when it is already registered");
-			return;
-		}
+    void Awake()
+    {
+        if (Instance != null)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
+        currentScenarioIndex = 0;
+        phase = ScenarioPhase.Introduction;
+    }
 
-		if (_roundManager == null)
-		{
-			Debug.LogError("Invalid RoundManager");
-			return;
-		}
+    void OnDestroy()
+    {
+        if (Instance == this)
+            Instance = null;
+    }
 
-		roundManager = _roundManager;
-		
-		roundManager.BeginRound(GetCurrentScenario().RequestedPiece);
-	}
+    void Update()
+    {
+        if (IsTransitioning || Keyboard.current == null)
+            return;
+	    if (phase == ScenarioPhase.Introduction && Keyboard.current.rKey.wasPressedThisFrame && Keyboard.current.fKey.isPressed)
+		    EndShopFrontScene();
+	    
+	    if (phase == ScenarioPhase.Workshop && Keyboard.current.fKey.isPressed)
+	    {
+		    if (Keyboard.current.digit1Key.wasPressedThisFrame)
+		    {
+			    RecordRoundResult(FinalRank.D);
+			    EndWorkshopScene();
+		    }
+		    else if (Keyboard.current.digit2Key.wasPressedThisFrame)
+		    {
+			    RecordRoundResult(FinalRank.C);
+			    EndWorkshopScene();
+		    }
+		    else if (Keyboard.current.digit3Key.wasPressedThisFrame)
+		    {
+			    RecordRoundResult(FinalRank.B);
+			    EndWorkshopScene();
+		    }
+		    else if (Keyboard.current.digit4Key.wasPressedThisFrame)
+		    {
+			    RecordRoundResult(FinalRank.A);
+			    EndWorkshopScene();
+		    }
+		    else if (Keyboard.current.digit5Key.wasPressedThisFrame)
+		    {
+			    RecordRoundResult(FinalRank.S);
+			    EndWorkshopScene();
+		    }
+	    } 
+    }
 
-	public void UnregisterRoundManager()
-	{
-		roundManager = null;
-	}
+    public void RegisterRoundManager(RoundManager manager)
+    {
+        if (roundManager != null || manager == null)
+        {
+            Debug.LogError("Cannot register an invalid or duplicate RoundManager.", this);
+            return;
+        }
+        CustomerScenario scenario = GetCurrentScenario();
+        if (scenario == null || scenario.RequestedPiece == null)
+        {
+            Debug.LogError("The current customer scenario needs a requested piece.", this);
+            return;
+        }
+        roundManager = manager;
+        phase = ScenarioPhase.Workshop;
+        completedScenario = null;
+        roundManager.BeginRound(scenario.RequestedPiece);
+    }
 
-	public void RegisterDialogueManager(DialogueManager _dialogueManager)
-	{
-		if (dialogueManager != null)
-		{
-			Debug.LogError("Attempted to register DialogueManager when it is already registered");
-			return;
-		}
+    public void UnregisterRoundManager()
+    {
+        roundManager = null;
+    }
 
-		if (_dialogueManager == null)
-		{
-			Debug.LogError("Invalid DialogueManager");
-			return;
-		}
+    public void RegisterDialogueManager(DialogueManager manager)
+    {
+        if (dialogueManager != null || manager == null)
+        {
+            Debug.LogError("Cannot register an invalid or duplicate DialogueManager.", this);
+            return;
+        }
+        dialogueManager = manager;
+    }
 
-		dialogueManager = _dialogueManager;
-	}
+    public void UnregisterDialogueManager()
+    {
+        dialogueManager = null;
+    }
 
-	public void UnregisterDialogueManager()
-	{
-		dialogueManager = null;
-	}
+    public void RegisterScenarioOverviewController(ScenarioOverviewController controller)
+    {
+        if (scenarioOverviewController != null || controller == null)
+        {
+            Debug.LogError("Cannot register an invalid or duplicate ScenarioOverviewController.", this);
+            return;
+        }
+        scenarioOverviewController = controller;
+    }
 
-	public void RegisterScenarioOverviewController(ScenarioOverviewController _scenarioOverviewController)
-	{
-		if (scenarioOverviewController != null)
-		{
-			Debug.LogError("Attempted to register ScenarioOverviewController when it is already registered");
-			return;
-		}
+    public void UnregisterScenarioOverviewController()
+    {
+        scenarioOverviewController = null;
+    }
 
-		if (_scenarioOverviewController == null)
-		{
-			Debug.LogError("Invalid ScenarioOverviewController");
-			return;
-		}
+    public void EndShopFrontScene()
+    {
+        if (IsTransitioning || phase != ScenarioPhase.Introduction)
+            return;
+        phase = ScenarioPhase.Workshop;
+        completedScenario = null;
+        ScreenTransitionController.LoadScene("_Scenes/WorkshopScene", sceneFadeSeconds);
+    }
 
-		scenarioOverviewController = _scenarioOverviewController;
-	}
+    public void RecordRoundResult(FinalRank rank)
+    {
+        if (phase != ScenarioPhase.Workshop)
+            return;
+        completedScenario = GetCurrentScenario();
+        completedRank = rank;
+    }
 
-	public void UnregisterScenarioOverviewController()
-	{
-		scenarioOverviewController = null;
-	}
+    public void EndWorkshopScene()
+    {
+        if (IsTransitioning || phase != ScenarioPhase.Workshop || !HasCompletedResult)
+            return;
+        phase = ScenarioPhase.CustomerReaction;
+        ScreenTransitionController.LoadScene("_Scenes/ShopFrontScene", sceneFadeSeconds, ResumeDialogueAfterTransition);
+    }
 
-	public void EndShopFrontScene()
-	{
-		Debug.Log("ENDING SHOP FRONT SCENE");
-		SceneManager.LoadScene("_Scenes/WorkshopScene", LoadSceneMode.Single);
-	}
+    public void StartCurrentDialogue()
+    {
+        if (dialogueManager == null)
+            return;
+        CustomerScenario scenario = IsCustomerReaction ? completedScenario : GetCurrentScenario();
+        scenarioOverviewController?.HideScenarioOverview();
+        if (scenario == null)
+        {
+            ReturnToMenu();
+            return;
+        }
+        DialogueScene scene = IsCustomerReaction ? scenario.GetCompletionDialogue(completedRank) : scenario.Scene;
+        // Rank reactions can share the introduction's actor without duplicating its assignment.
+        GameObject fallbackActor = IsCustomerReaction && scenario.Scene != null ? scenario.Scene.actorPrefab : null;
+        dialogueManager.SetDialogueScene(scene, fallbackActor, IsTransitioning);
+    }
 
-	public void EndOfDialogue()
-	{
-		if (!scenarioOverviewController)
-			return;
-		
-		scenarioOverviewController.ShowScenarioOverview(GetCurrentScenario());
-	}
+    public void EndOfDialogue()
+    {
+        if (IsTransitioning)
+            return;
+        if (IsCustomerReaction)
+        {
+            AdvanceAfterCustomerReaction();
+            return;
+        }
+        if (phase == ScenarioPhase.Introduction)
+        {
+            CustomerScenario scenario = GetCurrentScenario();
+            if (scenario != null)
+                scenarioOverviewController?.ShowScenarioOverview(scenario);
+        }
+    }
 
-	public void EndWorkshopScene()
-	{
-		Debug.Log("ENDING WORKSHOP SCENE");
-	}
+    void AdvanceAfterCustomerReaction()
+    {
+        int completedIndex = testScenario != null && customerScenarios != null ? Array.IndexOf(customerScenarios, completedScenario) : currentScenarioIndex;
+        testScenario = null;
+        completedScenario = null;
+        completedRank = FinalRank.D;
+        if (customerScenarios == null || completedIndex < 0)
+        {
+            ReturnToMenu();
+            return;
+        }
 
-	public CustomerScenario GetCurrentScenario()
-	{
-		if (testScenario != null)
-			return testScenario;
-		
-		return customerScenarios[currentScenarioIndex];
-	}
+        if (completedIndex + 1 >= customerScenarios.Length)
+        {
+	        phase = ScenarioPhase.ReturningToMenu;
+	        completedScenario = null;
+	        ScreenTransitionController.LoadScene("_Scenes/PromoscreenScene", sceneFadeSeconds, () => Destroy(gameObject));
+	        return;
+        }
+        
+        ScreenTransitionController.Interlude("Later that day", () =>
+        {
+            currentScenarioIndex = completedIndex + 1;
+            phase = ScenarioPhase.Introduction;
+            StartCurrentDialogue();
+        }, ResumeDialogueAfterTransition, sceneFadeSeconds, laterThatDaySeconds);
+    }
 
-	public void SetScenarioIndex(int _scenarioIndex)
-	{
-		if (_scenarioIndex < 0 || _scenarioIndex >= customerScenarios.Length)
-		{
-			Debug.LogError("Invalid Scenario Index");
-			return;
-		}
-		
-		testScenario = null;
-		currentScenarioIndex = _scenarioIndex;
-	}
+    void ReturnToMenu()
+    {
+        phase = ScenarioPhase.ReturningToMenu;
+        completedScenario = null;
+        ScreenTransitionController.LoadScene("_Scenes/StartScene", sceneFadeSeconds);
+    }
+
+    public void StartScenario(int scenarioIndex)
+    {
+        if (IsTransitioning)
+            return;
+        if (customerScenarios == null || scenarioIndex < 0 || scenarioIndex >= customerScenarios.Length)
+        {
+            Debug.LogError("Invalid Scenario Index", this);
+            return;
+        }
+        SetScenarioIndex(scenarioIndex);
+        ScreenTransitionController.LoadScene("_Scenes/ShopFrontScene", sceneFadeSeconds, ResumeDialogueAfterTransition);
+    }
+
+    void ResumeDialogueAfterTransition()
+    {
+        if (dialogueManager == null)
+            return;
+        if (dialogueManager.HasPreparedDialogue)
+            dialogueManager.BeginPreparedDialogue();
+        else
+            StartCurrentDialogue();
+    }
+
+    public string ResolveDialogueText(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+            return string.Empty;
+        CustomerScenario scenario = IsCustomerReaction ? completedScenario : GetCurrentScenario();
+        if (scenario == null)
+            return text;
+        return text.Replace("{piece}", scenario.PieceTitle ?? "piece").Replace("{customer}", scenario.CustomerName ?? "Customer").Replace("{rank}", HasCompletedResult ? completedRank.ToString() : string.Empty);
+    }
+
+    public CustomerScenario GetCurrentScenario()
+    {
+        if (testScenario != null)
+            return testScenario;
+        if (customerScenarios == null || currentScenarioIndex < 0 || currentScenarioIndex >= customerScenarios.Length)
+            return null;
+        return customerScenarios[currentScenarioIndex];
+    }
+
+    public void SetScenarioIndex(int scenarioIndex)
+    {
+        if (customerScenarios == null || scenarioIndex < 0 || scenarioIndex >= customerScenarios.Length)
+        {
+            Debug.LogError("Invalid Scenario Index", this);
+            return;
+        }
+        testScenario = null;
+        completedScenario = null;
+        completedRank = FinalRank.D;
+        phase = ScenarioPhase.Introduction;
+        currentScenarioIndex = scenarioIndex;
+    }
 }

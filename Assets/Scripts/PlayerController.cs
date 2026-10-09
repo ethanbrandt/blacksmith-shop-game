@@ -54,7 +54,7 @@ public class PlayerController : MonoBehaviour
 	Highlightable currentHighlight;
 	private bool endOfRound = false;
 
-	static bool IsMinigameBlocking => StationSessionCoordinator.IsActive;
+	static bool IsMinigameBlocking => StationSessionCoordinator.IsActive || GameManager.IsTransitioning;
 	public Pickable Held => held;
 	public float SlimedPercentLeft => slimeSlideRemaining / slimeSlideDuration;
 

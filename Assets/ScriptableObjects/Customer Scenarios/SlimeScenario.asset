@@ -14,6 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CustomerScenario
   requestedPiece: {fileID: 11400000, guid: eb358ac113a8acb4f8c82a8756539443, type: 2}
   dialogueScene: {fileID: 11400000, guid: 2a2c8cbff033c864185e82f3ce4c750b, type: 2}
+  dRankCompletionDialogue: {fileID: 11400000, guid: 5feb4fd3732c4bb43a5921aaa177dc94, type: 2}
+  cRankCompletionDialogue: {fileID: 11400000, guid: b2d4f663fb2a3d349b7178cc89f9c8af, type: 2}
+  bRankCompletionDialogue: {fileID: 11400000, guid: 5746075dacab9344b969b0d45f404c48, type: 2}
+  aRankCompletionDialogue: {fileID: 11400000, guid: 60f08100a4831df44addfb25f454d96a, type: 2}
+  sRankCompletionDialogue: {fileID: 11400000, guid: 1bb95331d6e2d6040ac324b682c476f6, type: 2}
+  defaultCompletionDialogue: {fileID: 0}
   pieceTitle: Pickaxe
   piecePreviewSprite: {fileID: -1153105854, guid: 92d746f93f473b94e9e54dd9149c2ca2, type: 3}
   customerName: Slime

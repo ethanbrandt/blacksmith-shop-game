@@ -5022,18 +5022,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0ea53183426054a4ab97711f8015a3ad, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RoundUIHandler
-  rankSprites:
-  - {fileID: 21300000, guid: 626db1bf79d5a8c4c9eacfe630be8f77, type: 3}
-  - {fileID: 21300000, guid: 3f342ec9360bb664dbf971177e8f757b, type: 3}
-  - {fileID: 21300000, guid: c4c09daf186c90749b54f0fd28f2e943, type: 3}
-  - {fileID: 21300000, guid: c3edc4a9f0cfb7548bc412c340acae02, type: 3}
-  - {fileID: 21300000, guid: d53f7b546601c2c47bd4da8d5832e62d, type: 3}
   finalScoreDocument: {fileID: 2015263452}
   timeElapsedText: {fileID: 70511303}
   fullRevealDuration: 4.6
   initialHold: 0.35
   rankPause: 0.24
   extraPausePerRank: 0.1
+  rankImpactDuration: 0.28
+  rankImpactScale: 1.22
+  rankImpactAngle: 7
 --- !u!4 &1220906143
 Transform:
   m_ObjectHideFlags: 0
@@ -8208,7 +8205,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'Blacksmith Shop Prototype v0.2 (date of build: 9/14)'
+  m_text: 'Blacksmith Shop Prototype (alpha v0.3) [date of build: 10/9/2026]'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}

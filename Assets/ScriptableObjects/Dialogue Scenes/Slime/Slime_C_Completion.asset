@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3d592494cdf349147855bd5ce686c568, type: 3}
+  m_Name: Slime_C_Completion
+  m_EditorClassIdentifier: Assembly-CSharp::DialogueSystem.DialogueScene
+  actorPrefab: {fileID: 0}
+  lines:
+  - rawLine:
+      speaker: Slime
+      pose: neutral
+      scrollSpeed: 0
+      text: ohs! me has a picksaz agains!
+    choices: []
+  - rawLine:
+      speaker: Slime
+      pose: sad
+      scrollSpeed: 1
+      text: its looks a littles...<pause=0.3> <wobble>different</wobble>.
+    choices: []
+  - rawLine:
+      speaker: Slime
+      pose: neutral
+      scrollSpeed: 0
+      text: me cans do littles minings. littles rocks. very littles.
+    choices: []
+  - rawLine:
+      speaker: Slime
+      pose: happy
+      scrollSpeed: 0
+      text: tanks hunan. me tries no to brokes it dis time.
+    choices: []
