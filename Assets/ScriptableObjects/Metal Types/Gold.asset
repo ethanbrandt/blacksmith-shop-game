@@ -136,12 +136,16 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  note: Rose gold is easy to shape with a little heat. Avoid overheating it.
   heatGaugeRegions:
   - startHeat: 0
+    label: Too cold
     regionColor: {r: 0.2735246, g: 0.2717604, b: 0.2924528, a: 1}
   - startHeat: 0.05
+    label: Forgeable
     regionColor: {r: 0.8773585, g: 0.8773585, b: 0.8773585, a: 1}
   - startHeat: 0.72
+    label: Melting
     regionColor: {r: 0.93333334, g: 0.31150356, b: 0.2078431, a: 1}
   minHeatToForge: 0.05
   coldStrikeScale: 0

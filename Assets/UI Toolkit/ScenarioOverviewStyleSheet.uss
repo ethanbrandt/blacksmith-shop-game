@@ -1,21 +1,266 @@
 :root {
+    flex-grow: 1;
 }
 
 .is-hidden {
     display: none;
 }
 
-.part-box {
-    margin: 4px 8px 4px 8px;
-    border-width: 1px;
-    border-color: black;
-    flex-shrink: 1;
-    max-height: 128px;
-    min-width: 96px;
+.overview-background {
+    flex-grow: 1;
+    padding: 12px 32px;
+    background-color: rgba(24, 19, 15, 0.72);
 }
 
-.part-box .unity-label {
+.overview-sheet {
+    flex-grow: 1;
+    min-height: 0;
+    padding: 8px 16px;
+    border-width: 2px;
+    border-color: rgb(108, 91, 63);
+    background-color: rgb(234, 228, 201);
+    color: rgb(57, 47, 33);
+}
+
+.unity-label {
+    margin: 0;
+    padding: 0;
+}
+
+.order-eyebrow {
+    flex-shrink: 0;
+    font-size: 9px;
+    color: rgb(116, 98, 69);
+    -unity-text-align: middle-center;
+}
+
+.piece-title {
+    flex-shrink: 0;
+    margin-bottom: 6px;
+    font-size: 22px;
+    -unity-font-definition: url("../TextMesh Pro/Fonts/Inkbit.ttf");
+    -unity-text-align: middle-center;
+    white-space: normal;
+}
+
+.overview-content {
+    flex-grow: 1;
+    min-height: 0;
+}
+
+.overview-content .unity-scroll-view__content-container {
+    padding-right: 4px;
+}
+
+.order-summary {
+    flex-direction: row;
+    flex-shrink: 0;
+    align-items: center;
+    min-height: 56px;
+}
+
+.piece-preview-frame {
+    width: 56px;
+    height: 56px;
+    flex-shrink: 0;
+    margin-right: 14px;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(108, 91, 63, 0.08);
+}
+
+.piece-preview {
+    width: 48px;
+    height: 48px;
+}
+
+.order-details {
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.order-meta {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.customer-name {
+    flex-grow: 1;
+    flex-shrink: 1;
+    font-size: 11px;
+    white-space: normal;
+}
+
+.part-info-area {
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+.part-box {
+    flex-grow: 1;
+    flex-shrink: 1;
+    flex-basis: 0;
+    min-width: 96px;
+    margin-right: 6px;
+    margin-bottom: 2px;
+    padding: 5px 8px;
+    border-bottom-width: 2px;
+    border-bottom-color: rgb(164, 144, 105);
+    background-color: rgba(255, 251, 227, 0.45);
+}
+
+.part-name {
+    font-size: 11px;
+    -unity-font-style: bold;
+    white-space: normal;
+}
+
+.material-name {
+    margin-top: 3px;
+    font-size: 10px;
+    color: rgb(116, 98, 69);
+    white-space: normal;
+}
+
+.customer-note,
+.material-note {
+    flex-shrink: 0;
+    font-size: 10px;
+    color: rgb(116, 98, 69);
+    white-space: normal;
+}
+
+.customer-note {
+    margin-top: 4px;
+    margin-bottom: 6px;
+}
+
+.material-note {
+    margin-top: 4px;
+}
+
+.forging-guide {
+    flex-shrink: 0;
+    padding-top: 4px;
+    padding-bottom: 4px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-color: rgb(184, 165, 128);
+}
+
+.material-guide {
+    flex-shrink: 0;
+}
+
+.material-guide-separated {
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top-width: 1px;
+    border-top-color: rgb(204, 190, 156);
+}
+
+.guide-heading-row {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.guide-material-heading {
+    flex-direction: row;
+    flex-shrink: 1;
+    align-items: center;
+    min-width: 0;
+    margin-right: 8px;
+}
+
+.guide-heading {
+    flex-shrink: 0;
+    font-size: 14px;
+    -unity-font-definition: url("../TextMesh Pro/Fonts/Inkbit.ttf");
+}
+
+.guide-used-for {
+    flex-shrink: 1;
+    margin-left: 10px;
+    font-size: 9px;
+    color: rgb(116, 98, 69);
+    white-space: normal;
+}
+
+.temperature-endpoint {
+    flex-shrink: 0;
     font-size: 8px;
-    margin: 0px 0px 0px 0px;
-    padding: 4px 6px 4px 6px;
+    color: rgb(116, 98, 69);
+}
+
+.temperature-bar {
+    height: 16px;
+    flex-shrink: 0;
+}
+
+.temperature-region {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+}
+
+.region-connectors {
+    height: 5px;
+    flex-shrink: 0;
+}
+
+.region-tick {
+    position: absolute;
+    top: 0;
+    width: 1px;
+    height: 4px;
+    background-color: rgb(133, 114, 82);
+}
+
+.region-explanations {
+    flex-direction: row;
+    flex-shrink: 0;
+}
+
+.region-explanation {
+    flex-shrink: 0;
+    min-width: 0;
+    min-height: 14px;
+    align-items: center;
+    justify-content: center;
+}
+
+.region-title {
+    flex-shrink: 0;
+    font-size: 11px;
+    -unity-font-style: bold;
+}
+
+.continue-prompt {
+    flex-direction: row;
+    flex-shrink: 0;
+    justify-content: center;
+    align-items: center;
+    height: 26px;
+    margin-top: 4px;
+}
+
+.continue-label {
+    font-size: 11px;
+}
+
+.continue-control {
+    width: 26px;
+    height: 26px;
+    margin-left: 6px;
+    margin-right: 6px;
+    align-items: center;
+    justify-content: center;
+}
+
+.continue-button-image {
+    width: 20px;
+    height: 20px;
 }

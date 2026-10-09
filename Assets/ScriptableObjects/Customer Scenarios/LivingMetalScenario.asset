@@ -23,5 +23,4 @@ MonoBehaviour:
   pieceTitle: Sword
   piecePreviewSprite: {fileID: -1153105854, guid: 92d746f93f473b94e9e54dd9149c2ca2, type: 3}
   customerName: Living Metal
-  estimatedReward: 1100 G
   customerNote: Very finnicky...

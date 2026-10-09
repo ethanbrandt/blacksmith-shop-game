@@ -25,6 +25,7 @@ public enum MetalHeatHeuristic
 [Serializable]
 public class HeatGaugeRegion
 {
+	public string label = "";
 	[Range(0f, 1f)] public float startHeat;
 	public Color regionColor;
 }
@@ -54,6 +55,7 @@ public abstract class MetalType : ScriptableObject
 	public AnimationCurve meltSpeedByIntensity = AnimationCurve.Linear(0f, 0f, 1f, 1f);
 
 	[Header("Heat Gauge Information")]
+	[TextArea(2, 4)] public string note = "";
 	public List<HeatGaugeRegion> heatGaugeRegions;
 
 	public virtual void Initialize(HeatableMetal _metal) { }
