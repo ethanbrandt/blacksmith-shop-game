@@ -110,7 +110,27 @@ public class PartTableLayout : ScriptableObject
 		return partToolSlots;
 	}
 
+	public TimeRankBenchmarks TimeRanks => timeRankSeconds;
+	public ScoreRankBenchmarks ForgingRanks => forgingRankScores;
+	public ScoreRankBenchmarks GrindingRanks => grindingRankScores;
+
+	// Normalize the original D..S rank average to 0..1. The half-rank boundaries
+	// stay identical to the original rounding rule and also position the gauge.
+	public static ScoreRankBenchmarks FinalScoreRanks => new ScoreRankBenchmarks(
+		MinimumFinalScore(FinalRank.C), MinimumFinalScore(FinalRank.B),
+		MinimumFinalScore(FinalRank.A), MinimumFinalScore(FinalRank.S));
+
+	public static float MinimumFinalScore(FinalRank rank)
+	{
+		return rank == FinalRank.D ? 0f : ((int)rank - 0.5f) / (int)FinalRank.S;
+	}
+
 	public FinalRank EvaluateRank(float elapsedSeconds, float forgingAverage, float grindingAverage, bool hasGrindingScore)
+	{
+		return FinalScoreRanks.Evaluate(EvaluateScore(elapsedSeconds, forgingAverage, grindingAverage, hasGrindingScore));
+	}
+
+	public float EvaluateScore(float elapsedSeconds, float forgingAverage, float grindingAverage, bool hasGrindingScore)
 	{
 		int rankTotal = (int)timeRankSeconds.Evaluate(elapsedSeconds) + (int)forgingRankScores.Evaluate(forgingAverage);
 		int rankCount = 2;
@@ -121,8 +141,6 @@ public class PartTableLayout : ScriptableObject
 			rankCount++;
 		}
 
-		float rankAverage = (float)rankTotal / rankCount;
-		int roundedRank = Mathf.FloorToInt(rankAverage + 0.5f);
-		return (FinalRank)Mathf.Clamp(roundedRank, (int)FinalRank.D, (int)FinalRank.S);
+		return (float)rankTotal / (rankCount * (int)FinalRank.S);
 	}
 }

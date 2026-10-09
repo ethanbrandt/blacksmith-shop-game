@@ -5030,6 +5030,10 @@ MonoBehaviour:
   - {fileID: 21300000, guid: d53f7b546601c2c47bd4da8d5832e62d, type: 3}
   finalScoreDocument: {fileID: 2015263452}
   timeElapsedText: {fileID: 70511303}
+  fullRevealDuration: 4.6
+  initialHold: 0.35
+  rankPause: 0.24
+  extraPausePerRank: 0.1
 --- !u!4 &1220906143
 Transform:
   m_ObjectHideFlags: 0

@@ -12,11 +12,14 @@ public class RoundManager : MonoBehaviour
     [SerializeField] FinishedToolShowcase finishedToolShowcase;
     [SerializeField] IsometricCameraController camController;
     
-    public float TimeElapsed => Time.time - startTime;
+    public float TimeElapsed => startTime < 0f ? 0f : Mathf.Max(0f, (HasEnded ? endTime : Time.time) - startTime);
     
     private RoundUIHandler uiHandler;
     
     float startTime = -1f;
+    float endTime = -1f;
+
+    public bool HasEnded => endTime >= 0f;
 
     void Awake()
     {
@@ -35,12 +38,14 @@ public class RoundManager : MonoBehaviour
 
     public void BeginRound(ForgePiece _selectedForgePiece)
     {
-        if (startTime > 0)
+        if (startTime >= 0f)
             return;
         
         vignetteController.ResetVignette();
         
         startTime = Time.time;
+        endTime = -1f;
+        uiHandler?.ResetFinalScores();
         
         partTable.InitializePartLayout(_selectedForgePiece.PartLayout);
 
@@ -62,6 +67,10 @@ public class RoundManager : MonoBehaviour
 
     public void EndRound(HeatableMetal[] finishedParts, PartDefinition[] partDefinitions, PartTableLayout partLayout)
     {
+        if (HasEnded)
+            return;
+
+        endTime = Time.time;
 	    player.NotifyEnding();
 	    
         if (uiHandler == null)
@@ -72,7 +81,7 @@ public class RoundManager : MonoBehaviour
         finishedToolShowcase.BeginToolShowcase(finishedParts, partLayout);
         camController.target = finishedToolShowcase.transform;
         
-        float elapsedSeconds = startTime >= 0f ? Time.time - startTime : 0f;
-        //uiHandler.ShowFinalScores(finishedParts, partDefinitions, partLayout, elapsedSeconds);
+        float elapsedSeconds = TimeElapsed;
+        uiHandler?.ShowFinalScores(finishedParts, partDefinitions, partLayout, elapsedSeconds);
     }
 }
