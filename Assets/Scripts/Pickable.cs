@@ -135,8 +135,8 @@ public class Pickable : MonoBehaviour
 		SetPhysicsActive(false);
 
 		transform.SetParent(socket, true);
-		transform.localPosition = Vector3.zero;
-		transform.localRotation = Quaternion.identity;
+		transform.localPosition = new Vector3(0f, 0f, -0.03f);
+		transform.localRotation = Quaternion.Euler(-90f, 0f, 0f);
 		return true;
 	}
 

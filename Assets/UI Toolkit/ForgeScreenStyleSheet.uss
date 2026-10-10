@@ -5,6 +5,39 @@
     display: none;
 }
 
+.station-controls {
+    flex-grow: 1;
+    bottom: auto;
+    right: auto;
+    top: auto;
+    justify-content: flex-end;
+    align-self: flex-end;
+    flex-direction: row;
+    align-items: auto;
+    margin-bottom: 4px;
+}
+
+.station-control {
+    flex-grow: 0;
+    flex-direction: row;
+    margin-left: 4px;
+    margin-right: 4px;
+    color: rgb(255, 255, 255);
+    font-size: 8px;
+}
+
+.station-control .unity-image {
+    width: 16px;
+    height: 16px;
+    margin-right: 2px;
+}
+
+.station-control .unity-label {
+    margin: 0;
+    padding: 0;
+    -unity-text-align: middle-left;
+}
+
 .heat {
 }
 

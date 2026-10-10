@@ -51,10 +51,11 @@
 
 .tutorial-progress {
     font-size: 7px;
-    color: rgb(116, 98, 69);
+    color: rgb(255, 255, 255);
 }
 
 .tutorial-title {
+    color: rgb(255, 255, 255);
     flex-shrink: 0;
     margin-bottom: 2px;
     font-size: 10px;
@@ -63,28 +64,9 @@
 }
 
 .tutorial-text {
+    color: rgb(255, 255, 255);
     flex-shrink: 0;
     font-size: 8.5px;
-    white-space: normal;
-}
-
-.tutorial-hint-row {
-    flex-direction: row;
-    align-items: center;
-    margin-top: 3px;
-}
-
-.tutorial-control {
-    width: 10px;
-    height: 10px;
-    flex-shrink: 0;
-    margin-right: 3px;
-}
-
-.tutorial-hint {
-    flex-shrink: 1;
-    font-size: 7.5px;
-    color: rgb(116, 98, 69);
     white-space: normal;
 }
 
@@ -112,8 +94,8 @@
     font-size: 10px;
 }
 
-.tutorial-overview .tutorial-hint {
-    font-size: 9px;
+.tutorial-overview .tutorial-card .unity-label {
+    color: rgb(0, 0, 0);
 }
 
 .tutorial-workshop {

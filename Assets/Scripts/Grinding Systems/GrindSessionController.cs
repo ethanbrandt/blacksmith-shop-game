@@ -85,6 +85,7 @@ public class GrindSessionController : MonoBehaviour
 	private VisualElement sLight;
 
 	public bool IsOpen { get; private set; }
+	public HeatableMetal ActiveMetal => activeMetal;
 
 	public bool CanBegin(HeatableMetal metal)
 	{

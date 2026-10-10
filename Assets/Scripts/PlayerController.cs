@@ -56,7 +56,14 @@ public class PlayerController : MonoBehaviour
 
 	static bool IsMinigameBlocking => StationSessionCoordinator.IsActive || GameManager.IsTransitioning;
 	public Pickable Held => held;
+	public Component InteractionTarget => currentTarget;
 	public float SlimedPercentLeft => slimeSlideRemaining / slimeSlideDuration;
+	public bool CanShowInteractionPrompts => isActiveAndEnabled && !IsMinigameBlocking && !endOfRound;
+
+	public Furnace GetNearbyFuelFurnace()
+	{
+		return CanShowInteractionPrompts ? FindClosestStation() as Furnace : null;
+	}
 
 	public Action<Transform> OnPickUp;
 	public Action<Transform> OnHighlight;
@@ -452,7 +459,7 @@ public class PlayerController : MonoBehaviour
 		for (int i = 0; i < stations.Length; i++)
 		{
 			Station station = stations[i];
-			if (station == null)
+			if (station == null || !station.isActiveAndEnabled)
 				continue;
 
 			float distSq = station.DistanceFromStationSquared(origin);

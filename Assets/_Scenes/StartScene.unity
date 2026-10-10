@@ -293,9 +293,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::StartMenu
   scenarioNames:
-  - HATCHET TEST SCENARIO
-  - SUITOR SCENARIO
-  - SLIME SCENARIO
+  - TUTORIAL
 --- !u!114 &1277966148
 MonoBehaviour:
   m_ObjectHideFlags: 0

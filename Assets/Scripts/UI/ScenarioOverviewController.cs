@@ -141,7 +141,7 @@ public class ScenarioOverviewController : MonoBehaviour
         }
 
         BuildMaterialGuides(parts);
-        HatchetTutorialMockup.ShowWelcome(document.rootVisualElement.Q<VisualElement>("OverviewTutorial"), _scenario.IsTutorial);
+        HatchetTutorialUI.ShowWelcome(document.rootVisualElement.Q<VisualElement>("OverviewTutorial"), _scenario.IsTutorial);
         overviewContent.scrollOffset = Vector2.zero;
     }
 

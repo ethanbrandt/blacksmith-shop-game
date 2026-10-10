@@ -7,15 +7,10 @@
             <ui:Image name="TutorialPortraitThumbsUp" scale-mode="ScaleToFit" source="project://database/Assets/Art/Ethan%20Icons/ethan_thumbsup.png?fileID=21300000&amp;guid=f79417bccb1f2264698b57ac9d4a776e&amp;type=3#ethan_thumbsup" picking-mode="Ignore" class="tutorial-portrait is-hidden"/>
         </ui:VisualElement>
         <ui:VisualElement picking-mode="Ignore" class="tutorial-copy">
-            <ui:Label text="Pick up your first piece" name="TutorialTitle" picking-mode="Ignore" class="tutorial-title" style="color: rgb(255, 255, 255);"/>
-            <ui:Label text="Those two iron blanks are your axe head and rod. Walk over and grab either one." name="TutorialText" picking-mode="Ignore" class="tutorial-text" style="color: rgb(255, 255, 255);"/>
-            <ui:VisualElement picking-mode="Ignore" class="tutorial-hint-row" style="color: rgb(255, 255, 255);">
-                <ui:Image name="TutorialControlY" source="project://database/Assets/Art/Button%20Icons/Y.png?fileID=21300000&amp;guid=95173dc58fb8a874eb01b89ace2679f9&amp;type=3#Y" picking-mode="Ignore" class="tutorial-control"/>
-                <ui:Image name="TutorialControlX" source="project://database/Assets/Art/Button%20Icons/X.png?fileID=21300000&amp;guid=73b9d9f046b2de347af7a99670d2076f&amp;type=3#X" picking-mode="Ignore" class="tutorial-control is-hidden"/>
-                <ui:Label text="Left stick: move  |  Y: pick up" name="TutorialHint" picking-mode="Ignore" class="tutorial-hint" style="color: rgb(255, 255, 255);"/>
-            </ui:VisualElement>
+            <ui:Label text="Pick up a piece of iron" name="TutorialTitle" picking-mode="Ignore" class="tutorial-title"/>
+            <ui:Label text="Walk over to an iron blank and press Y to pick it up." name="TutorialText" picking-mode="Ignore" class="tutorial-text"/>
             <ui:VisualElement picking-mode="Ignore" class="tutorial-heading">
-                <ui:Label text="01 / 08" name="TutorialProgress" picking-mode="Ignore" class="tutorial-progress" style="color: rgb(255, 255, 255);"/>
+                <ui:Label text="01 / 07" name="TutorialProgress" picking-mode="Ignore" class="tutorial-progress"/>
             </ui:VisualElement>
         </ui:VisualElement>
     </ui:VisualElement>

@@ -15,34 +15,14 @@ MonoBehaviour:
   actorPrefab: {fileID: 0}
   lines:
   - rawLine:
-      speaker: Suitor
-      pose: triumph
+      speaker: THE DEVELOPER
+      pose: thumbsUp
       scrollSpeed: 0
-      text: Alright let's see it!
+      text: Fantastic job!
     choices: []
   - rawLine:
-      speaker: Suitor
-      pose: 
-      scrollSpeed: 1
-      text: <wave amplitude=1>Hmmm...</wave>
-    choices: []
-  - rawLine:
-      speaker: Suitor
-      pose: determined
+      speaker: THE DEVELOPER
+      pose: explain
       scrollSpeed: 0
-      text: <wave amplitude=2>Fantasic work blacksmith!</wave> I have never seen
-        a piece such as this!
-    choices: []
-  - rawLine:
-      speaker: Suitor
-      pose: triumph
-      scrollSpeed: 0
-      text: Many praises to you and your master! This is truly magnificent.
-    choices: []
-  - rawLine:
-      speaker: Suitor
-      pose: triumph
-      scrollSpeed: 0
-      text: There is but no chance <i>my</i> beloved does not adore a gift of such
-        <wave amplitude=1>quality</wave>!
+      text: Now you're ready to take on the rest of this demo. Good luck!
     choices: []

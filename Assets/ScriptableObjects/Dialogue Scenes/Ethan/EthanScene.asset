@@ -15,26 +15,26 @@ MonoBehaviour:
   actorPrefab: {fileID: 5542709510451348906, guid: e4d4bd0e82055e141ac719b1a73ad51b, type: 3}
   lines:
   - rawLine:
-      speaker: DEV
+      speaker: THE DEVELOPER
       pose: explain
       scrollSpeed: 0
       text: Welcome to my game!
     choices: []
   - rawLine:
-      speaker: DEV
+      speaker: 
       pose: sad
       scrollSpeed: 0
       text: I did not have time to make another tutorial character so I'll have to
         do.
     choices: []
   - rawLine:
-      speaker: DEV
+      speaker: 
       pose: shrug
       scrollSpeed: 0
       text: That's just how game development goes sometimes.
     choices: []
   - rawLine:
-      speaker: DEV
+      speaker: 
       pose: explain
       scrollSpeed: 0
       text: Anyways,<pause=1> I'll walk you through your first piece.

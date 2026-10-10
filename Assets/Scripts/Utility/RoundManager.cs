@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class RoundManager : MonoBehaviour
@@ -20,6 +21,8 @@ public class RoundManager : MonoBehaviour
     float endTime = -1f;
 
     public bool HasEnded => endTime >= 0f;
+    readonly List<HeatableMetal> spawnedParts = new List<HeatableMetal>();
+    public IReadOnlyList<HeatableMetal> SpawnedParts => spawnedParts;
 
     void Awake()
     {
@@ -62,6 +65,7 @@ public class RoundManager : MonoBehaviour
             var heatableMetal = metalGO.GetComponent<HeatableMetal>();
             heatableMetal.SetMetalType(scenarioParts[i].metalType);
             heatableMetal.SetPartDefinition(scenarioParts[i].partDefinition);
+            spawnedParts.Add(heatableMetal);
         }
     }
 

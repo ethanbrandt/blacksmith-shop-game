@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7d3c45066358a0242a7f4c2793673225, type: 3}
   m_Name: Circle
   m_EditorClassIdentifier: Assembly-CSharp::PartDefinition
-  displayName: Circle
+  displayName: Head
   isBladed: 0
   partSocketSprite: {fileID: 0}
   thickness: 0.15

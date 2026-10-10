@@ -54,10 +54,10 @@ MonoBehaviour:
   outlineCenterOffset: {x: 0, y: 0}
   outlineEdgeNeedsSharpening: 00000000000000000000000000000000000000000000000000000000000000000000
   forgingScores:
-    c: 0.725
-    b: 0.85
-    a: 0.935
-    s: 0.975
+    c: 0.7
+    b: 0.825
+    a: 0.91
+    s: 0.95
   grindingScores:
     c: 0
     b: 0

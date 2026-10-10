@@ -23,10 +23,10 @@ MonoBehaviour:
   - positionOffset: {x: 0, y: 0, z: 0}
     rotationOffset: {x: 0, y: 90, z: 90}
   timeRankSeconds:
-    c: 420
-    b: 310
-    a: 200
-    s: 120
+    c: 720
+    b: 610
+    a: 500
+    s: 320
   forgingRankScores:
     c: 0.7
     b: 0.8

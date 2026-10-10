@@ -15,21 +15,14 @@ MonoBehaviour:
   actorPrefab: {fileID: 0}
   lines:
   - rawLine:
-      speaker: Suitor
-      pose: triumph
+      speaker: THE DEVELOPER
+      pose: explain
       scrollSpeed: 0
-      text: Alright let's see it!
+      text: Not bad.
     choices: []
   - rawLine:
-      speaker: Suitor
-      pose: 
-      scrollSpeed: 1
-      text: <wave amplitude=1>Hmmm...</wave>
-    choices: []
-  - rawLine:
-      speaker: Suitor
-      pose: determined
+      speaker: THE DEVELOPER
+      pose: explain
       scrollSpeed: 0
-      text: <wave amplitude=2>Barely satisfactory!</wave><pause=0.5> Hopfully this
-        will do.
+      text: Now you're ready to take on the rest of this demo. Good luck!
     choices: []

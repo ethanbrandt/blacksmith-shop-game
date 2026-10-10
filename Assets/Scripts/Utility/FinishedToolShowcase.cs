@@ -33,6 +33,8 @@ public class FinishedToolShowcase : MonoBehaviour
 		{
 			toolSlots[i].containedPart = _finishedMetals[i];
 			_finishedMetals[i].transform.SetParent(toolSlots[i].slotSocket, false);
+			_finishedMetals[i].transform.localRotation = Quaternion.identity;
+			_finishedMetals[i].transform.localPosition = Vector3.zero;
 			if (_finishedMetals[i].TryGetComponent(out Highlightable highlight))
 				highlight.SetHighlighted(true);
 		}
