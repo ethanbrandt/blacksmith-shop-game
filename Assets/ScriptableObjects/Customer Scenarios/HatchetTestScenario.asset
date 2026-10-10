@@ -20,6 +20,7 @@ MonoBehaviour:
   aRankCompletionDialogue: {fileID: 11400000, guid: a7ada9ac9b074b6c8235584d75005333, type: 2}
   sRankCompletionDialogue: {fileID: 11400000, guid: 0d54d10be3914ecf9e42c8dfd8f2e8fd, type: 2}
   defaultCompletionDialogue: {fileID: 0}
+  isTutorial: 1
   pieceTitle: HATCHET
   piecePreviewSprite: {fileID: -1153105854, guid: 92d746f93f473b94e9e54dd9149c2ca2, type: 3}
   customerName: ???

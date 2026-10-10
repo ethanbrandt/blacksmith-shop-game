@@ -19,6 +19,8 @@ public class CustomerScenario : ScriptableObject
 	[SerializeField] DialogueScene defaultCompletionDialogue;
 
 	[Header("Scenario Info")]
+	[Tooltip("Shows the static Ethan tutorial mockup on the order screen and workshop HUD.")]
+	[SerializeField] bool isTutorial;
 	[SerializeField] string pieceTitle;
 	[SerializeField] Sprite piecePreviewSprite;
 	[SerializeField] string customerName;
@@ -40,6 +42,7 @@ public class CustomerScenario : ScriptableObject
 
 	public ForgePiece RequestedPiece => requestedPiece;
 	public DialogueScene Scene => dialogueScene;
+	public bool IsTutorial => isTutorial;
 	public string PieceTitle => pieceTitle;
 	public Sprite PiecePreviewSprite => piecePreviewSprite;
 	public string CustomerName => customerName;

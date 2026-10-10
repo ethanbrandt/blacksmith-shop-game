@@ -1,5 +1,7 @@
 <ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
     <Style src="project://database/Assets/UI%20Toolkit/ScenarioOverviewStyleSheet.uss?fileID=7433441132597879392&amp;guid=9ca47341726ee7348be0b48c424a9f79&amp;type=3#ScenarioOverviewStyleSheet"/>
+    <Style src="TutorialCallout.uss"/>
+    <ui:Template name="TutorialCallout" src="TutorialCallout.uxml"/>
     <ui:VisualElement name="BackgroundDim" class="overview-background">
         <ui:VisualElement name="OverviewSheet" class="overview-sheet">
             <ui:Label text="CUSTOMER ORDER" class="order-eyebrow"/>
@@ -32,6 +34,7 @@
                 <ui:Label name="CustomerNoteLabel" class="customer-note"/>
                 <ui:VisualElement name="MaterialGuideArea" class="forging-guide"/>
             </ui:ScrollView>
+            <ui:Instance template="TutorialCallout" name="OverviewTutorial" class="tutorial-overview is-hidden" picking-mode="Ignore"/>
             <ui:VisualElement class="continue-prompt">
                 <ui:Label text="Hold" class="continue-label"/>
                 <RadialProgress progress="0" radial-color="rgb(82, 69, 47)" thickness="2" radius="11" name="ContinueRadialProgress" class="continue-control">

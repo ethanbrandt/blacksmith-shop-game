@@ -6,6 +6,17 @@ public class MainControlsHUDController : MonoBehaviour
     [Header("Prompt Offsets")]
     [SerializeField] float stationPromptYOffset;
     [SerializeField] float pickablePromptYOffset;
+
+    [Header("Tutorial Visual Mockup")]
+    [Tooltip("Manual preview only. Changing this in Play mode swaps Ethan's text and pose; player actions do not advance it.")]
+    [SerializeField] TutorialPreviewStep tutorialPreviewStep = TutorialPreviewStep.PickUpMetal;
+    private TutorialPreviewStep displayedTutorialStep;
+    private VisualElement tutorialPanel;
+    private VisualElement controlsVisual;
+    private bool displayedForgeOpen;
+    private bool displayedGrindOpen;
+    private bool showTutorial;
+    private float normalSortingOrder;
     
     private UIDocument document;
     
@@ -24,6 +35,9 @@ public class MainControlsHUDController : MonoBehaviour
     void Awake()
     {
         document = GetComponent<UIDocument>();
+        normalSortingOrder = document.sortingOrder;
+        document.rootVisualElement.pickingMode = PickingMode.Ignore;
+        controlsVisual = document.rootVisualElement.Q<VisualElement>("ControlsVisual");
 
         leftStick = document.rootVisualElement.Q<VisualElement>("LeftStick");
         xButton = document.rootVisualElement.Q<VisualElement>("XButton");
@@ -38,10 +52,40 @@ public class MainControlsHUDController : MonoBehaviour
         player = FindFirstObjectByType<PlayerController>();
     }
 
+    void Start()
+    {
+        tutorialPanel = document.rootVisualElement.Q<VisualElement>("WorkshopTutorial");
+        RefreshTutorialPreview();
+    }
+
     private void Update()
     {
-        bool isBlocking = ForgeSessionController.IsBlockingPlayer || GrindSessionController.IsBlockingPlayer;
-        document.rootVisualElement.EnableInClassList("is-hidden", isBlocking);
+        bool forgeOpen = ForgeSessionController.IsBlockingPlayer;
+        bool grindOpen = GrindSessionController.IsBlockingPlayer;
+        if (displayedTutorialStep != tutorialPreviewStep || displayedForgeOpen != forgeOpen || displayedGrindOpen != grindOpen)
+            RefreshTutorialPreview();
+
+        bool isBlocking = forgeOpen || grindOpen;
+        document.rootVisualElement.EnableInClassList("is-hidden", isBlocking && !showTutorial);
+        controlsVisual.EnableInClassList("is-hidden", isBlocking);
+        buttonPrompt.style.display = isBlocking ? new StyleEnum<DisplayStyle>(DisplayStyle.None) : new StyleEnum<DisplayStyle>(StyleKeyword.Null);
+        // Station windows render at 100. Keep the usual tutorial above them.
+        document.sortingOrder = isBlocking && showTutorial ? Mathf.Max(normalSortingOrder, 101f) : normalSortingOrder;
+    }
+
+    private void RefreshTutorialPreview()
+    {
+        displayedTutorialStep = tutorialPreviewStep;
+        displayedForgeOpen = ForgeSessionController.IsBlockingPlayer;
+        displayedGrindOpen = GrindSessionController.IsBlockingPlayer;
+        var scenario = GameManager.Instance != null ? GameManager.Instance.GetCurrentScenario() : null;
+        showTutorial = scenario != null && scenario.IsTutorial;
+        if (displayedForgeOpen)
+            HatchetTutorialMockup.ShowForge(tutorialPanel, showTutorial);
+        else if (displayedGrindOpen)
+            HatchetTutorialMockup.ShowGrind(tutorialPanel, showTutorial);
+        else
+            HatchetTutorialMockup.ShowWorkshop(tutorialPanel, showTutorial, tutorialPreviewStep);
     }
 
     private void LateUpdate()

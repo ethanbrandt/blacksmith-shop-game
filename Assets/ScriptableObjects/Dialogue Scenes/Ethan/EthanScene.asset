@@ -37,6 +37,5 @@ MonoBehaviour:
       speaker: DEV
       pose: explain
       scrollSpeed: 0
-      text: Anyways,<pause=0.5> I'll walk you through your first customer, <pause=1><wave
-        amplitime=1>me</wave>.
+      text: Anyways,<pause=1> I'll walk you through your first piece.
     choices: []

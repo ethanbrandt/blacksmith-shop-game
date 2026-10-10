@@ -1,0 +1,22 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <Style src="project://database/Assets/UI%20Toolkit/TutorialCallout.uss?fileID=7433441132597879392&amp;guid=6e710f93438b4d5aa02777830eab6b9f&amp;type=3#TutorialCallout"/>
+    <ui:VisualElement name="TutorialCard" picking-mode="Ignore" class="tutorial-card" style="border-left-width: 0; border-top-width: 0; border-right-width: 0; border-bottom-width: 0; background-color: rgba(140, 140, 140, 0.29);">
+        <ui:VisualElement picking-mode="Ignore" class="tutorial-portrait-frame" style="border-bottom-width: 0; flex-shrink: 1; align-self: flex-start; height: 46px;">
+            <ui:Image name="TutorialPortraitExplain" scale-mode="ScaleToFit" source="project://database/Assets/Art/Ethan%20Icons/ethan_explain.png?fileID=21300000&amp;guid=d97f0778d351e164a9acffe98de9e7e6&amp;type=3#ethan_explain" picking-mode="Ignore" class="tutorial-portrait"/>
+            <ui:Image name="TutorialPortraitInquisitive" scale-mode="ScaleToFit" source="project://database/Assets/Art/Ethan%20Icons/ethan_inquesitive.png?fileID=21300000&amp;guid=0d68b50ede545a64095216efa91a9e25&amp;type=3#ethan_inquesitive" picking-mode="Ignore" class="tutorial-portrait is-hidden"/>
+            <ui:Image name="TutorialPortraitThumbsUp" scale-mode="ScaleToFit" source="project://database/Assets/Art/Ethan%20Icons/ethan_thumbsup.png?fileID=21300000&amp;guid=f79417bccb1f2264698b57ac9d4a776e&amp;type=3#ethan_thumbsup" picking-mode="Ignore" class="tutorial-portrait is-hidden"/>
+        </ui:VisualElement>
+        <ui:VisualElement picking-mode="Ignore" class="tutorial-copy">
+            <ui:Label text="Pick up your first piece" name="TutorialTitle" picking-mode="Ignore" class="tutorial-title" style="color: rgb(255, 255, 255);"/>
+            <ui:Label text="Those two iron blanks are your axe head and rod. Walk over and grab either one." name="TutorialText" picking-mode="Ignore" class="tutorial-text" style="color: rgb(255, 255, 255);"/>
+            <ui:VisualElement picking-mode="Ignore" class="tutorial-hint-row" style="color: rgb(255, 255, 255);">
+                <ui:Image name="TutorialControlY" source="project://database/Assets/Art/Button%20Icons/Y.png?fileID=21300000&amp;guid=95173dc58fb8a874eb01b89ace2679f9&amp;type=3#Y" picking-mode="Ignore" class="tutorial-control"/>
+                <ui:Image name="TutorialControlX" source="project://database/Assets/Art/Button%20Icons/X.png?fileID=21300000&amp;guid=73b9d9f046b2de347af7a99670d2076f&amp;type=3#X" picking-mode="Ignore" class="tutorial-control is-hidden"/>
+                <ui:Label text="Left stick: move  |  Y: pick up" name="TutorialHint" picking-mode="Ignore" class="tutorial-hint" style="color: rgb(255, 255, 255);"/>
+            </ui:VisualElement>
+            <ui:VisualElement picking-mode="Ignore" class="tutorial-heading">
+                <ui:Label text="01 / 08" name="TutorialProgress" picking-mode="Ignore" class="tutorial-progress" style="color: rgb(255, 255, 255);"/>
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
