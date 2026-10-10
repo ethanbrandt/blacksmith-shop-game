@@ -294,7 +294,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::StartMenu
   scenarioNames:
   - HATCHET TEST SCENARIO
-  - LIVING METAL SCENARIO
   - SUITOR SCENARIO
   - SLIME SCENARIO
 --- !u!114 &1277966148

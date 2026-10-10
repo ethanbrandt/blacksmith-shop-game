@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3d592494cdf349147855bd5ce686c568, type: 3}
+  m_Name: Ethan_A_Completion
+  m_EditorClassIdentifier: Assembly-CSharp::DialogueSystem.DialogueScene
+  actorPrefab: {fileID: 0}
+  lines:
+  - rawLine:
+      speaker: Suitor
+      pose: triumph
+      scrollSpeed: 0
+      text: Alright let's see it!
+    choices: []
+  - rawLine:
+      speaker: Suitor
+      pose: 
+      scrollSpeed: 1
+      text: <wave amplitude=1>Hmmm...</wave>
+    choices: []
+  - rawLine:
+      speaker: Suitor
+      pose: determined
+      scrollSpeed: 0
+      text: <wave amplitude=2>Good work blacksmith!</wave> I will make sure to recommend
+        you to my friends.
+    choices: []
+  - rawLine:
+      speaker: Suitor
+      pose: triumph
+      scrollSpeed: 0
+      text: As soon as I have one.
+    choices: []

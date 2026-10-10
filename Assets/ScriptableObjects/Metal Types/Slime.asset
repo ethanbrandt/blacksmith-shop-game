@@ -172,13 +172,13 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  note: Slime gets harder as it heats up. Forge it while warm.
+  note: Slime gets harder as it heats up. Heat it up immediatley to avoid melting!
   heatGaugeRegions:
-  - startHeat: 0
-    label: Melting
+  - label: Melting
+    startHeat: 0
     regionColor: {r: 0.2741189, g: 0.710933, b: 0.754717, a: 1}
-  - startHeat: 0.25
-    label: Forgeable
+  - label: Forgeable
+    startHeat: 0.25
     regionColor: {r: 0.8773585, g: 0.8773585, b: 0.8773585, a: 1}
   applyHeatTint: 1
   metalColorBlend: 0.96

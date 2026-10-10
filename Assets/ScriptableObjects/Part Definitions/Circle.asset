@@ -1,0 +1,47 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7d3c45066358a0242a7f4c2793673225, type: 3}
+  m_Name: Circle
+  m_EditorClassIdentifier: Assembly-CSharp::PartDefinition
+  displayName: Circle
+  isBladed: 0
+  partSocketSprite: {fileID: 0}
+  thickness: 0.15
+  outlineLocal:
+  - {x: 0, y: 1.2523282}
+  - {x: 0.47924522, y: 1.1570003}
+  - {x: 0.8855297, y: 0.8855297}
+  - {x: 1.1570003, y: 0.47924522}
+  - {x: 1.2523282, y: 0}
+  - {x: 1.1570003, y: -0.47924522}
+  - {x: 0.8855297, y: -0.8855297}
+  - {x: 0.47924522, y: -1.1570003}
+  - {x: 0, y: -1.2523282}
+  - {x: -0.47924522, y: -1.1570003}
+  - {x: -0.8855297, y: -0.8855297}
+  - {x: -1.1570003, y: -0.47924522}
+  - {x: -1.2523282, y: 0}
+  - {x: -1.1570003, y: 0.47924522}
+  - {x: -0.8855297, y: 0.8855297}
+  - {x: -0.47924522, y: 1.1570003}
+  outlineCenterOffset: {x: 0, y: 0}
+  outlineEdgeNeedsSharpening: 00000000000000000000000000000000
+  forgingScores:
+    c: 0.8
+    b: 0.875
+    a: 0.965
+    s: 0.985
+  grindingScores:
+    c: 0
+    b: 0
+    a: 0
+    s: 0
